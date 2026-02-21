@@ -3,6 +3,11 @@
 ## Purpose
 This file gives Codex (and other coding agents) a source-of-truth guide for working in this repository quickly and safely.
 
+## LLM Documentation
+- Primary LLM workflow doc: `docs/LLM_GUIDE.md`.
+- Keep `AGENTS.md`, `README.md`, and `docs/CONTEXT_HANDOFF.md` aligned when commands, paths, or repository layout changes.
+- If a workflow detail is uncertain, verify from code/scripts first, then update docs to match implementation.
+
 ## Development Approach (TDD First)
 - We use TDD by default for feature work and bug fixes.
 - Workflow:
@@ -47,10 +52,10 @@ App URL: `http://localhost:3000`
 
 ### Python/backend setup (only if touching backend)
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r apps/ml/requirements.txt
-python apps/ml/models/train_model.py
+cd apps/ml/models && python train_model.py
 ```
 
 ## Core Dev Commands
@@ -83,8 +88,11 @@ pnpm run test:e2e
 
 For ML/backend-only changes, there is no formal Python test/lint setup in-repo yet; at minimum run:
 ```bash
-python apps/ml/models/train_model.py
+cd apps/ml/models && python train_model.py
 ```
+
+ML training caveat:
+- `apps/ml/models/train_model.py` currently relies on relative paths and local data availability; validate input/output paths in your environment before using outputs.
 
 ## Testing and Linting Details
 - Unit tests live in:

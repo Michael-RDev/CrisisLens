@@ -5,18 +5,18 @@ import { useEffect, useState } from "react";
 type ThemeMode = "light" | "dark";
 
 function getPreferredTheme(): ThemeMode {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
 
   const stored = window.localStorage.getItem("cl-theme");
   if (stored === "light" || stored === "dark") {
     return stored;
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "light";
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [theme, setTheme] = useState<ThemeMode>("light");
 
   useEffect(() => {
     const preferred = getPreferredTheme();

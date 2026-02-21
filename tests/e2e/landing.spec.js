@@ -6,6 +6,7 @@ test.describe("CrisisLens landing page", () => {
 
     await expect(page.getByRole("banner")).toBeVisible();
     await expect(page.getByRole("heading", { name: "CrisisLens" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live Global Pulse" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Launch Dashboard" })).toBeVisible();
     await expect(page.getByRole("contentinfo")).toBeVisible();
     await expect(page.getByRole("contentinfo")).toContainText("CrisisLens");

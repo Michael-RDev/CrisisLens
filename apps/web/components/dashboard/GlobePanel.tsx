@@ -38,15 +38,18 @@ export function GlobePanel({
 }: GlobePanelProps) {
   return (
     <motion.article
-      className="globe-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4 xl:row-span-2"
+      className="dbx-panel globe-card xl:row-span-2"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: 0.14 }}
     >
       <div className="card-header-row flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="m-0 text-xl font-semibold">Live Global Pulse</h2>
+        <div>
+          <p className="dbx-kicker">Realtime Geospatial Layer</p>
+          <h2 className="dbx-title">Live Global Pulse</h2>
+        </div>
         <input
-          className="min-w-0 rounded-[9px] border border-[#2f5168] bg-[#0a1824] px-3 py-2 text-[#eaf3f8] lg:min-w-[260px]"
+          className="dbx-input lg:min-w-[260px]"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Jump to country or ISO3 (example: Sudan, SDN)"
@@ -60,7 +63,7 @@ export function GlobePanel({
         </datalist>
         <button
           type="button"
-          className="cursor-pointer rounded-[9px] border border-[#4a6e86] bg-[#1f4056] px-3 py-2 font-semibold text-[#f7fbff]"
+          className="dbx-btn-secondary"
           onClick={onJump}
         >
           Jump
@@ -74,7 +77,7 @@ export function GlobePanel({
         onSelect={onSelectIso3}
         onHover={onHoverIso3}
       />
-      <div className="mt-2 border-t border-dashed border-[#35566f] pt-2 text-sm text-[#b5c8d6]">
+      <div className="dbx-divider mt-2 pt-2 text-sm text-[#b5c8d6]">
         <p>{hoverText}</p>
       </div>
     </motion.article>

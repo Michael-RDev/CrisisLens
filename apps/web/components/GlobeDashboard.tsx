@@ -300,10 +300,10 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }
 
   return (
-    <main className="mx-auto max-w-[1460px] p-4 sm:p-5">
+    <main className="dbx-workspace">
       <HeroSection generatedAt={generatedAt} />
 
-      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">
           <GlobePanel
             metrics={metrics}
@@ -318,23 +318,21 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             onQueryChange={setQuery}
             onJump={jumpToCountry}
           />
-          <div className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+          <div className="dbx-panel-raised">
+            <p className="dbx-kicker">Display Layer</p>
             <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
           </div>
         </div>
 
-        <aside className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4 2xl:max-h-[calc(100vh-220px)]">
-          <h2 className="m-0 text-xl font-semibold">Operations Panels</h2>
+        <aside className="dbx-panel flex min-w-0 flex-col overflow-hidden 2xl:max-h-[calc(100vh-220px)]">
+          <p className="dbx-kicker">Decision Workspace</p>
+          <h2 className="dbx-title">Operations Panels</h2>
           <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               role="tab"
               aria-selected={activePanel === "country"}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                activePanel === "country"
-                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
-                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
-              }`}
+              className={`dbx-tab ${activePanel === "country" ? "dbx-tab-active" : ""}`}
               onClick={() => setActivePanel("country")}
             >
               Country Ops
@@ -343,11 +341,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               type="button"
               role="tab"
               aria-selected={activePanel === "priority"}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                activePanel === "priority"
-                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
-                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
-              }`}
+              className={`dbx-tab ${activePanel === "priority" ? "dbx-tab-active" : ""}`}
               onClick={() => setActivePanel("priority")}
             >
               Priority View
@@ -356,36 +350,32 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               type="button"
               role="tab"
               aria-selected={activePanel === "simulation"}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                activePanel === "simulation"
-                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
-                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
-              }`}
+              className={`dbx-tab ${activePanel === "simulation" ? "dbx-tab-active" : ""}`}
               onClick={() => setActivePanel("simulation")}
             >
               Simulation
             </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-[#2f5064] bg-[#0d1b27] p-3 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-[#2f3f50] bg-[#0e1822] p-3 sm:grid-cols-3">
             <div className="min-w-0">
-              <p className="m-0 text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Focus Country</p>
+              <p className="dbx-kicker">Focus Country</p>
               <p className="m-0 pt-1 text-sm font-semibold break-words">{selectedLabel}</p>
             </div>
             <div className="min-w-0">
-              <p className="m-0 text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Active Layer</p>
+              <p className="dbx-kicker">Active Layer</p>
               <p className="m-0 pt-1 text-sm font-semibold">
                 {layerMode} {selectedLayerValue !== null ? `• ${selectedLayerValue.toFixed(1)}` : ""}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="m-0 text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Highlights</p>
+              <p className="dbx-kicker">Highlights</p>
               <p className="m-0 pt-1 text-sm font-semibold">{highlightedIso3.length} active</p>
             </div>
           </div>
 
           <div
-            className="mt-3 grid min-w-0 flex-1 content-start gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
+            className="dbx-scroll mt-3 grid min-w-0 flex-1 content-start gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
             role="tabpanel"
           >
             {activePanel === "country" ? (
@@ -417,7 +407,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
             {activePanel === "priority" ? (
               <div className="grid min-w-0 gap-3">
-                <h3 className="m-0 text-lg font-semibold">Priority Stack</h3>
+                <h3 className="dbx-title text-lg">Priority Stack</h3>
                 <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
                   <div className="min-w-0">
                     <PriorityRankingPanel
@@ -446,7 +436,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
             {activePanel === "simulation" ? (
               <>
-                <h3 className="m-0 text-lg font-semibold">Response Runbook</h3>
+                <h3 className="dbx-title text-lg">Response Runbook</h3>
                 <SimulationPanel
                   selectedIso3={selectedIso3}
                   allocationUsd={allocationUsd}

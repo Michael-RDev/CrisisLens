@@ -20,7 +20,16 @@ export function OciPanel({
       <p className="dbx-subtitle mt-2">
         OCI = 32% severity + 28% in-need rate + 22% funding gap + 18% coverage mismatch.
       </p>
-      {overviewLoading ? <p>Loading OCI leaderboard...</p> : null}
+      {overviewLoading ? (
+        <ul className="dbx-loading list-none p-0" role="status" aria-label="Loading OCI leaderboard">
+          {[0, 1, 2, 3, 4].map((idx) => (
+            <li key={`oci-loading-${idx}`} className="dbx-loading-row">
+              <span className={`dbx-loading-bar ${idx % 2 === 0 ? "w-3/4" : "w-5/6"}`} />
+              <span className="dbx-loading-bar w-14" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {!overviewLoading && overview ? (
         <ul className="grid list-none gap-1.5 p-0">
           {overview.top_overlooked.slice(0, 8).map((row) => (

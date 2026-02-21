@@ -91,7 +91,18 @@ export function DatabricksChatPopup({
                 {genieLoading ? "Querying..." : "Send"}
               </button>
             </form>
-            {genieAnswer ? (
+            {genieLoading ? (
+              <div className="dbx-loading dbx-divider mt-2 pt-2" role="status" aria-label="Querying Databricks chat">
+                <span className="dbx-loading-bar w-5/6" />
+                <span className="dbx-loading-bar w-2/3" />
+                {[0, 1, 2].map((idx) => (
+                  <div key={`chat-loading-${idx}`} className="dbx-loading-row">
+                    <span className="dbx-loading-bar w-4/5" />
+                    <span className="dbx-loading-bar w-12" />
+                  </div>
+                ))}
+              </div>
+            ) : genieAnswer ? (
               <div className="dbx-divider mt-2 pt-2">
                 <p>{genieAnswer}</p>
                 <p className="dbx-subtitle mt-2">

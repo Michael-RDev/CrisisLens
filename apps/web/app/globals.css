@@ -393,6 +393,21 @@
     scrollbar-color: var(--dbx-scroll-thumb) var(--dbx-scroll-track);
   }
 
+  .dbx-loading {
+    @apply mt-2 grid gap-1.5 animate-pulse;
+  }
+
+  .dbx-loading-row {
+    @apply flex items-center justify-between gap-2 rounded-[10px] border px-2.5 py-2;
+    border-color: var(--dbx-list-border);
+    background: var(--dbx-list-bg);
+  }
+
+  .dbx-loading-bar {
+    @apply h-2.5 rounded;
+    background: var(--dbx-surface-strong);
+  }
+
   .dbx-chat-fab {
     @apply fixed bottom-5 right-5 z-20 rounded-full border px-4 py-2 text-sm font-semibold shadow-lg transition-colors;
     border-color: var(--dbx-accent);

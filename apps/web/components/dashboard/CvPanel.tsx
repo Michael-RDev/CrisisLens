@@ -40,7 +40,15 @@ export function CvPanel({
           {cvLoading ? "Detecting..." : "Detect Country"}
         </button>
       </div>
-      {cvDetection ? (
+      {cvLoading ? (
+        <div className="dbx-loading" role="status" aria-label="Detecting country from CV input">
+          <span className="dbx-loading-bar w-44" />
+          <div className="dbx-loading-row">
+            <span className="dbx-loading-bar w-28" />
+            <span className="dbx-loading-bar w-16" />
+          </div>
+        </div>
+      ) : cvDetection ? (
         <div className="dbx-divider mt-1 pt-2">
           <p>
             Detected: <strong>{cvDetection.iso3}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)

@@ -41,7 +41,13 @@ export function SimulationPanel({
           {simulationLoading ? "Simulating..." : `Simulate for ${selectedIso3 ?? "country"}`}
         </button>
       </div>
-      {simulation ? (
+      {simulationLoading ? (
+        <div className="dbx-loading dbx-divider mt-1 pt-2" role="status" aria-label="Running funding simulation">
+          <span className="dbx-loading-bar w-3/4" />
+          <span className="dbx-loading-bar w-2/3" />
+          <span className="dbx-loading-bar w-1/2" />
+        </div>
+      ) : simulation ? (
         <div className="dbx-divider mt-1 pt-2">
           <p>
             Rank change: <strong>{simulation.rank_delta >= 0 ? "+" : ""}{simulation.rank_delta}</strong>

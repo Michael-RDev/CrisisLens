@@ -38,7 +38,18 @@ export function ProjectOutliersPanel({
           ))}
         </ul>
       )}
-      {projectDetailLoading ? <p>Loading comparable projects...</p> : null}
+      {projectDetailLoading ? (
+        <div className="dbx-divider dbx-loading mt-1 pt-2" role="status" aria-label="Loading comparable projects">
+          <span className="dbx-loading-bar w-3/4" />
+          <span className="dbx-loading-bar w-2/3" />
+          {[0, 1, 2].map((idx) => (
+            <div key={`project-loading-${idx}`} className="dbx-loading-row">
+              <span className={`dbx-loading-bar ${idx === 1 ? "w-5/6" : "w-3/4"}`} />
+              <span className="dbx-loading-bar w-12" />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {!projectDetailLoading && projectDetail ? (
         <div className="dbx-divider mt-1 pt-2">
           <p>

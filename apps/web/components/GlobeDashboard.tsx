@@ -395,11 +395,11 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           </div>
 
           <div
-            className="dbx-scroll mt-3 grid min-w-0 flex-1 content-start gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
+            className="dbx-scroll mt-3 grid min-w-0 flex-1 gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
             role="tabpanel"
           >
             {activePanel === "country" ? (
-              <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
+              <div className="grid min-h-full min-w-0 gap-3 2xl:grid-cols-2">
                 <div className="min-w-0">
                   <CountryPanel
                     selected={selected}
@@ -408,7 +408,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                     clusterBreakdown={clusterBreakdown}
                   />
                 </div>
-                <div className="grid min-w-0 content-start gap-3">
+                <div className="grid min-w-0 gap-3 2xl:auto-rows-fr">
                   <AgentStatePanel
                     selectedIso3={selectedIso3}
                     agentLoading={agentLoading}
@@ -426,9 +426,9 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             ) : null}
 
             {activePanel === "priority" ? (
-              <div className="grid min-w-0 gap-3">
+              <div className="grid min-h-full min-w-0 gap-3 2xl:grid-rows-[auto_1fr]">
                 <h3 className="dbx-title text-lg">Priority Stack</h3>
-                <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
+                <div className="grid min-h-0 min-w-0 gap-3 2xl:grid-cols-2">
                   <div className="min-w-0">
                     <PriorityRankingPanel
                       ranked={ranked}
@@ -436,7 +436,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                       onSelectIso3={setSelectedIso3}
                     />
                   </div>
-                  <div className="grid min-w-0 content-start gap-3">
+                  <div className="grid min-w-0 gap-3 2xl:auto-rows-fr">
                     <OciPanel
                       overviewLoading={overviewLoading}
                       overview={overview}
@@ -455,7 +455,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             ) : null}
 
             {activePanel === "simulation" ? (
-              <>
+              <div className="grid min-h-full min-w-0 gap-3 2xl:grid-rows-[auto_1fr]">
                 <h3 className="dbx-title text-lg">Response Runbook</h3>
                 <SimulationPanel
                   selectedIso3={selectedIso3}
@@ -465,7 +465,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                   onAllocationChange={setAllocationUsd}
                   onSimulate={runSimulation}
                 />
-              </>
+              </div>
             ) : null}
           </div>
         </motion.aside>

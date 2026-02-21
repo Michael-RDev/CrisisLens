@@ -16,14 +16,14 @@ export function PriorityRankingPanel({
 }: PriorityRankingPanelProps) {
   return (
     <motion.article
-      className="list-card dbx-panel-raised min-w-0 overflow-hidden"
+      className="list-card dbx-panel-raised flex h-full min-w-0 flex-col overflow-hidden"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
     >
       <p className="dbx-kicker">Model Priority</p>
       <h2 className="dbx-title">Priority Ranking ({layerConfig[layerMode].label})</h2>
-      <ol className="dbx-scroll mt-2 grid max-h-[480px] list-none gap-1.5 overflow-auto p-0">
+      <ol className="dbx-scroll mt-2 grid min-h-0 flex-1 list-none gap-1.5 overflow-auto p-0">
         {ranked.map((row) => {
           const value = getLayerValue(row, layerMode);
           return (

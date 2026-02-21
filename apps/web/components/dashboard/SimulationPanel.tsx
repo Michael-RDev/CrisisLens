@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { SimulationResponse } from "@/lib/api/crisiswatch";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
+import { countryByIso3 } from "@/lib/countries";
 
 type SimulationPanelProps = {
   selectedIso3: string | null;
@@ -19,9 +20,11 @@ export function SimulationPanel({
   onAllocationChange,
   onSimulate
 }: SimulationPanelProps) {
+  const selectedCountryName = selectedIso3 ? countryByIso3.get(selectedIso3)?.name ?? selectedIso3 : null;
+
   return (
     <motion.article
-      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      className="integration-card dbx-panel-raised flex h-full min-w-0 flex-col overflow-hidden"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
@@ -45,7 +48,7 @@ export function SimulationPanel({
           onClick={onSimulate}
           disabled={simulationLoading || !selectedIso3}
         >
-          {simulationLoading ? "Loading..." : `Simulate for ${selectedIso3 ?? "country"}`}
+          {simulationLoading ? "Loading..." : `Simulate for ${selectedCountryName ?? "country"}`}
         </button>
       </div>
       {simulationLoading ? (

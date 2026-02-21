@@ -24,9 +24,6 @@ export function HeroSection({ generatedAt }: HeroSectionProps) {
       </div>
       <div className="grid content-start gap-2 sm:grid-cols-3 lg:grid-cols-1">
         <ThemeToggle />
-        <span className="dbx-chip text-center">OCI Explainability</span>
-        <span className="dbx-chip text-center">Outlier Benchmarking</span>
-        <span className="dbx-chip text-center">What-if Simulator</span>
       </div>
     </motion.section>
   );

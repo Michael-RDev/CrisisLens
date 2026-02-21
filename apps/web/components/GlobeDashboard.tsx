@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { countryByIso3 } from "@/lib/countries";
 import {
@@ -91,6 +91,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [allocationUsd, setAllocationUsd] = useState("5000000");
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [workspacePanelHeight, setWorkspacePanelHeight] = useState<number | null>(null);
+  const leftStackRef = useRef<HTMLDivElement | null>(null);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
@@ -121,6 +123,43 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }, [filtered, layerMode]);
 
   const hoverText = buildHoverText({ hoverCountryMetric, hoverCountryMeta, layerMode });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const leftStack = leftStackRef.current;
+    if (!leftStack) return;
+
+    const breakpoint = window.matchMedia("(min-width: 1536px)");
+    const syncWorkspaceHeight = () => {
+      if (!breakpoint.matches) {
+        setWorkspacePanelHeight(null);
+        return;
+      }
+
+      const nextHeight = Math.round(leftStack.getBoundingClientRect().height);
+      setWorkspacePanelHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
+    };
+
+    syncWorkspaceHeight();
+    const observer = new ResizeObserver(syncWorkspaceHeight);
+    observer.observe(leftStack);
+
+    if (breakpoint.addEventListener) {
+      breakpoint.addEventListener("change", syncWorkspaceHeight);
+    } else {
+      breakpoint.addListener(syncWorkspaceHeight);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (breakpoint.removeEventListener) {
+        breakpoint.removeEventListener("change", syncWorkspaceHeight);
+      } else {
+        breakpoint.removeListener(syncWorkspaceHeight);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -305,8 +344,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     <main className="dbx-workspace">
       <HeroSection generatedAt={generatedAt} />
 
-      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-        <div className="grid min-w-0 content-start gap-3">
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] 2xl:items-start">
+        <div ref={leftStackRef} className="grid min-w-0 content-start gap-3">
           <motion.section
             className="dbx-panel"
             initial={{ opacity: 0, y: 14 }}
@@ -319,7 +358,6 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                 <h2 className="dbx-title">Signal Overlay</h2>
                 <p className="dbx-subtitle mt-1">Choose the metric used to color the globe and rankings.</p>
               </div>
-              <span className="dbx-chip">Active: {layerConfig[layerMode].label}</span>
             </div>
             <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
           </motion.section>
@@ -339,7 +377,15 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         </div>
 
         <motion.aside
-          className="dbx-panel flex min-w-0 flex-col overflow-hidden 2xl:h-full"
+          className="dbx-panel flex min-h-0 min-w-0 flex-col overflow-hidden"
+          style={
+            workspacePanelHeight !== null
+              ? {
+                  height: workspacePanelHeight,
+                  maxHeight: workspacePanelHeight
+                }
+              : undefined
+          }
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.36, ease: "easeOut" }}

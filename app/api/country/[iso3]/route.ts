@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { loadCountryMetrics } from "@/lib/loadMetrics";
+import { computeOciComponents } from "@/lib/analytics";
+import { loadCountryMetrics, loadProjectProfiles } from "@/lib/loadMetrics";
 
 type Params = {
   params: { iso3: string };
 };
-
-const clusterNames = ["WASH", "Food", "Health", "Shelter", "Education", "Protection"];
 
 export async function GET(_: Request, { params }: Params) {
   const iso3 = params.iso3.trim().toUpperCase();
@@ -13,44 +12,77 @@ export async function GET(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid ISO3 code." }, { status: 400 });
   }
 
-  const metrics = await loadCountryMetrics();
+  const [metrics, projects] = await Promise.all([loadCountryMetrics(), loadProjectProfiles()]);
   const row = metrics.find((item) => item.iso3 === iso3);
   if (!row) {
     return NextResponse.json({ error: "Country not found." }, { status: 404 });
   }
 
-  const clusterBreakdown = clusterNames.map((clusterName, index) => {
-    const weight = 1 + ((iso3.charCodeAt(0) + index * 7) % 6) / 10;
-    const bbr = Number(((row.reached / Math.max(row.revisedPlanRequirements, 1)) * 1_000_000 * weight).toFixed(2));
-    const bbrZScore = Number((((weight - 1.25) / 0.22) * 0.6).toFixed(2));
-    return {
-      cluster_name: clusterName,
-      bbr,
-      bbr_z_score: bbrZScore
+  const countryProjects = projects.filter((item) => item.iso3 === iso3);
+  const clusterMap = new Map<
+    string,
+    {
+      cluster_name: string;
+      bbr_sum: number;
+      bbr_z_score_abs_max: number;
+      count: number;
+      budget_usd: number;
+      people_targeted: number;
+    }
+  >();
+
+  countryProjects.forEach((project) => {
+    const current = clusterMap.get(project.cluster_name) ?? {
+      cluster_name: project.cluster_name,
+      bbr_sum: 0,
+      bbr_z_score_abs_max: 0,
+      count: 0,
+      budget_usd: 0,
+      people_targeted: 0
     };
+    current.bbr_sum += project.bbr;
+    current.bbr_z_score_abs_max = Math.max(current.bbr_z_score_abs_max, Math.abs(project.bbr_z_score));
+    current.count += 1;
+    current.budget_usd += project.budget_usd;
+    current.people_targeted += project.people_targeted;
+    clusterMap.set(project.cluster_name, current);
   });
 
-  const projectList = Array.from({ length: 5 }).map((_, idx) => {
-    const budget = Math.max(500_000, Math.round((row.fundingRequired / 8) * (1 + idx * 0.14)));
-    const peopleTargeted = Math.max(5_000, Math.round((row.targeted / 6) * (1 + idx * 0.08)));
-    const bbr = Number((peopleTargeted / budget).toFixed(6));
-    const bbrZScore = Number(((-0.4 + idx * 0.35) * 1.1).toFixed(2));
+  const clusterBreakdown = [...clusterMap.values()]
+    .map((cluster) => ({
+      cluster_name: cluster.cluster_name,
+      bbr: Number((cluster.bbr_sum / Math.max(cluster.count, 1)).toFixed(8)),
+      bbr_z_score: Number(cluster.bbr_z_score_abs_max.toFixed(2)),
+      budget_usd: Math.round(cluster.budget_usd),
+      people_targeted: Math.round(cluster.people_targeted)
+    }))
+    .sort((a, b) => b.bbr_z_score - a.bbr_z_score);
 
-    return {
-      project_id: `HRP-${row.latestFundingYear || 2026}-${iso3}-${String(idx + 1).padStart(5, "0")}`,
-      name: `${row.country} Response Project ${idx + 1}`,
-      budget_usd: budget,
-      people_targeted: peopleTargeted,
-      bbr_z_score: bbrZScore,
-      bbr
-    };
-  });
+  const projectList = countryProjects
+    .map((project) => ({
+      project_id: project.project_id,
+      name: project.name,
+      cluster_name: project.cluster_name,
+      budget_usd: project.budget_usd,
+      people_targeted: project.people_targeted,
+      bbr: project.bbr,
+      bbr_z_score: project.bbr_z_score,
+      outlier_flag: project.outlier_flag
+    }))
+    .sort((a, b) => Math.abs(b.bbr_z_score) - Math.abs(a.bbr_z_score));
+
+  const outlierProjects = projectList
+    .filter((project) => Math.abs(project.bbr_z_score) >= 1.8)
+    .slice(0, 12);
 
   return NextResponse.json({
     iso3,
     country: row.country,
+    oci: computeOciComponents(row),
     cluster_breakdown: clusterBreakdown,
-    hrp_project_list: projectList,
+    outlier_projects: outlierProjects,
+    hrp_project_list: projectList.slice(0, 20),
     metrics: row
   });
 }
+

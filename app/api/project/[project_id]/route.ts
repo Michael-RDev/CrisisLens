@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { comparableProjectsFor } from "@/lib/analytics";
+import { loadProjectProfiles } from "@/lib/loadMetrics";
 
 type Params = {
   params: { project_id: string };
@@ -10,31 +12,26 @@ export async function GET(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid project ID." }, { status: 400 });
   }
 
+  const projects = await loadProjectProfiles();
+  const target = projects.find((project) => project.project_id === projectId);
+  if (!target) {
+    return NextResponse.json({ error: "Project not found." }, { status: 404 });
+  }
+
   return NextResponse.json({
-    project_id: projectId,
-    project_name: `Mock project ${projectId}`,
+    project_id: target.project_id,
+    project_name: target.name,
     metrics: {
-      budget_usd: 2_400_000,
-      people_targeted: 170_000,
-      bbr: 0.0708,
-      bbr_z_score: 1.24
+      budget_usd: target.budget_usd,
+      funding_usd: target.funding_usd,
+      funding_pct: target.funding_pct,
+      people_targeted: target.people_targeted,
+      bbr: target.bbr,
+      bbr_z_score: target.bbr_z_score,
+      cluster_name: target.cluster_name,
+      outlier_flag: target.outlier_flag
     },
-    comparable_projects: [
-      {
-        project_id: `${projectId}-PEER-1`,
-        similarity_score: 0.92,
-        efficiency_delta_pct: 11.4
-      },
-      {
-        project_id: `${projectId}-PEER-2`,
-        similarity_score: 0.89,
-        efficiency_delta_pct: 6.8
-      },
-      {
-        project_id: `${projectId}-PEER-3`,
-        similarity_score: 0.84,
-        efficiency_delta_pct: -2.3
-      }
-    ]
+    comparable_projects: comparableProjectsFor(target, projects, 6)
   });
 }
+

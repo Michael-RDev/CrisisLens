@@ -462,6 +462,15 @@ body {
   resize: vertical;
 }
 
+.integration-form input {
+  width: 100%;
+  background: #0a1824;
+  color: var(--text);
+  border: 1px solid #2f5067;
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+}
+
 .integration-form button {
   justify-self: start;
   border: 1px solid #416986;
@@ -485,6 +494,20 @@ body {
 
 .integration-output p {
   margin: 0.2rem 0;
+}
+
+.plain-list-btn {
+  width: 100%;
+  border: 1px solid #345871;
+  background: #0a1925;
+  color: var(--text);
+  border-radius: 9px;
+  text-align: left;
+  padding: 0.5rem 0.55rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
 }
 
 @media (max-width: 1240px) {

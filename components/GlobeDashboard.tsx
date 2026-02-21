@@ -5,7 +5,20 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { computeGlobalSummary, formatCompact } from "@/components/summary-utils";
 import { allCountriesSorted, countryByIso3 } from "@/lib/countries";
-import { fetchCountryDrilldown, queryGenie, subscribeToGlobeEvents } from "@/lib/api/crisiswatch";
+import {
+  fetchAnalyticsOverview,
+  fetchCountryDrilldown,
+  fetchProjectDetail,
+  queryGenie,
+  simulateFundingScenario,
+  subscribeToGlobeEvents
+} from "@/lib/api/crisiswatch";
+import type {
+  AnalyticsOverviewResponse,
+  CountryDrilldown,
+  ProjectDetail,
+  SimulationResponse
+} from "@/lib/api/crisiswatch";
 import { normalizeIso3, shouldApplyCVDetection } from "@/lib/cv/globeBridge";
 import { computeDerivedMetrics, getLayerValue } from "@/lib/metrics";
 import { CountryMetrics, LayerMode, RiskBand } from "@/lib/types";
@@ -26,12 +39,13 @@ const layerConfig: Record<LayerMode, { label: string; unit: string; highIsBad: b
   severity: { label: "Severity", unit: "pts", highIsBad: true },
   inNeedRate: { label: "In-Need Rate", unit: "%", highIsBad: true },
   fundingGap: { label: "Funding Gap", unit: "%", highIsBad: true },
-  coverage: { label: "Coverage", unit: "%", highIsBad: false }
+  coverage: { label: "Coverage", unit: "%", highIsBad: false },
+  overlooked: { label: "Overlooked Index (OCI)", unit: "pts", highIsBad: true }
 };
 
 const queryTemplates = [
-  "What projects are most similar to HRP-2024-ETH-00423 and how does their efficiency compare?",
-  "Rank the top 10 most overlooked crises by Coverage Mismatch Index."
+  "What projects are most similar to PRJ-2025-SDN-health and how does their efficiency compare?",
+  "Rank the top 10 most overlooked crises by OCI and explain why."
 ];
 
 function riskClass(riskBand?: RiskBand): string {
@@ -41,12 +55,21 @@ function riskClass(riskBand?: RiskBand): string {
   return "chip-low";
 }
 
+function outlierLabel(flag: "low" | "high" | "none"): string {
+  if (flag === "high") return "High BBR outlier";
+  if (flag === "low") return "Low BBR outlier";
+  return "Within range";
+}
+
 export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
   const [hoverIso3, setHoverIso3] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [layerMode, setLayerMode] = useState<LayerMode>("severity");
+  const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
+
+  const [overview, setOverview] = useState<AnalyticsOverviewResponse | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
 
   const [agentState, setAgentState] = useState<DatabricksCountryState | null>(null);
   const [agentLoading, setAgentLoading] = useState(false);
@@ -61,9 +84,17 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [cvDetection, setCvDetection] = useState<CVDetection | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
 
-  const [clusterBreakdown, setClusterBreakdown] = useState<
-    Array<{ cluster_name: string; bbr: number; bbr_z_score: number }>
-  >([]);
+  const [clusterBreakdown, setClusterBreakdown] = useState<CountryDrilldown["cluster_breakdown"]>([]);
+  const [projectOutliers, setProjectOutliers] = useState<CountryDrilldown["outlier_projects"]>([]);
+  const [selectedOci, setSelectedOci] = useState<CountryDrilldown["oci"] | null>(null);
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectDetail, setProjectDetail] = useState<ProjectDetail | null>(null);
+  const [projectDetailLoading, setProjectDetailLoading] = useState(false);
+
+  const [allocationUsd, setAllocationUsd] = useState("5000000");
+  const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const countryCatalogByIso = useMemo(() => countryByIso3, []);
@@ -94,9 +125,28 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }, [filtered, layerMode]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    setOverviewLoading(true);
+
+    fetchAnalyticsOverview()
+      .then((payload) => {
+        if (!controller.signal.aborted) setOverview(payload);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setOverviewLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     if (!selectedIso3) {
       setAgentState(null);
       setClusterBreakdown([]);
+      setProjectOutliers([]);
+      setSelectedProjectId(null);
+      setProjectDetail(null);
+      setSelectedOci(null);
       return;
     }
 
@@ -111,13 +161,26 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       fetchCountryDrilldown(selectedIso3)
     ])
       .then(([agent, drilldown]) => {
+        if (controller.signal.aborted) return;
         setAgentState(agent);
         setClusterBreakdown(drilldown.cluster_breakdown);
+        setProjectOutliers(drilldown.outlier_projects);
+        setSelectedOci(drilldown.oci);
+        setSelectedProjectId((current) => {
+          if (current && drilldown.hrp_project_list.some((project) => project.project_id === current)) {
+            return current;
+          }
+          return drilldown.outlier_projects[0]?.project_id ?? drilldown.hrp_project_list[0]?.project_id ?? null;
+        });
       })
       .catch(() => {
         if (!controller.signal.aborted) {
           setAgentState(null);
           setClusterBreakdown([]);
+          setProjectOutliers([]);
+          setSelectedProjectId(null);
+          setProjectDetail(null);
+          setSelectedOci(null);
         }
       })
       .finally(() => {
@@ -126,6 +189,28 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
     return () => controller.abort();
   }, [selectedIso3]);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setProjectDetail(null);
+      return;
+    }
+    const controller = new AbortController();
+    setProjectDetailLoading(true);
+
+    fetchProjectDetail(selectedProjectId)
+      .then((payload) => {
+        if (!controller.signal.aborted) setProjectDetail(payload);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setProjectDetail(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setProjectDetailLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [selectedProjectId]);
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_GLOBE_WS_URL;
@@ -187,6 +272,26 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     }
   }
 
+  async function runSimulation() {
+    if (!selectedIso3) return;
+    const parsed = Number(allocationUsd.replace(/,/g, ""));
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+
+    setSimulationLoading(true);
+    try {
+      const payload = await simulateFundingScenario({
+        iso3: selectedIso3,
+        allocation_usd: parsed
+      });
+      setSimulation(payload);
+      setHighlightedIso3(payload.top_overlooked_after.slice(0, 3).map((item) => item.iso3));
+    } catch {
+      setSimulation(null);
+    } finally {
+      setSimulationLoading(false);
+    }
+  }
+
   function jumpToCountry() {
     const raw = query.trim();
     const isoFromLabel = raw.match(/\(([A-Za-z]{3})\)$/)?.[1]?.toUpperCase();
@@ -219,24 +324,24 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         <div>
           <h1>CrisisLens Command Center</h1>
           <p>
-            Three.js Tier-4 interactive globe. Orbit, zoom, hover, click drill-down, and integration
-            seams for Databricks Genie, Agent Bricks, CV pointing, and WebSocket anomaly events.
+            Explainable overlooked-crisis analytics for UN decision support: OCI ranking, cluster-level
+            beneficiary-to-budget outliers, benchmark lookalikes, and funding what-if simulation.
           </p>
           <p className="meta">Snapshot: {new Date(generatedAt).toLocaleString()}</p>
         </div>
         <div className="hero-badge">
-          <span>3D Globe</span>
-          <span>WebSocket Ready</span>
-          <span>Genie Sync</span>
+          <span>OCI Explainability</span>
+          <span>Outlier Benchmarking</span>
+          <span>What-if Simulator</span>
         </div>
       </motion.section>
 
       <section className="top-tabs">
         <button className="active">Global View</button>
-        <button>Country Drilldown</button>
-        <button>Agent Insights</button>
+        <button>Overlooked Index</button>
+        <button>Project Outliers</button>
+        <button>What-if Allocation</button>
         <button>Genie Query</button>
-        <button>CV Pointer</button>
       </section>
 
       <motion.section
@@ -254,13 +359,16 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           <p>{formatCompact(summary.inNeed)}</p>
         </article>
         <article>
-          <h3>Funding Received</h3>
-          <p>${formatCompact(summary.fundingReceived)}</p>
-        </article>
-        <article>
           <h3>Funding Gap</h3>
           <p>${formatCompact(summary.fundingGap)}</p>
-          <small>{summary.fundedPct.toFixed(1)}% funded globally</small>
+        </article>
+        <article>
+          <h3>Top Overlooked</h3>
+          <p>{overview?.top_overlooked[0]?.iso3 ?? "—"}</p>
+          <small>
+            OCI {overview?.top_overlooked[0]?.oci_score?.toFixed(1) ?? "—"} •{" "}
+            {overview?.top_overlooked[0]?.country ?? "Loading"}
+          </small>
         </article>
       </motion.section>
 
@@ -285,7 +393,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           transition={{ duration: 0.45, delay: 0.14 }}
         >
           <div className="card-header-row">
-            <h2>Interactive 3D Globe</h2>
+            <h2>Interactive Globe</h2>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -319,7 +427,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                   ).toFixed(1)}${layerConfig[layerMode].unit}`
                 : hoverCountryMeta
                   ? `${hoverCountryMeta.name} (${hoverCountryMeta.iso3}) • no metrics in current snapshot`
-                : "Hover countries for details. Drag to rotate. Scroll to zoom. Click any country polygon to open drill-down."}
+                  : "Hover countries for details. Drag to rotate. Scroll to zoom. Pinch-control is available from the overlay."}
             </p>
           </div>
         </motion.article>
@@ -340,6 +448,10 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           {selected && selectedDerived ? (
             <dl>
               <div>
+                <dt>Overlooked Index (OCI)</dt>
+                <dd>{selectedOci?.totalScore?.toFixed(2) ?? "—"}</dd>
+              </div>
+              <div>
                 <dt>Severity Score</dt>
                 <dd>{selected.severityScore.toFixed(1)}</dd>
               </div>
@@ -352,34 +464,49 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                 <dd>{selectedDerived.coveragePct.toFixed(1)}%</dd>
               </div>
               <div>
-                <dt>Funding Gap</dt>
-                <dd>${selectedDerived.fundingGap.toLocaleString()}</dd>
-              </div>
-              <div>
                 <dt>Funding Gap %</dt>
                 <dd>{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
-              </div>
-              <div>
-                <dt>Plan Requirements</dt>
-                <dd>${selected.revisedPlanRequirements.toLocaleString()}</dd>
               </div>
             </dl>
           ) : selectedCountryMeta ? (
             <p>
               {selectedCountryMeta.name} is selected, but this country has no current metric record in
-              the loaded snapshot yet. The selection is still valid and CV/Genie highlighting will work
-              for it.
+              the loaded snapshot yet.
             </p>
           ) : (
             <p>Select a country from the globe or ranking list.</p>
           )}
 
-          <h3 className="panel-subtitle">Cluster Breakdown (Mock)</h3>
+          <h3 className="panel-subtitle">OCI Component Breakdown</h3>
+          {selectedOci ? (
+            <ul className="cluster-list">
+              <li>
+                <span>Severity Component</span>
+                <strong>{selectedOci.severityComponent.toFixed(1)}</strong>
+              </li>
+              <li>
+                <span>In-Need Rate Component</span>
+                <strong>{selectedOci.inNeedRateComponent.toFixed(1)}</strong>
+              </li>
+              <li>
+                <span>Funding Gap Component</span>
+                <strong>{selectedOci.fundingGapComponent.toFixed(1)}</strong>
+              </li>
+              <li>
+                <span>Coverage Mismatch Component</span>
+                <strong>{selectedOci.coverageMismatchComponent.toFixed(1)}</strong>
+              </li>
+            </ul>
+          ) : (
+            <p className="subtle">No OCI breakdown available for this selection.</p>
+          )}
+
+          <h3 className="panel-subtitle">Cluster Outlier Severity</h3>
           <ul className="cluster-list">
             {clusterBreakdown.length === 0 ? (
-              <li className="subtle">No cluster rows available for this country yet.</li>
+              <li className="subtle">No cluster rows available for this country.</li>
             ) : (
-              clusterBreakdown.map((cluster) => (
+              clusterBreakdown.slice(0, 6).map((cluster) => (
                 <li key={cluster.cluster_name}>
                   <span>{cluster.cluster_name}</span>
                   <strong>{cluster.bbr_z_score.toFixed(2)} z</strong>
@@ -409,6 +536,114 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               );
             })}
           </ol>
+        </article>
+
+        <article className="integration-card glass">
+          <h2>Overlooked Crisis Index (Explainable)</h2>
+          <p className="subtle">
+            OCI = 32% severity + 28% in-need rate + 22% funding gap + 18% coverage mismatch.
+          </p>
+          {overviewLoading ? <p>Loading OCI leaderboard...</p> : null}
+          {!overviewLoading && overview ? (
+            <ul className="cluster-list">
+              {overview.top_overlooked.slice(0, 8).map((row) => (
+                <li key={row.iso3}>
+                  <button
+                    className="plain-list-btn"
+                    type="button"
+                    onClick={() => {
+                      setSelectedIso3(row.iso3);
+                      setHighlightedIso3([row.iso3]);
+                    }}
+                  >
+                    <span>
+                      #{row.rank} {row.country} ({row.iso3})
+                    </span>
+                    <strong>OCI {row.oci_score.toFixed(1)}</strong>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </article>
+
+        <article className="integration-card glass">
+          <h2>Funding What-if Simulator</h2>
+          <p className="subtle">
+            Test how adding pooled-fund allocation changes country OCI rank and global leaderboard.
+          </p>
+          <div className="integration-form">
+            <input
+              value={allocationUsd}
+              onChange={(event) => setAllocationUsd(event.target.value)}
+              placeholder="5000000"
+              inputMode="numeric"
+            />
+            <button type="button" onClick={runSimulation} disabled={simulationLoading || !selectedIso3}>
+              {simulationLoading ? "Simulating..." : `Simulate for ${selectedIso3 ?? "country"}`}
+            </button>
+          </div>
+          {simulation ? (
+            <div className="integration-output">
+              <p>
+                Rank change: <strong>{simulation.rank_delta >= 0 ? "+" : ""}{simulation.rank_delta}</strong>
+                {" "} | OCI delta: <strong>{simulation.oci_delta.toFixed(2)}</strong>
+              </p>
+              <p>
+                Funded {simulation.base.percent_funded.toFixed(1)}% →{" "}
+                {simulation.scenario.percent_funded.toFixed(1)}%
+              </p>
+              <p className="subtle">
+                New rank: #{simulation.scenario.rank} (was #{simulation.base.rank})
+              </p>
+            </div>
+          ) : null}
+        </article>
+
+        <article className="integration-card glass">
+          <h2>Project Outliers & Benchmarks</h2>
+          {projectOutliers.length === 0 ? (
+            <p className="subtle">No outlier projects for this country.</p>
+          ) : (
+            <ul className="cluster-list">
+              {projectOutliers.slice(0, 8).map((project) => (
+                <li key={project.project_id}>
+                  <button
+                    className="plain-list-btn"
+                    type="button"
+                    onClick={() => setSelectedProjectId(project.project_id)}
+                  >
+                    <span>
+                      {project.cluster_name} • {outlierLabel(project.outlier_flag)}
+                    </span>
+                    <strong>{project.bbr_z_score.toFixed(2)} z</strong>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {projectDetailLoading ? <p>Loading comparable projects...</p> : null}
+          {!projectDetailLoading && projectDetail ? (
+            <div className="integration-output">
+              <p>
+                <strong>{projectDetail.project_name}</strong>
+              </p>
+              <p className="subtle">
+                Budget ${Math.round(projectDetail.metrics.budget_usd).toLocaleString()} • Targeted{" "}
+                {Math.round(projectDetail.metrics.people_targeted).toLocaleString()}
+              </p>
+              <ul className="cluster-list">
+                {projectDetail.comparable_projects.map((peer) => (
+                  <li key={peer.project_id}>
+                    <span>
+                      {peer.project_id} • {peer.rationale}
+                    </span>
+                    <strong>{(peer.similarity_score * 100).toFixed(0)}%</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </article>
 
         <article className="integration-card glass">
@@ -442,7 +677,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               rows={3}
-              placeholder="Ask a query (example: top overlooked crises by CMI)."
+              placeholder="Ask a query (example: top overlooked crises by OCI)."
             />
             <button type="submit" disabled={genieLoading}>
               {genieLoading ? "Querying..." : "Run Genie Query"}
@@ -459,9 +694,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         <article className="integration-card glass">
           <h2>CV Point-to-Highlight</h2>
           <p className="subtle">
-            Live hand control is now available on the globe card. Use <strong>Start Hand Control</strong>,
-            then aim with the cursor, quick-pinch to select a country, or hold-pinch and move to drag
-            the globe.
+            Gesture control is enabled on the globe. CV endpoint remains available for external camera
+            streams and country auto-select integration.
           </p>
           <div className="integration-form">
             <textarea
@@ -488,3 +722,4 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     </main>
   );
 }
+

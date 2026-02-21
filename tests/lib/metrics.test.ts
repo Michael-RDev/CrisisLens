@@ -38,6 +38,7 @@ describe("metrics helpers", () => {
     expect(getLayerValue(row, "inNeedRate")).toBe(40);
     expect(getLayerValue(row, "fundingGap")).toBe(65);
     expect(getLayerValue(row, "coverage")).toBe(30);
+    expect(getLayerValue({ ...row, overlookedScore: 71.4 }, "overlooked")).toBe(71.4);
   });
 
   it("maps risk bands", () => {

@@ -149,6 +149,7 @@ export default function Globe3D({
   const handPovRef = useRef<GeoPov | null>(null);
   const handStatusRef = useRef("Camera control is off.");
   const controlsRef = useRef<OrbitControlsLike | null>(null);
+  const selectedIso3Ref = useRef<string | null>(selectedIso3);
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
@@ -166,6 +167,10 @@ export default function Globe3D({
   const countriesByIso = useMemo(() => {
     return countryByIso3;
   }, []);
+
+  useEffect(() => {
+    selectedIso3Ref.current = selectedIso3;
+  }, [selectedIso3]);
 
   const earthMaterial = useMemo(() => {
     const material = new MeshPhongMaterial({
@@ -280,7 +285,7 @@ export default function Globe3D({
 
     const controls = globeApi.controls();
     controlsRef.current = controls;
-    controls.autoRotate = true;
+    controls.autoRotate = !selectedIso3Ref.current;
     controls.autoRotateSpeed = 0.25;
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -314,6 +319,11 @@ export default function Globe3D({
       controlsRef.current = null;
     };
   }, [globeReady]);
+
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.autoRotate = !handControlEnabled && !selectedIso3;
+  }, [handControlEnabled, selectedIso3]);
 
   const setHandStatusSafely = useCallback((status: string) => {
     if (handStatusRef.current === status) return;
@@ -366,7 +376,7 @@ export default function Globe3D({
       dragPrevPointRef.current = null;
       smoothedHandRef.current = null;
       handPovRef.current = null;
-      if (controlsRef.current) controlsRef.current.autoRotate = true;
+      if (controlsRef.current) controlsRef.current.autoRotate = !selectedIso3Ref.current;
 
       setHandControlEnabled(false);
       setHandCursor({

@@ -3,7 +3,6 @@ import {
   LandingFootprint,
   LandingFooter,
   LandingGlobe,
-  LandingHeader,
   LandingHero,
   LandingWorkflow
 } from "@/components/landing";
@@ -11,7 +10,6 @@ import {
 export default function Home() {
   return (
     <main className="landing-shell">
-      <LandingHeader />
       <LandingHero />
       <LandingGlobe />
       <LandingFootprint />

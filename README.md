@@ -64,3 +64,34 @@ python apps/ml/models/train_model.py
 - Frontend tests live in `apps/web/tests` (Vitest + Playwright).
 - Web data generation script lives at `apps/web/scripts/generate-country-metrics.mjs`.
 - Optional env var: `NEXT_PUBLIC_GLOBE_WS_URL` for real-time globe highlights.
+
+## Geo-Insight Agent Endpoints
+
+Set these env vars in `apps/web/.env.local`:
+
+- `DATABRICKS_HOST`
+- `DATABRICKS_TOKEN`
+- `DATABRICKS_WAREHOUSE_ID`
+- `CRISIS_TABLE_FQN`
+- `AI_MODEL`
+
+Optional compatibility overrides (if your workspace does not expose AI Gateway path):
+
+- `DATABRICKS_AI_CHAT_PATH` (example: `/api/2.0/ai-gateway/chat/completions`)
+- `DATABRICKS_AI_ENDPOINT` (serving endpoint name to call via `/serving-endpoints/{name}/invocations`)
+
+Quick checks:
+
+```bash
+curl -s "http://localhost:3000/api/geo/metrics?iso3=HTI"
+```
+
+```bash
+curl -s "http://localhost:3000/api/geo/insight?iso3=HTI"
+```
+
+```bash
+curl -s -X POST "http://localhost:3000/api/geo/query" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Which countries have lower funding coverage than Mali and where should funding increase?"}'
+```

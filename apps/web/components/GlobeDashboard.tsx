@@ -4,11 +4,11 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { computeGlobalSummary } from "@/components/summary-utils";
 import { countryByIso3, iso3ByIso2 } from "@/lib/countries";
 import {
-  ensureGenieSession,
   fetchAnalyticsOverview,
   fetchCountryDrilldown,
-  fetchCountryInsightMetrics,
-  fetchGenieSummary,
+  fetchGeoInsight,
+  runGeoStrategicQuery,
+  fetchGeoSummary,
   fetchProjectDetail,
   queryGenie,
   simulateFundingScenario,
@@ -17,8 +17,9 @@ import {
 import type {
   AnalyticsOverviewResponse,
   CountryDrilldown,
-  GenieSummaryResponse,
-  InsightMetricsResponse,
+  GeoInsight,
+  GeoMetrics,
+  GeoStrategicQueryResult,
   ProjectDetail,
   SimulationResponse
 } from "@/lib/api/crisiswatch";
@@ -42,6 +43,7 @@ import {
   PriorityRankingPanel,
   ProjectOutliersPanel,
   SimulationPanel,
+  StrategicQueryPanel,
   TopTabs,
   buildHoverText
 } from "@/components/dashboard";
@@ -53,7 +55,7 @@ type GlobeDashboardProps = {
 };
 
 type PinchSelection = {
-  countryCode: string;
+  countryCode?: string;
   countryName?: string;
 };
 
@@ -108,16 +110,20 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [insightOpen, setInsightOpen] = useState(false);
-  const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
   const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
-  const [insightMetrics, setInsightMetrics] = useState<InsightMetricsResponse | null>(null);
-  const [insightSummary, setInsightSummary] = useState<GenieSummaryResponse | null>(null);
+  const [insightMetrics, setInsightMetrics] = useState<GeoMetrics | null>(null);
+  const [insightSummary, setInsightSummary] = useState<GeoInsight | null>(null);
   const [insightMetricsLoading, setInsightMetricsLoading] = useState(false);
   const [insightSummaryLoading, setInsightSummaryLoading] = useState(false);
   const [insightMetricsError, setInsightMetricsError] = useState<string | null>(null);
   const [insightSummaryError, setInsightSummaryError] = useState<string | null>(null);
   const [insightProgressLabel, setInsightProgressLabel] = useState("Waiting for country selection.");
   const [followUpQuestion, setFollowUpQuestion] = useState("");
+  const [lastAskedQuestion, setLastAskedQuestion] = useState<string | null>(null);
+  const [strategicQuestion, setStrategicQuestion] = useState("");
+  const [strategicLoading, setStrategicLoading] = useState(false);
+  const [strategicError, setStrategicError] = useState<string | null>(null);
+  const [strategicResult, setStrategicResult] = useState<GeoStrategicQueryResult | null>(null);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const summary = useMemo(() => computeGlobalSummary(metrics), [metrics]);
@@ -316,84 +322,143 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     }
   }
 
-  async function ensureConversationId(): Promise<string> {
-    if (genieConversationId) return genieConversationId;
-    const session = await ensureGenieSession();
-    setGenieConversationId(session.conversationId);
-    return session.conversationId;
-  }
-
   async function loadInsightForCountry(selection: PinchSelection, followUp?: string) {
-    const normalized = normalizeCountryCode(selection.countryCode);
-    if (!normalized) {
-      setInsightMetricsError("Selected country code is invalid. Use ISO3 or ISO2.");
-      setInsightSummaryError("Cannot query Genie because the country code is invalid.");
+    const normalized = selection.countryCode ? normalizeCountryCode(selection.countryCode) : null;
+    if (!normalized && !selection.countryName?.trim()) {
+      setInsightMetricsError("Country selection is missing ISO3 and country name.");
+      setInsightSummaryError("Cannot load geo insight without a valid country selection.");
       return;
     }
 
-    setInsightSelection({ countryCode: normalized, countryName: selection.countryName });
-    setSelectedIso3(normalized);
+    setInsightSelection({
+      countryCode: normalized ?? undefined,
+      countryName: selection.countryName
+    });
+    if (normalized) setSelectedIso3(normalized);
     setInsightOpen(true);
+    setInsightMetrics(null);
+    setInsightSummary(null);
+    setLastAskedQuestion(followUp?.trim() ? followUp.trim() : null);
     setInsightMetricsError(null);
     setInsightSummaryError(null);
-    setInsightProgressLabel("Loading country metrics...");
+    setInsightProgressLabel("Loading geo insight...");
     setInsightMetricsLoading(true);
     setInsightSummaryLoading(true);
 
-    const metricsPromise = fetchCountryInsightMetrics(normalized)
-      .then((payload) => setInsightMetrics(payload))
-      .catch((error) => {
-        const message = error instanceof Error ? error.message : "Unable to load country metrics.";
-        setInsightMetricsError(message);
-        setInsightMetrics(null);
-      })
-      .finally(() => setInsightMetricsLoading(false));
-
-    const summaryPromise = (async () => {
-      try {
-        setInsightProgressLabel("Starting Genie session...");
-        const conversationId = await ensureConversationId();
-        setInsightProgressLabel("Asking Databricks Genie for country summary...");
-        const summaryPayload = await fetchGenieSummary({
-          countryCode: normalized,
-          countryName: selection.countryName,
-          conversationId,
-          followUpQuestion: followUp
+    try {
+      const payload = await fetchGeoInsight({
+        iso3: normalized ?? undefined,
+        country: normalized ? undefined : selection.countryName
+      });
+      setInsightMetrics(payload.metrics);
+      setInsightSummary(payload.insight);
+      setInsightSelection({
+        countryCode: payload.metrics.iso3,
+        countryName: payload.metrics.country
+      });
+      setSelectedIso3(payload.metrics.iso3);
+      if (followUp?.trim()) {
+        setInsightProgressLabel("Applying follow-up question...");
+        const refined = await fetchGeoSummary({
+          metrics: payload.metrics,
+          question: followUp.trim()
         });
-        if (summaryPayload.conversationId && summaryPayload.conversationId !== genieConversationId) {
-          setGenieConversationId(summaryPayload.conversationId);
-        }
-        setInsightSummary(summaryPayload);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to load Genie summary.";
-        setInsightSummaryError(message);
-        setInsightSummary(null);
-      } finally {
-        setInsightSummaryLoading(false);
-        setInsightProgressLabel("Summary ready.");
+        setInsightSummary(refined);
+        setLastAskedQuestion(followUp.trim());
       }
-    })();
-
-    await Promise.all([metricsPromise, summaryPromise]);
+      setInsightProgressLabel("Summary ready.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load geo insight.";
+      setInsightMetricsError(message);
+      setInsightSummaryError(message);
+      setInsightMetrics(null);
+      setInsightSummary(null);
+      setInsightProgressLabel("Unable to load geo insight.");
+    } finally {
+      setInsightMetricsLoading(false);
+      setInsightSummaryLoading(false);
+    }
   }
 
   function onCountryPinch(selection: PinchSelection) {
     // Plug your existing globe pinch callback into this handler.
     // Expected payload shape: onCountryPinch({ countryCode, countryName? }).
     setFollowUpQuestion("");
+    setLastAskedQuestion(null);
     void loadInsightForCountry(selection);
   }
 
   async function refreshInsightSummary() {
     if (!insightSelection) return;
+    setFollowUpQuestion("");
+    setLastAskedQuestion(null);
     await loadInsightForCountry(insightSelection);
   }
 
   async function submitInsightFollowUp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!insightSelection || !followUpQuestion.trim()) return;
+    setLastAskedQuestion(followUpQuestion.trim());
     await loadInsightForCountry(insightSelection, followUpQuestion.trim());
     setFollowUpQuestion("");
+  }
+
+  async function askInsightFollowupChip(questionText: string) {
+    if (!insightMetrics || !questionText.trim()) return;
+    setInsightSummaryLoading(true);
+    setInsightSummaryError(null);
+    setInsightSummary(null);
+    setInsightProgressLabel("Applying follow-up question...");
+    try {
+      const refined = await fetchGeoSummary({
+        metrics: insightMetrics,
+        question: questionText
+      });
+      setInsightSummary(refined);
+      setFollowUpQuestion(questionText);
+      setLastAskedQuestion(questionText);
+      setInsightProgressLabel("Summary ready.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to apply follow-up.";
+      setInsightSummaryError(message);
+      setInsightProgressLabel("Unable to apply follow-up.");
+    } finally {
+      setInsightSummaryLoading(false);
+    }
+  }
+
+  async function submitStrategicQuery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!strategicQuestion.trim()) return;
+    setStrategicLoading(true);
+    setStrategicError(null);
+    try {
+      const result = await runGeoStrategicQuery(strategicQuestion.trim());
+      setStrategicResult(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to run strategic query.";
+      setStrategicError(message);
+      setStrategicResult(null);
+    } finally {
+      setStrategicLoading(false);
+    }
+  }
+
+  function useStrategicFollowup(questionText: string) {
+    setStrategicQuestion(questionText);
+    void (async () => {
+      setStrategicLoading(true);
+      setStrategicError(null);
+      try {
+        const result = await runGeoStrategicQuery(questionText);
+        setStrategicResult(result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to run strategic follow-up.";
+        setStrategicError(message);
+      } finally {
+        setStrategicLoading(false);
+      }
+    })();
   }
 
   function jumpToCountry() {
@@ -469,6 +534,15 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           onSetQuestion={setQuestion}
           onSubmit={submitGenieQuestion}
         />
+        <StrategicQueryPanel
+          question={strategicQuestion}
+          loading={strategicLoading}
+          error={strategicError}
+          result={strategicResult}
+          onQuestionChange={setStrategicQuestion}
+          onSubmit={submitStrategicQuery}
+          onUseFollowup={useStrategicFollowup}
+        />
         <CvPanel
           cvFrameInput={cvFrameInput}
           cvLoading={cvLoading}
@@ -482,17 +556,19 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         countryCode={insightSelection?.countryCode}
         countryName={insightSelection?.countryName}
         metrics={insightMetrics}
-        summary={insightSummary}
+        insight={insightSummary}
         metricsLoading={insightMetricsLoading}
         summaryLoading={insightSummaryLoading}
         metricsError={insightMetricsError}
         summaryError={insightSummaryError}
         progressLabel={insightProgressLabel}
         followUpQuestion={followUpQuestion}
+        lastAskedQuestion={lastAskedQuestion}
         onClose={() => setInsightOpen(false)}
         onRefreshSummary={() => void refreshInsightSummary()}
         onFollowUpChange={setFollowUpQuestion}
         onSubmitFollowUp={submitInsightFollowUp}
+        onFollowupChip={askInsightFollowupChip}
       />
       <DashboardFooter />
     </main>

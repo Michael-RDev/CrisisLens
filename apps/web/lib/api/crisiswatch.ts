@@ -161,6 +161,61 @@ export type GenieSummaryResponse = {
   rows?: Array<Record<string, unknown>>;
 };
 
+export type GeoMetrics = {
+  iso3: string;
+  country: string;
+  year: number;
+  people_in_need: number;
+  people_targeted: number;
+  funding_usd: number;
+  requirements_usd: number;
+  funding_gap_usd: number;
+  funding_coverage_ratio: number;
+  funding_gap_per_person: number;
+  coverage_pct: number;
+};
+
+export type GeoInsight = {
+  headline: string;
+  summary: string;
+  flags: string[];
+  followups: string[];
+  source?: "ai" | "fallback";
+  askedQuestion?: string | null;
+};
+
+export type GeoInsightResponse = {
+  ok: true;
+  data: {
+    metrics: GeoMetrics;
+    insight: GeoInsight;
+  };
+};
+
+export type GeoApiError = {
+  ok: false;
+  error: string;
+};
+
+export type GeoStrategicQueryResult = {
+  intent: "compare" | "funding_up" | "funding_cut" | "solutions" | "general";
+  headline: string;
+  answer: string;
+  recommendations: string[];
+  followups: string[];
+  rows: Array<{
+    iso3: string;
+    country: string;
+    year: number;
+    funding_coverage_ratio: number;
+    coverage_pct: number;
+    funding_gap_usd: number;
+    funding_gap_per_person: number;
+    people_in_need: number;
+  }>;
+  askedQuestion: string;
+};
+
 export type GlobeEvent =
   | {
       type: "anomaly";
@@ -261,6 +316,72 @@ export async function fetchGenieSummary(payload: {
     body: JSON.stringify(payload)
   });
   return parseJson<GenieSummaryResponse>(response);
+}
+
+export async function fetchGeoInsight(payload: {
+  iso3?: string;
+  country?: string;
+}): Promise<GeoInsightResponse["data"]> {
+  const params = new URLSearchParams();
+  if (payload.iso3) params.set("iso3", payload.iso3);
+  if (payload.country) params.set("country", payload.country);
+
+  const response = await fetch(`/api/geo/insight?${params.toString()}`, {
+    method: "GET"
+  });
+
+  const parsed = await parseJson<GeoInsightResponse | GeoApiError>(response);
+  if (!parsed || !("ok" in parsed) || parsed.ok !== true) {
+    throw new Error("Geo insight response was invalid.");
+  }
+  return parsed.data;
+}
+
+export async function fetchGeoSummary(payload: {
+  metrics: GeoMetrics;
+  question?: string;
+}): Promise<GeoInsight> {
+  const response = await fetch("/api/geo/summary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const parsed = await parseJson<
+    | {
+        ok: true;
+        data: GeoInsight;
+      }
+    | GeoApiError
+  >(response);
+
+  if (!parsed || !("ok" in parsed) || parsed.ok !== true) {
+    throw new Error("Geo summary response was invalid.");
+  }
+
+  return parsed.data;
+}
+
+export async function runGeoStrategicQuery(question: string): Promise<GeoStrategicQueryResult> {
+  const response = await fetch("/api/geo/query", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question })
+  });
+
+  const parsed = await parseJson<
+    | {
+        ok: true;
+        data: GeoStrategicQueryResult;
+      }
+    | GeoApiError
+  >(response);
+
+  if (!parsed || !("ok" in parsed) || parsed.ok !== true) {
+    throw new Error("Geo strategic query response was invalid.");
+  }
+
+  return parsed.data;
 }
 
 export function subscribeToGlobeEvents(

@@ -94,3 +94,40 @@ test.describe("API route contracts", () => {
     expect(badCv.status()).toBe(400);
   });
 });
+
+test.describe("Geo insight routes", () => {
+  test("geo routes validate bad requests", async ({ request }) => {
+    const badMetrics = await request.get("/api/geo/metrics");
+    expect(badMetrics.status()).toBe(400);
+
+    const badInsight = await request.get("/api/geo/insight");
+    expect(badInsight.status()).toBe(400);
+
+    const badSummary = await request.post("/api/geo/summary", {
+      data: {}
+    });
+    expect(badSummary.status()).toBe(400);
+
+    const badQuery = await request.post("/api/geo/query", {
+      data: {}
+    });
+    expect(badQuery.status()).toBe(400);
+  });
+
+  test("geo metrics and insight can return databricks-backed payload", async ({ request }) => {
+    test.skip(!process.env.DATABRICKS_TOKEN, "Databricks env is not available in test runtime.");
+
+    const metrics = await request.get("/api/geo/metrics?iso3=HTI");
+    expect(metrics.ok()).toBeTruthy();
+    const metricsBody = await metrics.json();
+    expect(metricsBody.ok).toBe(true);
+    expect(metricsBody.data.iso3).toBe("HTI");
+
+    const insight = await request.get("/api/geo/insight?iso3=HTI");
+    expect(insight.ok()).toBeTruthy();
+    const insightBody = await insight.json();
+    expect(insightBody.ok).toBe(true);
+    expect(insightBody.data.metrics.iso3).toBe("HTI");
+    expect(typeof insightBody.data.insight.summary).toBe("string");
+  });
+});

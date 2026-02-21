@@ -1,0 +1,17 @@
+import { readFileSync } from "fs";
+const d = JSON.parse(readFileSync("public/data/country-metrics.json", "utf8"));
+const total = d.length;
+const withNeglect = d.filter(r => (r.neglectScore || 0) > 0).length;
+const flagged = d.filter(r => r.neglectFlag).length;
+const withTrend = d.filter(r => r.fundingTrend?.length).length;
+const withClusters = d.filter(r => r.clusterBreakdown?.length).length;
+const withPeers = d.filter(r => r.peerIso3?.length).length;
+console.log("Total countries:         ", total);
+console.log("With neglect score > 0:  ", withNeglect);
+console.log("Neglect-flagged (>=65):  ", flagged);
+console.log("With funding trend:      ", withTrend);
+console.log("With cluster breakdown:  ", withClusters);
+console.log("With KNN peers:          ", withPeers);
+const top5 = [...d].sort((a, b) => (b.neglectScore || 0) - (a.neglectScore || 0)).slice(0, 5);
+console.log("\nTop 5 most neglected:");
+top5.forEach(r => console.log(` ${r.iso3}  ${(r.country || "").padEnd(26)}  neglect=${r.neglectScore?.toFixed(1)}  fgi=${r.fgiScore?.toFixed(1)}  severity=${r.anomalySeverity}  flagged=${r.neglectFlag}`));

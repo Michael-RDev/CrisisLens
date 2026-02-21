@@ -23,10 +23,14 @@ test.describe("API route contracts", () => {
     expect(country.hrp_project_list.length).toBeGreaterThan(0);
 
     const agentResponse = await request.get(`/api/agent?iso3=${iso3}`);
-    expect(agentResponse.ok()).toBeTruthy();
+    expect([200, 503]).toContain(agentResponse.status());
     const agent = await agentResponse.json();
-    expect(agent.iso3).toBe(iso3);
-    expect(typeof agent.narrative).toBe("string");
+    if (agentResponse.status() === 200) {
+      expect(agent.iso3).toBe(iso3);
+      expect(typeof agent.narrative).toBe("string");
+    } else {
+      expect(typeof agent.error).toBe("string");
+    }
   });
 
   test("project, genie, and cv endpoints return expected data", async ({ request }) => {

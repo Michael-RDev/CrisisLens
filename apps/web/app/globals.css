@@ -34,7 +34,7 @@
 .globe-canvas {
   position: relative;
   margin-top: 0.55rem;
-  height: min(58vh, 640px);
+  height: min(50vh, 560px);
   border: 1px solid #2b4e66;
   border-radius: 14px;
   overflow: hidden;
@@ -197,12 +197,12 @@
 
 @media (max-width: 1240px) {
   .globe-canvas {
-    height: 55vh;
+    height: 47vh;
   }
 }
 
 @media (max-width: 640px) {
   .globe-canvas {
-    height: 48vh;
+    height: 42vh;
   }
 }

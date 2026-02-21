@@ -42,19 +42,6 @@ function toNum(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function toRow(metrics: GeoMetrics): GeoQueryRow {
-  return {
-    iso3: metrics.iso3,
-    country: metrics.country,
-    year: metrics.year,
-    funding_coverage_ratio: metrics.funding_coverage_ratio,
-    coverage_pct: metrics.coverage_pct,
-    funding_gap_usd: metrics.funding_gap_usd,
-    funding_gap_per_person: metrics.funding_gap_per_person,
-    people_in_need: metrics.people_in_need
-  };
-}
-
 function mapGenericRow(row: Record<string, unknown>): GeoQueryRow {
   const coverageRatio = toNum(row.funding_coverage_ratio);
   return {

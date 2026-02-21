@@ -29,10 +29,10 @@ export function StrategicQueryPanel({
 }: StrategicQueryPanelProps) {
   return (
     <article className="integration-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
-      <h2 className="m-0 text-xl font-semibold">Strategic Query (Cross-Country)</h2>
+      <h2 className="m-0 text-xl font-semibold">General Query Assistant</h2>
       <p className="mt-1 text-sm text-[#9db7c8]">
-        Ask broad questions: comparisons, where to increase funding, where cuts may be lower-risk, and strategic
-        interventions.
+        Ask any cross-country or strategy question: comparisons, where to increase funding, where to reduce, and
+        intervention options.
       </p>
 
       <form onSubmit={onSubmit} className="grid gap-2">
@@ -41,14 +41,14 @@ export function StrategicQueryPanel({
           value={question}
           onChange={(event) => onQuestionChange(event.target.value)}
           rows={3}
-          placeholder="Example: which countries have lower funding coverage than Mali, and where should funding be prioritized?"
+          placeholder="Ask a general question (example: where should funding be increased this quarter?)"
         />
         <button
           type="submit"
           className="w-fit cursor-pointer rounded-lg border border-[#416986] bg-[#12344a] px-3 py-2 text-[#dbeaf2] disabled:opacity-70"
           disabled={loading || !question.trim()}
         >
-          {loading ? "Analyzing..." : "Run Strategic Query"}
+          {loading ? "Analyzing..." : "Run Query"}
         </button>
       </form>
 

@@ -1,5 +1,8 @@
-import { FormEvent } from "react";
+"use client";
+
+import { FormEvent, useMemo, useState } from "react";
 import type { GeoInsight, GeoMetrics } from "@/lib/api/crisiswatch";
+import { ActionChip, EmptyState, LoadingSkeleton, SectionCard, StatPill } from "@/components/dashboard/ui-kit";
 
 type InsightPanelProps = {
   isOpen: boolean;
@@ -21,12 +24,7 @@ type InsightPanelProps = {
   onFollowupChip: (question: string) => void;
 };
 
-function formatCompact(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1
-  }).format(Math.max(0, value));
-}
+type TabKey = "summary" | "drivers" | "actions" | "sources";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -37,8 +35,11 @@ function formatCurrency(value: number): string {
   }).format(Math.max(0, value));
 }
 
-function CardSkeleton() {
-  return <div className="h-[78px] animate-pulse rounded-xl border border-[#2d4d61] bg-[#122634]" />;
+function formatCompact(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(Math.max(0, value));
 }
 
 export function InsightPanel({
@@ -60,176 +61,189 @@ export function InsightPanel({
   onSubmitFollowUp,
   onFollowupChip
 }: InsightPanelProps) {
-  const coverage = metrics ? `${metrics.coverage_pct.toFixed(1)}%` : "--";
+  const [tab, setTab] = useState<TabKey>("summary");
+
+  const keyDrivers = useMemo(() => {
+    if (!metrics) return [];
+    return [
+      { label: "Coverage", value: `${metrics.coverage_pct.toFixed(1)}%`, severity: Math.max(5, 100 - metrics.coverage_pct) },
+      {
+        label: "Gap / Person",
+        value: formatCurrency(metrics.funding_gap_per_person),
+        severity: Math.min(100, metrics.funding_gap_per_person)
+      },
+      {
+        label: "Funding Gap",
+        value: formatCurrency(metrics.funding_gap_usd),
+        severity: Math.min(100, metrics.funding_gap_usd / 50_000_000)
+      }
+    ];
+  }, [metrics]);
 
   return (
-    <>
-      <div
-        className={`fixed inset-0 z-30 bg-[#02060a]/45 transition-opacity duration-200 ${
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        onClick={onClose}
-      />
-      <aside
-        className={`fixed right-0 top-0 z-40 flex h-screen w-full max-w-[460px] flex-col border-l border-[#2f5168] bg-[#0b1a26]/95 p-4 backdrop-blur transition-transform duration-250 sm:w-[440px] ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        aria-hidden={!isOpen}
-      >
-        <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#27475c] pb-3">
-          <div>
-            <h2 className="m-0 text-xl font-semibold">Insight Panel</h2>
-            <p className="m-0 mt-1 text-sm text-[#9fb9ca]">
-              {countryName ?? metrics?.country ?? "Selected Country"}
-              {countryCode ? ` (${countryCode})` : metrics?.iso3 ? ` (${metrics.iso3})` : ""}
-              {metrics?.year ? ` • ${metrics.year}` : ""}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[#4f7086] bg-[#112f41] px-2.5 py-1 text-sm"
-          >
-            Close
-          </button>
-        </div>
-
-        <section className="mb-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="m-0 text-sm uppercase tracking-[0.05em] text-[#b9ccda]">Country Metrics</h3>
-            <div className="rounded-md border border-[#2d4d61] bg-[#112837] px-2.5 py-1 text-sm">
-              Coverage: <strong>{coverage}</strong>
-            </div>
-          </div>
-          {metricsError ? (
-            <p className="rounded-lg border border-[#8a3d47] bg-[#3b1a22] p-2 text-sm">{metricsError}</p>
-          ) : null}
-          <div className="grid grid-cols-2 gap-2">
-            {metricsLoading || !metrics ? (
-              <>
-                <CardSkeleton />
-                <CardSkeleton />
-                <CardSkeleton />
-                <CardSkeleton />
-              </>
-            ) : (
-              <>
-                <div className="rounded-xl border border-[#2d4d61] bg-[#102433] p-2.5">
-                  <p className="m-0 text-xs text-[#9eb7c8]">People In Need</p>
-                  <p className="m-0 mt-1 text-lg font-semibold">{formatCompact(metrics.people_in_need)}</p>
-                </div>
-                <div className="rounded-xl border border-[#2d4d61] bg-[#102433] p-2.5">
-                  <p className="m-0 text-xs text-[#9eb7c8]">Funding</p>
-                  <p className="m-0 mt-1 text-lg font-semibold">{formatCurrency(metrics.funding_usd)}</p>
-                </div>
-                <div className="rounded-xl border border-[#2d4d61] bg-[#102433] p-2.5">
-                  <p className="m-0 text-xs text-[#9eb7c8]">Requirements</p>
-                  <p className="m-0 mt-1 text-lg font-semibold">{formatCurrency(metrics.requirements_usd)}</p>
-                </div>
-                <div className="rounded-xl border border-[#2d4d61] bg-[#102433] p-2.5">
-                  <p className="m-0 text-xs text-[#9eb7c8]">Gap / Person</p>
-                  <p className="m-0 mt-1 text-lg font-semibold">{formatCurrency(metrics.funding_gap_per_person)}</p>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        <section className="mb-4 flex-1 overflow-y-auto">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h3 className="m-0 text-sm uppercase tracking-[0.05em] text-[#b9ccda]">Geo-Insight Summary</h3>
+    <div className="h-auto xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)]">
+      <SectionCard
+        className="h-auto overflow-hidden xl:max-h-[calc(100vh-7rem)] xl:flex xl:flex-col"
+        title="Geo-Insight Copilot"
+        subtitle={
+          countryName || metrics?.country
+            ? `${countryName ?? metrics?.country} (${countryCode ?? metrics?.iso3 ?? "---"})${metrics?.year ? ` • ${metrics.year}` : ""}`
+            : "Select a country on the globe"
+        }
+        rightSlot={
+          <div className="flex items-center gap-2">
+            {insight?.source ? <StatPill>{insight.source === "ai" ? "AI" : "Fallback"}</StatPill> : null}
             <button
               type="button"
               onClick={onRefreshSummary}
               disabled={summaryLoading || !countryCode}
-              className="rounded-md border border-[#4f7086] bg-[#113145] px-2.5 py-1 text-xs disabled:opacity-60"
+              className="rounded-lg border border-[#4f7086] bg-[#113145] px-2.5 py-1 text-xs disabled:opacity-60"
             >
-              Refresh Summary
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-[#4f7086] bg-[#113145] px-2.5 py-1 text-xs"
+            >
+              Clear
             </button>
           </div>
-
-          {summaryLoading ? (
-            <p className="rounded-lg border border-[#2f5165] bg-[#102433] p-2 text-sm text-[#c7d8e4]">
-              {progressLabel}
-            </p>
-          ) : null}
-
-          {summaryError ? (
-            <p className="rounded-lg border border-[#8a3d47] bg-[#3b1a22] p-2 text-sm">{summaryError}</p>
-          ) : null}
-
-          {insight?.source ? (
-            <p className="mb-2 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">
-              Source: {insight.source === "ai" ? "Agent Brick (AI)" : "Fallback Formatter"}
-            </p>
-          ) : null}
-
-          {lastAskedQuestion ? (
-            <p className="mb-2 rounded-md border border-[#315267] bg-[#102433] px-2 py-1 text-xs text-[#c8d9e5]">
-              Asked: {lastAskedQuestion}
-            </p>
-          ) : null}
-
-          {insight?.headline ? (
-            <p className="rounded-lg border border-[#2f5064] bg-[#102433] p-2.5 text-sm font-semibold leading-6">
-              {insight.headline}
-            </p>
-          ) : null}
-
-          {insight?.summary ? (
-            <p className="mt-2 rounded-lg border border-[#2f5064] bg-[#102433] p-2.5 text-sm leading-6">
-              {insight.summary}
-            </p>
-          ) : null}
-
-          {insight?.flags?.length ? (
-            <div className="mt-2">
-              <p className="m-0 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Flags</p>
-              <ul className="mt-1 list-disc pl-5 text-sm text-[#dbe8f2]">
-                {insight.flags.map((flag) => (
-                  <li key={flag}>{flag}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {insight?.followups?.length ? (
-            <div className="mt-3 rounded-xl border border-[#2f5064] bg-[#0f2130] p-2.5 text-sm">
-              <p className="m-0 mb-1 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Suggested Follow-ups</p>
-              <div className="flex flex-wrap gap-2">
-                {insight.followups.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => onFollowupChip(item)}
-                    className="rounded-full border border-[#3f6278] bg-[#133348] px-2.5 py-1 text-xs"
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        <form onSubmit={onSubmitFollowUp} className="border-t border-[#27475c] pt-3">
-          <label className="mb-1 block text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Ask Follow-up</label>
-          <textarea
-            value={followUpQuestion}
-            onChange={(event) => onFollowUpChange(event.target.value)}
-            rows={3}
-            placeholder="Example: explain the biggest funding anomaly in the last period"
-            className="w-full resize-none rounded-lg border border-[#31546a] bg-[#0d1f2c] px-2.5 py-2 text-sm"
+        }
+      >
+        {!isOpen ? (
+          <EmptyState
+            title="No country selected"
+            description="Pinch or click a country on the globe to load AI insight and metrics."
           />
-          <button
-            type="submit"
-            disabled={summaryLoading || !countryCode || !followUpQuestion.trim()}
-            className="mt-2 rounded-md border border-[#4f7086] bg-[#113145] px-3 py-1.5 text-sm disabled:opacity-60"
-          >
-            Send Follow-up
-          </button>
-        </form>
-      </aside>
-    </>
+        ) : (
+          <div className="xl:min-h-0 xl:overflow-y-auto xl:pr-1">
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {metricsLoading || !metrics ? (
+                <>
+                  <LoadingSkeleton className="h-16" />
+                  <LoadingSkeleton className="h-16" />
+                  <LoadingSkeleton className="h-16" />
+                  <LoadingSkeleton className="h-16" />
+                </>
+              ) : (
+                <>
+                  <StatPill>Coverage {metrics.coverage_pct.toFixed(1)}%</StatPill>
+                  <StatPill>PIN {formatCompact(metrics.people_in_need)}</StatPill>
+                  <StatPill>Funding {formatCurrency(metrics.funding_usd)}</StatPill>
+                  <StatPill>Req {formatCurrency(metrics.requirements_usd)}</StatPill>
+                </>
+              )}
+            </div>
+
+            {metricsError ? <p className="rounded-lg border border-[#8a3d47] bg-[#3b1a22] p-2 text-sm">{metricsError}</p> : null}
+            {summaryError ? <p className="rounded-lg border border-[#8a3d47] bg-[#3b1a22] p-2 text-sm">{summaryError}</p> : null}
+            {summaryLoading ? (
+              <p className="rounded-lg border border-[#2f5165] bg-[#102433] p-2 text-sm text-[#c7d8e4]">{progressLabel}</p>
+            ) : null}
+            {lastAskedQuestion ? (
+              <p className="my-2 rounded-md border border-[#315267] bg-[#102433] px-2 py-1 text-xs text-[#c8d9e5]">
+                Asked: {lastAskedQuestion}
+              </p>
+            ) : null}
+
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {([
+                ["summary", "Summary"],
+                ["drivers", "Drivers"],
+                ["actions", "Actions"],
+                ["sources", "Sources"]
+              ] as Array<[TabKey, string]>).map(([key, label]) => (
+                <ActionChip key={key} onClick={() => setTab(key)} disabled={tab === key}>
+                  {label}
+                </ActionChip>
+              ))}
+            </div>
+
+            <div className="max-h-[44vh] overflow-y-auto rounded-xl border border-[#2f5064] bg-[#0f2434] p-2.5">
+              {tab === "summary" ? (
+                <div className="space-y-2">
+                  <p className="m-0 font-semibold">{insight?.headline ?? "Awaiting insight..."}</p>
+                  <p className="m-0 text-sm leading-6 text-[#d7e5f0]">{insight?.summary ?? ""}</p>
+                  {insight?.followups?.length ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {insight.followups.map((item) => (
+                        <ActionChip key={item} onClick={() => onFollowupChip(item)}>
+                          {item}
+                        </ActionChip>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {tab === "drivers" ? (
+                <div className="space-y-2">
+                  {keyDrivers.map((driver) => (
+                    <div key={driver.label} className="rounded-lg border border-[#315267] bg-[#122a3b] p-2">
+                      <div className="mb-1 flex justify-between text-xs">
+                        <span>{driver.label}</span>
+                        <strong>{driver.value}</strong>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#0a1722]">
+                        <div
+                          className="h-full rounded-full bg-[#6ec2ff]"
+                          style={{ width: `${Math.max(8, Math.min(100, driver.severity))}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {insight?.flags?.length ? (
+                    <ul className="list-disc pl-5 text-sm text-[#dbe8f2]">
+                      {insight.flags.map((flag) => (
+                        <li key={flag}>{flag}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {tab === "actions" ? (
+                <div className="space-y-2">
+                  {(insight?.flags ?? []).map((flag, index) => (
+                    <div key={`${flag}-${index}`} className="rounded-lg border border-[#315267] bg-[#122a3b] p-2 text-sm">
+                      <p className="m-0 font-semibold">Priority {index + 1}</p>
+                      <p className="m-0 mt-1 text-[#dbe8f2]">{flag}</p>
+                      <p className="m-0 mt-1 text-xs text-[#9eb8ca]">Why this matters: helps reduce unmet need faster.</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {tab === "sources" ? (
+                <div className="space-y-2 text-sm">
+                  <p className="m-0">Table: <code>workspace.hdx.api_crisis_priority_2026</code></p>
+                  <p className="m-0">Metrics cited: coverage %, funding gap, funding gap per person, people in need.</p>
+                  <p className="m-0">Updated: {new Date().toLocaleTimeString()}</p>
+                </div>
+              ) : null}
+            </div>
+
+            <form onSubmit={onSubmitFollowUp} className="mt-3 border-t border-[#27475c] pt-3">
+              <label className="mb-1 block text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Ask follow-up</label>
+              <textarea
+                value={followUpQuestion}
+                onChange={(event) => onFollowUpChange(event.target.value)}
+                rows={2}
+                placeholder="Ask a concise follow-up question"
+                className="w-full resize-none rounded-lg border border-[#31546a] bg-[#0d1f2c] px-2.5 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={summaryLoading || !countryCode || !followUpQuestion.trim()}
+                className="mt-2 rounded-md border border-[#4f7086] bg-[#113145] px-3 py-1.5 text-sm disabled:opacity-60"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        )}
+      </SectionCard>
+    </div>
   );
 }

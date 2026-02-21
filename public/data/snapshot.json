@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-02-21T05:26:13.730Z",
+  "sourceFiles": [
+    "data/cod_population_admin0.csv",
+    "data/cod_population_admin1.csv",
+    "data/cod_population_admin3.csv",
+    "data/cod_population_admin4.csv",
+    "data/hpc_hno_2024.csv",
+    "data/hpc_hno_2025.csv",
+    "data/hpc_hno_2026.csv",
+    "data/fts_requirements_funding_global.csv",
+    "data/humanitarian-response-plans.csv",
+    "data/fts_requirements_funding_cluster_global.csv"
+  ],
+  "recordCount": 164,
+  "projectRecordCount": 5988
+}

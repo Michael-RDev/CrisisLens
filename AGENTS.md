@@ -26,6 +26,12 @@ This file gives Codex (and other coding agents) a source-of-truth guide for work
 - Keep the subject concise and imperative (example: `feat(landing): add hero CTA and footer`).
 - If a change is breaking, include `!` after type/scope and note `BREAKING CHANGE:` in the body.
 
+## Branching and Commit Rhythm
+- Commit as you go for meaningful checkpoints instead of batching everything into one final commit.
+- Use a dedicated branch for applicable feature/fix work before merging.
+- Branch names must use `feature/...` or `fix/...`.
+- Do not use `codex/...` or `copilot/...` as branch prefixes.
+
 ## Repository Snapshot
 - Project: `CrisisLens`
 - Monorepo layout:

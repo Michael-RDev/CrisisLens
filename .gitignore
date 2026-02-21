@@ -3,5 +3,7 @@
 .env
 
 data/
-
 .DS_Store
+node_modules/
+.next/
+tsconfig.tsbuildinfo

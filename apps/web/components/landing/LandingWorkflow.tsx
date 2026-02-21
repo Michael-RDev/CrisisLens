@@ -24,9 +24,9 @@ export function LandingWorkflow() {
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {workflowSteps.map((step) => (
-          <article key={step.title} className="rounded-xl border border-[#2e4b61] bg-[#152738] p-4">
+          <article key={step.title} className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] p-4">
             <h3 className="m-0 text-lg font-semibold">{step.title}</h3>
-            <p className="mt-2 text-sm text-[#adc4d5]">{step.description}</p>
+            <p className="mt-2 text-sm text-[var(--cl-text-muted)]">{step.description}</p>
           </article>
         ))}
       </div>

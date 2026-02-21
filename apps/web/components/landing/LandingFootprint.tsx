@@ -16,10 +16,10 @@ export function LandingFootprint() {
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {footprintStats.map((stat) => (
-          <article key={stat.label} className="rounded-xl border border-[#2e4b61] bg-[#152738] p-4">
-            <p className="m-0 text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">{stat.label}</p>
-            <p className="m-0 pt-2 text-3xl font-semibold text-[#f0b25d]">{stat.value}</p>
-            <p className="m-0 pt-1 text-xs text-[#adc4d5]">{stat.detail}</p>
+          <article key={stat.label} className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] p-4">
+            <p className="m-0 text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">{stat.label}</p>
+            <p className="m-0 pt-2 text-3xl font-semibold text-[var(--cl-accent)]">{stat.value}</p>
+            <p className="m-0 pt-1 text-xs text-[var(--cl-text-muted)]">{stat.detail}</p>
           </article>
         ))}
       </div>

@@ -1,8 +1,8 @@
 export function LandingFooter() {
   return (
-    <footer className="landing-card flex flex-col justify-between gap-3 px-4 py-4 text-sm text-[#adc3d3] sm:flex-row sm:items-center" role="contentinfo">
+    <footer className="landing-card flex flex-col justify-between gap-3 px-4 py-4 text-sm text-[var(--cl-text-muted)] sm:flex-row sm:items-center" role="contentinfo">
       <div className="flex flex-col gap-1">
-        <p className="m-0 font-semibold text-[#eaf3f8]">CrisisLens</p>
+        <p className="m-0 font-semibold text-[var(--cl-text)]">CrisisLens</p>
         <p className="m-0 text-xs">Tier-4 humanitarian operations interface</p>
       </div>
       <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.06em]">

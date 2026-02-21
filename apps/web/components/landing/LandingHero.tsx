@@ -6,7 +6,7 @@ export function LandingHero() {
       <div>
         <p className="landing-overline">Humanitarian intelligence platform</p>
         <h1 className="mb-2 mt-1 text-5xl font-bold leading-tight sm:text-6xl">CrisisLens</h1>
-        <p className="m-0 max-w-[64ch] text-base text-[#bfd3e2]">
+        <p className="landing-body m-0 max-w-[64ch] text-base">
           Unified operating view for severity, funding pressure, and response posture across countries.
           Built for analysts who need to move from anomaly to action quickly.
         </p>
@@ -34,20 +34,20 @@ export function LandingHero() {
           prioritize follow-up where response risk is rising.
         </p>
         <dl className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-[#2f4b61] bg-[#111f2c] p-3">
-            <dt className="text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Countries tracked</dt>
+          <div className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
+            <dt className="text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">Countries tracked</dt>
             <dd className="m-0 pt-1 text-2xl font-semibold">118</dd>
           </div>
-          <div className="rounded-xl border border-[#2f4b61] bg-[#111f2c] p-3">
-            <dt className="text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">High-priority flags</dt>
+          <div className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
+            <dt className="text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">High-priority flags</dt>
             <dd className="m-0 pt-1 text-2xl font-semibold">24</dd>
           </div>
-          <div className="rounded-xl border border-[#2f4b61] bg-[#111f2c] p-3">
-            <dt className="text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Funding at risk</dt>
+          <div className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
+            <dt className="text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">Funding at risk</dt>
             <dd className="m-0 pt-1 text-2xl font-semibold">$2.6B</dd>
           </div>
-          <div className="rounded-xl border border-[#2f4b61] bg-[#111f2c] p-3">
-            <dt className="text-xs uppercase tracking-[0.08em] text-[#9fb7c7]">Coverage alerts</dt>
+          <div className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
+            <dt className="text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">Coverage alerts</dt>
             <dd className="m-0 pt-1 text-2xl font-semibold">9 clusters</dd>
           </div>
         </dl>

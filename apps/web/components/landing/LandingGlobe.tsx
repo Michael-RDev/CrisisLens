@@ -101,7 +101,7 @@ export function LandingGlobe() {
       <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
         <div
           ref={containerRef}
-          className="h-[320px] w-full overflow-hidden rounded-xl border border-[#2b4e66] bg-[#08131d] sm:h-[360px]"
+          className="h-[320px] w-full overflow-hidden rounded-xl border border-[var(--cl-border)] bg-[var(--cl-surface-elevated)] sm:h-[360px]"
         >
           {webglSupported ? (
             <Globe
@@ -126,8 +126,8 @@ export function LandingGlobe() {
           ) : (
             <div className="grid h-full place-items-center p-5 text-center">
               <div>
-                <p className="m-0 text-sm font-semibold text-[#eaf3f8]">3D map unavailable</p>
-                <p className="mt-2 text-xs text-[#adc3d3]">
+                <p className="m-0 text-sm font-semibold text-[var(--cl-text)]">3D map unavailable</p>
+                <p className="mt-2 text-xs text-[var(--cl-text-muted)]">
                   WebGL is not available in this runtime. Live signal summaries remain accessible.
                 </p>
               </div>
@@ -135,14 +135,14 @@ export function LandingGlobe() {
           )}
         </div>
         <aside className="landing-card-muted p-4">
-          <h3 className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-[#b4c6d3]">
+          <h3 className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">
             Active monitors
           </h3>
           <ul className="m-0 mt-3 grid list-none gap-2 p-0">
             {hotspots.map((spot) => (
-              <li key={spot.label} className="rounded-lg border border-[#2e4b61] bg-[#111f2c] p-3">
+              <li key={spot.label} className="rounded-lg border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
                 <p className="m-0 text-sm font-semibold">{spot.label}</p>
-                <p className="m-0 pt-1 text-xs text-[#9fb7c7]">
+                <p className="m-0 pt-1 text-xs text-[var(--cl-text-muted)]">
                   Lat {spot.lat.toFixed(2)} | Lng {spot.lng.toFixed(2)}
                 </p>
               </li>

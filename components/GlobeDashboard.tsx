@@ -1,51 +1,65 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { computeGlobalSummary, formatCompact } from "@/components/summary-utils";
-import { fetchCountryDrilldown, queryGenie, subscribeToGlobeEvents } from "@/lib/api/crisiswatch";
+import { computeGlobalSummary } from "@/components/summary-utils";
+import { countryByIso3 } from "@/lib/countries";
+import {
+  fetchAnalyticsOverview,
+  fetchCountryDrilldown,
+  fetchProjectDetail,
+  queryGenie,
+  simulateFundingScenario,
+  subscribeToGlobeEvents
+} from "@/lib/api/crisiswatch";
+import type {
+  AnalyticsOverviewResponse,
+  CountryDrilldown,
+  ProjectDetail,
+  SimulationResponse
+} from "@/lib/api/crisiswatch";
 import { normalizeIso3, shouldApplyCVDetection } from "@/lib/cv/globeBridge";
-import { computeDerivedMetrics, getLayerValue } from "@/lib/metrics";
-import { CountryMetrics, LayerMode, RiskBand } from "@/lib/types";
+import { getLayerValue } from "@/lib/metrics";
+import { CountryMetrics, LayerMode } from "@/lib/types";
 import type { DatabricksCountryState } from "@/lib/databricks/client";
 import type { CVDetection } from "@/lib/cv/provider";
-
-const Globe3D = dynamic(() => import("@/components/Globe3D"), {
-  ssr: false,
-  loading: () => <div className="globe-canvas globe-loading">Loading 3D globe...</div>
-});
+import {
+  AgentStatePanel,
+  CountryPanel,
+  CvPanel,
+  DashboardFooter,
+  GeniePanel,
+  GlobePanel,
+  HeroSection,
+  KpiGrid,
+  LayerSelector,
+  OciPanel,
+  PriorityRankingPanel,
+  ProjectOutliersPanel,
+  SimulationPanel,
+  TopTabs,
+  buildHoverText
+} from "@/components/dashboard";
+import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
 };
 
-const layerConfig: Record<LayerMode, { label: string; unit: string; highIsBad: boolean }> = {
-  severity: { label: "Severity", unit: "pts", highIsBad: true },
-  inNeedRate: { label: "In-Need Rate", unit: "%", highIsBad: true },
-  fundingGap: { label: "Funding Gap", unit: "%", highIsBad: true },
-  coverage: { label: "Coverage", unit: "%", highIsBad: false }
-};
-
 const queryTemplates = [
-  "What projects are most similar to HRP-2024-ETH-00423 and how does their efficiency compare?",
-  "Rank the top 10 most overlooked crises by Coverage Mismatch Index."
+  "What projects are most similar to PRJ-2025-SDN-health and how does their efficiency compare?",
+  "Rank the top 10 most overlooked crises by OCI and explain why."
 ];
-
-function riskClass(riskBand?: RiskBand): string {
-  if (riskBand === "critical") return "chip-critical";
-  if (riskBand === "high") return "chip-high";
-  if (riskBand === "moderate") return "chip-moderate";
-  return "chip-low";
-}
 
 export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
   const [hoverIso3, setHoverIso3] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [layerMode, setLayerMode] = useState<LayerMode>("severity");
+  const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
+
+  const [overview, setOverview] = useState<AnalyticsOverviewResponse | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
 
   const [agentState, setAgentState] = useState<DatabricksCountryState | null>(null);
   const [agentLoading, setAgentLoading] = useState(false);
@@ -60,19 +74,21 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [cvDetection, setCvDetection] = useState<CVDetection | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
 
-  const [clusterBreakdown, setClusterBreakdown] = useState<
-    Array<{ cluster_name: string; bbr: number; bbr_z_score: number }>
-  >([]);
+  const [clusterBreakdown, setClusterBreakdown] = useState<CountryDrilldown["cluster_breakdown"]>([]);
+  const [projectOutliers, setProjectOutliers] = useState<CountryDrilldown["outlier_projects"]>([]);
+  const [selectedOci, setSelectedOci] = useState<CountryDrilldown["oci"] | null>(null);
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [projectDetail, setProjectDetail] = useState<ProjectDetail | null>(null);
+  const [projectDetailLoading, setProjectDetailLoading] = useState(false);
+
+  const [allocationUsd, setAllocationUsd] = useState("5000000");
+  const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const summary = useMemo(() => computeGlobalSummary(metrics), [metrics]);
-  const countrySuggestions = useMemo(
-    () =>
-      [...metrics]
-        .sort((a, b) => a.country.localeCompare(b.country))
-        .map((row) => `${row.country} (${row.iso3})`),
-    [metrics]
-  );
+  const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return metrics;
@@ -83,8 +99,9 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }, [metrics, query]);
 
   const selected = selectedIso3 ? byIso.get(selectedIso3) ?? null : null;
-  const hoverCountry = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
-  const selectedDerived = selected ? computeDerivedMetrics(selected) : null;
+  const selectedCountryMeta = selectedIso3 ? countryByIso3.get(selectedIso3) ?? null : null;
+  const hoverCountryMetric = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
+  const hoverCountryMeta = hoverIso3 ? countryByIso3.get(hoverIso3) ?? null : null;
 
   const ranked = useMemo(() => {
     return [...filtered]
@@ -92,10 +109,31 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       .slice(0, 12);
   }, [filtered, layerMode]);
 
+  const hoverText = buildHoverText({ hoverCountryMetric, hoverCountryMeta, layerMode });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setOverviewLoading(true);
+
+    fetchAnalyticsOverview()
+      .then((payload) => {
+        if (!controller.signal.aborted) setOverview(payload);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setOverviewLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     if (!selectedIso3) {
       setAgentState(null);
       setClusterBreakdown([]);
+      setProjectOutliers([]);
+      setSelectedProjectId(null);
+      setProjectDetail(null);
+      setSelectedOci(null);
       return;
     }
 
@@ -110,13 +148,26 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       fetchCountryDrilldown(selectedIso3)
     ])
       .then(([agent, drilldown]) => {
+        if (controller.signal.aborted) return;
         setAgentState(agent);
         setClusterBreakdown(drilldown.cluster_breakdown);
+        setProjectOutliers(drilldown.outlier_projects);
+        setSelectedOci(drilldown.oci);
+        setSelectedProjectId((current) => {
+          if (current && drilldown.hrp_project_list.some((project) => project.project_id === current)) {
+            return current;
+          }
+          return drilldown.outlier_projects[0]?.project_id ?? drilldown.hrp_project_list[0]?.project_id ?? null;
+        });
       })
       .catch(() => {
         if (!controller.signal.aborted) {
           setAgentState(null);
           setClusterBreakdown([]);
+          setProjectOutliers([]);
+          setSelectedProjectId(null);
+          setProjectDetail(null);
+          setSelectedOci(null);
         }
       })
       .finally(() => {
@@ -125,6 +176,28 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
     return () => controller.abort();
   }, [selectedIso3]);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setProjectDetail(null);
+      return;
+    }
+    const controller = new AbortController();
+    setProjectDetailLoading(true);
+
+    fetchProjectDetail(selectedProjectId)
+      .then((payload) => {
+        if (!controller.signal.aborted) setProjectDetail(payload);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setProjectDetail(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setProjectDetailLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [selectedProjectId]);
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_GLOBE_WS_URL;
@@ -186,281 +259,101 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     }
   }
 
-  function jumpToCountry() {
-    const raw = query.trim();
-    const isoFromLabel = raw.match(/\(([A-Za-z]{3})\)$/)?.[1]?.toUpperCase();
-    if (isoFromLabel && byIso.has(isoFromLabel)) {
-      setSelectedIso3(isoFromLabel);
-      return;
-    }
+  async function runSimulation() {
+    if (!selectedIso3) return;
+    const parsed = Number(allocationUsd.replace(/,/g, ""));
+    if (!Number.isFinite(parsed) || parsed < 0) return;
 
-    const needle = raw.toLowerCase();
-    if (!needle) return;
-    const exactIso = metrics.find((item) => item.iso3.toLowerCase() === needle);
-    if (exactIso) {
-      setSelectedIso3(exactIso.iso3);
-      return;
+    setSimulationLoading(true);
+    try {
+      const payload = await simulateFundingScenario({
+        iso3: selectedIso3,
+        allocation_usd: parsed
+      });
+      setSimulation(payload);
+      setHighlightedIso3(payload.top_overlooked_after.slice(0, 3).map((item) => item.iso3));
+    } catch {
+      setSimulation(null);
+    } finally {
+      setSimulationLoading(false);
     }
-    const nameMatch = metrics.find((item) => item.country.toLowerCase().includes(needle));
-    if (nameMatch) {
-      setSelectedIso3(nameMatch.iso3);
+  }
+
+  function jumpToCountry() {
+    const iso3 = resolveJumpToCountryIso3(query);
+    if (iso3) {
+      setSelectedIso3(iso3);
     }
   }
 
   return (
-    <main className="page-shell">
-      <motion.section
-        className="hero glass"
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-      >
-        <div>
-          <h1>CrisisLens Command Center</h1>
-          <p>
-            Three.js Tier-4 interactive globe. Orbit, zoom, hover, click drill-down, and integration
-            seams for Databricks Genie, Agent Bricks, CV pointing, and WebSocket anomaly events.
-          </p>
-          <p className="meta">Snapshot: {new Date(generatedAt).toLocaleString()}</p>
-        </div>
-        <div className="hero-badge">
-          <span>3D Globe</span>
-          <span>WebSocket Ready</span>
-          <span>Genie Sync</span>
-        </div>
-      </motion.section>
+    <main className="mx-auto max-w-[1460px] p-4 sm:p-5">
+      <HeroSection generatedAt={generatedAt} />
+      <TopTabs />
+      <KpiGrid summary={summary} overview={overview} />
+      <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
 
-      <motion.section
-        className="kpi-grid"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.42, delay: 0.08 }}
-      >
-        <article>
-          <h3>Population Tracked</h3>
-          <p>{formatCompact(summary.population)}</p>
-        </article>
-        <article>
-          <h3>People In Need</h3>
-          <p>{formatCompact(summary.inNeed)}</p>
-        </article>
-        <article>
-          <h3>Funding Received</h3>
-          <p>${formatCompact(summary.fundingReceived)}</p>
-        </article>
-        <article>
-          <h3>Funding Gap</h3>
-          <p>${formatCompact(summary.fundingGap)}</p>
-          <small>{summary.fundedPct.toFixed(1)}% funded globally</small>
-        </article>
-      </motion.section>
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(520px,2fr)_minmax(330px,1fr)]">
+        <GlobePanel
+          metrics={metrics}
+          layerMode={layerMode}
+          selectedIso3={selectedIso3}
+          highlightedIso3={highlightedIso3}
+          query={query}
+          countrySuggestions={countrySuggestions}
+          hoverText={hoverText}
+          onSelectIso3={setSelectedIso3}
+          onHoverIso3={setHoverIso3}
+          onQueryChange={setQuery}
+          onJump={jumpToCountry}
+        />
 
-      <section className="layer-row">
-        {(Object.keys(layerConfig) as LayerMode[]).map((mode) => (
-          <button
-            key={mode}
-            type="button"
-            className={mode === layerMode ? "is-active" : ""}
-            onClick={() => setLayerMode(mode)}
-          >
-            {layerConfig[mode].label}
-          </button>
-        ))}
+        <CountryPanel
+          selected={selected}
+          selectedCountryMeta={selectedCountryMeta}
+          selectedOci={selectedOci}
+          clusterBreakdown={clusterBreakdown}
+        />
+
+        <PriorityRankingPanel ranked={ranked} layerMode={layerMode} onSelectIso3={setSelectedIso3} />
+        <OciPanel
+          overviewLoading={overviewLoading}
+          overview={overview}
+          onSelectIso3={setSelectedIso3}
+          onHighlightIso3={setHighlightedIso3}
+        />
+        <SimulationPanel
+          selectedIso3={selectedIso3}
+          allocationUsd={allocationUsd}
+          simulationLoading={simulationLoading}
+          simulation={simulation}
+          onAllocationChange={setAllocationUsd}
+          onSimulate={runSimulation}
+        />
+        <ProjectOutliersPanel
+          projectOutliers={projectOutliers}
+          projectDetailLoading={projectDetailLoading}
+          projectDetail={projectDetail}
+          onSelectProjectId={setSelectedProjectId}
+        />
+        <AgentStatePanel selectedIso3={selectedIso3} agentLoading={agentLoading} agentState={agentState} />
+        <GeniePanel
+          queryTemplates={queryTemplates}
+          question={question}
+          genieAnswer={genieAnswer}
+          genieLoading={genieLoading}
+          onSetQuestion={setQuestion}
+          onSubmit={submitGenieQuestion}
+        />
+        <CvPanel
+          cvFrameInput={cvFrameInput}
+          cvLoading={cvLoading}
+          cvDetection={cvDetection}
+          onCvInputChange={setCvFrameInput}
+          onDetect={triggerCvDetection}
+        />
       </section>
-
-      <section className="dashboard-grid">
-        <motion.article
-          className="globe-card glass"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.14 }}
-        >
-          <div className="card-header-row">
-            <h2>Interactive 3D Globe</h2>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Jump to country or ISO3 (example: Sudan, SDN)"
-              aria-label="Search country"
-              list="country-suggestions"
-            />
-            <datalist id="country-suggestions">
-              {countrySuggestions.map((item) => (
-                <option key={item} value={item} />
-              ))}
-            </datalist>
-            <button type="button" onClick={jumpToCountry}>
-              Jump
-            </button>
-          </div>
-          <Globe3D
-            metrics={metrics}
-            layerMode={layerMode}
-            selectedIso3={selectedIso3}
-            highlightedIso3={highlightedIso3}
-            onSelect={setSelectedIso3}
-            onHover={setHoverIso3}
-          />
-          <div className="globe-footer">
-            <p>
-              {hoverCountry
-                ? `${hoverCountry.country} (${hoverCountry.iso3}) • ${layerConfig[layerMode].label}: ${getLayerValue(
-                    hoverCountry,
-                    layerMode
-                  ).toFixed(1)}${layerConfig[layerMode].unit}`
-                : "Hover countries for details. Drag to rotate. Scroll to zoom. Click any country polygon to open drill-down."}
-            </p>
-          </div>
-        </motion.article>
-
-        <motion.article
-          className="country-card glass"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.2 }}
-        >
-          <h2>{selected ? `${selected.country} (${selected.iso3})` : "Select a country"}</h2>
-          {selected && selectedDerived ? (
-            <dl>
-              <div>
-                <dt>Severity Score</dt>
-                <dd>{selected.severityScore.toFixed(1)}</dd>
-              </div>
-              <div>
-                <dt>People In Need %</dt>
-                <dd>{selectedDerived.inNeedPct.toFixed(1)}%</dd>
-              </div>
-              <div>
-                <dt>Coverage %</dt>
-                <dd>{selectedDerived.coveragePct.toFixed(1)}%</dd>
-              </div>
-              <div>
-                <dt>Funding Gap</dt>
-                <dd>${selectedDerived.fundingGap.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>Funding Gap %</dt>
-                <dd>{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
-              </div>
-              <div>
-                <dt>Plan Requirements</dt>
-                <dd>${selected.revisedPlanRequirements.toLocaleString()}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p>Select a country from the globe or ranking list.</p>
-          )}
-
-          <h3 className="panel-subtitle">Cluster Breakdown (Mock)</h3>
-          <ul className="cluster-list">
-            {clusterBreakdown.length === 0 ? (
-              <li className="subtle">No cluster rows available for this country yet.</li>
-            ) : (
-              clusterBreakdown.map((cluster) => (
-                <li key={cluster.cluster_name}>
-                  <span>{cluster.cluster_name}</span>
-                  <strong>{cluster.bbr_z_score.toFixed(2)} z</strong>
-                </li>
-              ))
-            )}
-          </ul>
-        </motion.article>
-
-        <article className="list-card glass">
-          <h2>Priority Ranking ({layerConfig[layerMode].label})</h2>
-          <ol>
-            {ranked.map((row) => {
-              const value = getLayerValue(row, layerMode);
-              return (
-                <li key={row.iso3}>
-                  <button onClick={() => setSelectedIso3(row.iso3)}>
-                    <span>
-                      {row.country} <small>{row.iso3}</small>
-                    </span>
-                    <strong>
-                      {value.toFixed(1)}
-                      {layerConfig[layerMode].unit}
-                    </strong>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </article>
-
-        <article className="integration-card glass">
-          <h2>Databricks Agent State</h2>
-          {selectedIso3 ? <p className="subtle">Country scope: {selectedIso3}</p> : null}
-          {agentLoading ? <p>Loading agent state...</p> : null}
-          {!agentLoading && agentState ? (
-            <>
-              <p className={`risk-chip ${riskClass(agentState.riskBand)}`}>
-                Risk band: {agentState.riskBand ?? "n/a"}
-              </p>
-              <p>{agentState.narrative}</p>
-            </>
-          ) : null}
-          {!agentLoading && !agentState ? (
-            <p className="subtle">No agent payload. Wire Databricks serving endpoint next.</p>
-          ) : null}
-        </article>
-
-        <article className="integration-card glass">
-          <h2>Databricks Genie (NLQ)</h2>
-          <div className="template-row">
-            {queryTemplates.map((template) => (
-              <button key={template} type="button" onClick={() => setQuestion(template)}>
-                Use Template
-              </button>
-            ))}
-          </div>
-          <form onSubmit={submitGenieQuestion} className="integration-form">
-            <textarea
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              rows={3}
-              placeholder="Ask a query (example: top overlooked crises by CMI)."
-            />
-            <button type="submit" disabled={genieLoading}>
-              {genieLoading ? "Querying..." : "Run Genie Query"}
-            </button>
-          </form>
-          {genieAnswer ? (
-            <div className="integration-output">
-              <p>{genieAnswer}</p>
-              <p className="subtle">Globe highlights sync from `highlight_iso3`.</p>
-            </div>
-          ) : null}
-        </article>
-
-        <article className="integration-card glass">
-          <h2>CV Point-to-Highlight</h2>
-          <p className="subtle">
-            This placeholder matches the future MediaPipe/WebRTC flow: detection emits ISO3 and the
-            globe auto-selects that country.
-          </p>
-          <div className="integration-form">
-            <textarea
-              value={cvFrameInput}
-              onChange={(event) => setCvFrameInput(event.target.value)}
-              rows={3}
-              placeholder="Example: fingertip=0.42,0.31|country=SDN"
-            />
-            <button type="button" onClick={triggerCvDetection} disabled={cvLoading}>
-              {cvLoading ? "Detecting..." : "Detect Country"}
-            </button>
-          </div>
-          {cvDetection ? (
-            <div className="integration-output">
-              <p>
-                Detected: <strong>{cvDetection.iso3}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
-              </p>
-            </div>
-          ) : (
-            <p className="subtle">No detection yet.</p>
-          )}
-        </article>
-      </section>
+      <DashboardFooter />
     </main>
   );
 }

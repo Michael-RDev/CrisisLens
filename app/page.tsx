@@ -1,7 +1,17 @@
-import GlobeDashboard from "@/components/GlobeDashboard";
-import { loadCountryMetrics, loadSnapshot } from "@/lib/loadMetrics";
+import {
+  LandingFeatures,
+  LandingFooter,
+  LandingHeader,
+  LandingHero
+} from "@/components/landing";
 
-export default async function Home() {
-  const [metrics, snapshot] = await Promise.all([loadCountryMetrics(), loadSnapshot()]);
-  return <GlobeDashboard metrics={metrics} generatedAt={snapshot.generatedAt} />;
+export default function Home() {
+  return (
+    <main className="mx-auto grid min-h-screen max-w-[1180px] grid-rows-[auto_1fr_auto_auto] gap-4 p-5 sm:p-6">
+      <LandingHeader />
+      <LandingHero />
+      <LandingFeatures />
+      <LandingFooter />
+    </main>
+  );
 }

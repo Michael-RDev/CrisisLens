@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-21T06:04:07.071Z",
+  "generatedAt": "2026-02-21T08:05:53.478Z",
   "sourceFiles": [
     "data/cod_population_admin0.csv",
     "data/cod_population_admin1.csv",
@@ -9,7 +9,9 @@
     "data/hpc_hno_2025.csv",
     "data/hpc_hno_2026.csv",
     "data/fts_requirements_funding_global.csv",
-    "data/humanitarian-response-plans.csv"
+    "data/humanitarian-response-plans.csv",
+    "data/fts_requirements_funding_cluster_global.csv"
   ],
-  "recordCount": 164
+  "recordCount": 164,
+  "projectRecordCount": 5988
 }

@@ -4,23 +4,46 @@ export type GlobeHeatmapRow = {
   country_iso3: string;
   fgi_score: number;
   cmi_score: number;
+  oci_score: number;
   cbpf_total_usd: number;
 };
 
 export type CountryDrilldown = {
   iso3: string;
   country: string;
+  oci: {
+    severityComponent: number;
+    inNeedRateComponent: number;
+    fundingGapComponent: number;
+    coverageMismatchComponent: number;
+    totalScore: number;
+  };
   cluster_breakdown: Array<{
     cluster_name: string;
     bbr: number;
     bbr_z_score: number;
+    budget_usd: number;
+    people_targeted: number;
   }>;
   hrp_project_list: Array<{
     project_id: string;
     name: string;
+    cluster_name: string;
     budget_usd: number;
     people_targeted: number;
+    bbr: number;
     bbr_z_score: number;
+    outlier_flag: "low" | "high" | "none";
+  }>;
+  outlier_projects: Array<{
+    project_id: string;
+    name: string;
+    cluster_name: string;
+    budget_usd: number;
+    people_targeted: number;
+    bbr: number;
+    bbr_z_score: number;
+    outlier_flag: "low" | "high" | "none";
   }>;
   metrics: CountryMetrics;
 };
@@ -30,14 +53,64 @@ export type ProjectDetail = {
   project_name: string;
   metrics: {
     budget_usd: number;
+    funding_usd: number;
+    funding_pct: number;
     people_targeted: number;
     bbr: number;
     bbr_z_score: number;
+    cluster_name: string;
+    outlier_flag: "low" | "high" | "none";
   };
   comparable_projects: Array<{
     project_id: string;
     similarity_score: number;
     efficiency_delta_pct: number;
+    rationale: string;
+  }>;
+};
+
+export type AnalyticsOverviewResponse = {
+  generated_at: string;
+  formula: {
+    severity_component_pct: number;
+    in_need_rate_component_pct: number;
+    funding_gap_component_pct: number;
+    coverage_mismatch_component_pct: number;
+  };
+  top_overlooked: Array<{
+    rank: number;
+    iso3: string;
+    country: string;
+    oci_score: number;
+    severity_score: number;
+    in_need_pct: number;
+    funding_gap_pct: number;
+    coverage_pct: number;
+  }>;
+};
+
+export type SimulationResponse = {
+  iso3: string;
+  allocation_usd: number;
+  base: {
+    rank: number;
+    oci: number;
+    funding_received: number;
+    percent_funded: number;
+  };
+  scenario: {
+    rank: number;
+    oci: number;
+    funding_received: number;
+    percent_funded: number;
+  };
+  rank_delta: number;
+  oci_delta: number;
+  top_overlooked_after: Array<{
+    rank: number;
+    iso3: string;
+    country: string;
+    oci_score: number;
   }>;
 };
 
@@ -82,6 +155,23 @@ export async function fetchCountryDrilldown(iso3: string): Promise<CountryDrilld
 export async function fetchProjectDetail(projectId: string): Promise<ProjectDetail> {
   const response = await fetch(`/api/project/${projectId}`, { method: "GET" });
   return parseJson<ProjectDetail>(response);
+}
+
+export async function fetchAnalyticsOverview(): Promise<AnalyticsOverviewResponse> {
+  const response = await fetch("/api/analytics/overview", { method: "GET" });
+  return parseJson<AnalyticsOverviewResponse>(response);
+}
+
+export async function simulateFundingScenario(payload: {
+  iso3: string;
+  allocation_usd: number;
+}): Promise<SimulationResponse> {
+  const response = await fetch("/api/analytics/simulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseJson<SimulationResponse>(response);
 }
 
 export async function queryGenie(payload: {

@@ -71,6 +71,18 @@ Open:
 
 Next.js frontend with a **react-globe.gl / Three.js 3D spinnable globe** (country polygons, not point markers), country drilldown, layer switching, and integration-ready seams for Databricks Agent, Databricks Genie, WebSocket anomaly events, and CV country detection.
 
+### Competition Features Implemented
+
+- **Overlooked Crisis Index (OCI)** with transparent weighting:
+  - `32% severity + 28% in-need rate + 22% funding gap + 18% coverage mismatch`
+- **Cluster-level project profiles** built from UN data feeds with:
+  - beneficiary-to-budget ratio (`bbr`)
+  - robust outlier scoring (`bbr_z_score`)
+  - outlier flagging (`high` / `low`)
+- **Comparable project benchmarking** for any project profile.
+- **What-if funding simulator** to estimate OCI and rank movement after incremental allocation.
+- **Gesture-controlled globe** (camera + hand tracking) with cursor targeting and pinch select/drag behavior.
+
 ### Quick Start
 
 ```bash
@@ -83,25 +95,40 @@ Open `http://localhost:3000`.
 
 ### Scripts
 
-- `npm run generate:data` builds `public/data/country-metrics.json` + `public/data/snapshot.json` from `data/*.csv`.
+- `npm run generate:data` builds:
+  - `public/data/country-metrics.json`
+  - `public/data/project-profiles.json`
+  - `public/data/snapshot.json`
 - `npm run lint` runs Next.js lint rules.
 - `npm run typecheck` runs TypeScript checks.
+- `npm run test:unit` runs Vitest unit tests.
+- `npm run test:e2e` runs Playwright end-to-end tests.
+- `npm run test:e2e:ui` runs landing + dashboard Playwright UI tests.
+- `npm run test:e2e:api` runs only Playwright API contract tests.
+- `npm run playwright:install` installs the Playwright Chromium browser.
 - `npm run build` builds production assets.
 - `npm run test` runs lint + typecheck.
+- `npm run test:all` runs lint + typecheck + unit + e2e.
+
+Playwright note: e2e scripts use `npx playwright ...`; if Playwright is not installed locally yet, first run needs network access.
 
 ### Key Paths
 
-- `app/page.tsx`: dashboard entry page.
+- `app/page.tsx`: landing page with header/footer/CTA.
+- `app/dashboard/page.tsx`: dashboard entry page.
 - `components/GlobeDashboard.tsx`: command-center dashboard and integration panels.
 - `components/Globe3D.tsx`: Three.js globe renderer (orbit, zoom, click/hover select, pulse highlights).
 - `lib/api/crisiswatch.ts`: typed frontend API client for REST + WebSocket.
 - `app/api/globe/heatmap/route.ts`: spec-style heatmap payload endpoint.
 - `app/api/country/[iso3]/route.ts`: spec-style country drilldown endpoint.
 - `app/api/project/[project_id]/route.ts`: spec-style project detail endpoint.
+- `app/api/analytics/overview/route.ts`: OCI formula + top overlooked leaderboard endpoint.
+- `app/api/analytics/simulate/route.ts`: what-if funding simulation endpoint.
 - `app/api/agent/country/[iso3]/route.ts`: backend seam for Databricks Agent country state.
 - `app/api/genie/query/route.ts`: backend seam for Databricks Genie NLQ.
 - `app/api/cv/detect/route.ts`: backend seam for CV country detection.
 - `scripts/generate-country-metrics.mjs`: CSV aggregation pipeline.
+- `lib/analytics.ts`: OCI, outlier scoring, and comparable-project logic.
 - `lib/databricks/client.ts`: Databricks Agent adapter contract.
 - `lib/databricks/genie.ts`: Databricks Genie adapter contract.
 - `lib/cv/provider.ts`: CV detector adapter contract.

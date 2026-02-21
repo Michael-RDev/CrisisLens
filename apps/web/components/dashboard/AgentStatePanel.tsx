@@ -1,4 +1,5 @@
 import { getRiskClass } from "@/components/dashboard/dashboard-utils";
+import { PanelLoading } from "@/components/dashboard/PanelLoading";
 import { DatabricksCountryState } from "@/lib/databricks/client";
 
 type AgentStatePanelProps = {
@@ -13,19 +14,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
       <p className="dbx-kicker">Agent Runtime</p>
       <h2 className="dbx-title">Databricks Agent State</h2>
       {selectedIso3 ? <p className="dbx-subtitle mt-1">Country scope: {selectedIso3}</p> : null}
-      {agentLoading ? (
-        <div className="dbx-loading" role="status" aria-label="Loading agent state">
-          <div className="dbx-loading-row">
-            <span className="dbx-loading-bar w-28" />
-            <span className="dbx-loading-bar w-16" />
-          </div>
-          <div className="dbx-loading-row">
-            <span className="dbx-loading-bar w-4/5" />
-            <span className="dbx-loading-bar w-12" />
-          </div>
-          <span className="dbx-loading-bar h-9 w-full" />
-        </div>
-      ) : null}
+      {agentLoading ? <PanelLoading label="Loading agent state" rows={2} /> : null}
       {!agentLoading && agentState ? (
         <>
           <p className={getRiskClass(agentState.riskBand)}>Risk band: {agentState.riskBand ?? "n/a"}</p>
@@ -37,13 +26,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
       ) : null}
       <h3 className="mb-1 mt-3 text-sm text-[var(--dbx-text-muted)]">Mock Risk Drivers</h3>
       {agentLoading ? (
-        <ul className="grid list-none gap-1.5 p-0 animate-pulse" aria-hidden>
-          {[0, 1, 2].map((idx) => (
-            <li key={`driver-loading-${idx}`} className="dbx-loading-row">
-              <span className={`dbx-loading-bar ${idx === 0 ? "w-5/6" : idx === 1 ? "w-3/4" : "w-2/3"}`} />
-            </li>
-          ))}
-        </ul>
+        <PanelLoading label="Loading risk drivers" rows={2} className="mt-1" />
       ) : (
         <ul className="grid list-none gap-1.5 p-0">
           {(agentState?.riskDrivers?.length
@@ -58,13 +41,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
       )}
       <h3 className="mb-1 mt-2 text-sm text-[var(--dbx-text-muted)]">Mock Recommended Actions</h3>
       {agentLoading ? (
-        <ul className="grid list-none gap-1.5 p-0 animate-pulse" aria-hidden>
-          {[0, 1, 2].map((idx) => (
-            <li key={`action-loading-${idx}`} className="dbx-loading-row">
-              <span className={`dbx-loading-bar ${idx === 0 ? "w-4/5" : idx === 1 ? "w-5/6" : "w-3/4"}`} />
-            </li>
-          ))}
-        </ul>
+        <PanelLoading label="Loading recommended actions" rows={2} className="mt-1" />
       ) : (
         <ul className="grid list-none gap-1.5 p-0">
           {(agentState?.recommendedActions?.length

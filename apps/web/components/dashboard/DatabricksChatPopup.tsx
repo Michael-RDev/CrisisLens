@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
 type GenieRow = {
   iso3: string;
@@ -88,20 +89,11 @@ export function DatabricksChatPopup({
                 className="dbx-btn-primary w-fit disabled:cursor-progress disabled:opacity-70"
                 disabled={genieLoading}
               >
-                {genieLoading ? "Querying..." : "Send"}
+                {genieLoading ? "Loading..." : "Send"}
               </button>
             </form>
             {genieLoading ? (
-              <div className="dbx-loading dbx-divider mt-2 pt-2" role="status" aria-label="Querying Databricks chat">
-                <span className="dbx-loading-bar w-5/6" />
-                <span className="dbx-loading-bar w-2/3" />
-                {[0, 1, 2].map((idx) => (
-                  <div key={`chat-loading-${idx}`} className="dbx-loading-row">
-                    <span className="dbx-loading-bar w-4/5" />
-                    <span className="dbx-loading-bar w-12" />
-                  </div>
-                ))}
-              </div>
+              <PanelLoading label="Querying Databricks chat" rows={3} className="dbx-divider mt-2 pt-2" />
             ) : genieAnswer ? (
               <div className="dbx-divider mt-2 pt-2">
                 <p>{genieAnswer}</p>

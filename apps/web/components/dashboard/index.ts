@@ -9,6 +9,7 @@ export * from "@/components/dashboard/HeroSection";
 export * from "@/components/dashboard/KpiGrid";
 export * from "@/components/dashboard/LayerSelector";
 export * from "@/components/dashboard/OciPanel";
+export * from "@/components/dashboard/PanelLoading";
 export * from "@/components/dashboard/PriorityRankingPanel";
 export * from "@/components/dashboard/ProjectOutliersPanel";
 export * from "@/components/dashboard/SimulationPanel";

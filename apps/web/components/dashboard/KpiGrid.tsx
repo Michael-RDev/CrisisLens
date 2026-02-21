@@ -36,7 +36,7 @@ export function KpiGrid({ summary, overview }: KpiGridProps) {
         <p className="my-2 text-3xl font-bold">{overview?.top_overlooked[0]?.iso3 ?? "—"}</p>
         <small className="text-[var(--dbx-text-muted)]">
           OCI {overview?.top_overlooked[0]?.oci_score?.toFixed(1) ?? "—"} •{" "}
-          {overview?.top_overlooked[0]?.country ?? "Loading"}
+          {overview?.top_overlooked[0]?.country ?? "—"}
         </small>
       </article>
     </motion.section>

@@ -1,4 +1,5 @@
 import { SimulationResponse } from "@/lib/api/crisiswatch";
+import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
 type SimulationPanelProps = {
   selectedIso3: string | null;
@@ -38,15 +39,11 @@ export function SimulationPanel({
           onClick={onSimulate}
           disabled={simulationLoading || !selectedIso3}
         >
-          {simulationLoading ? "Simulating..." : `Simulate for ${selectedIso3 ?? "country"}`}
+          {simulationLoading ? "Loading..." : `Simulate for ${selectedIso3 ?? "country"}`}
         </button>
       </div>
       {simulationLoading ? (
-        <div className="dbx-loading dbx-divider mt-1 pt-2" role="status" aria-label="Running funding simulation">
-          <span className="dbx-loading-bar w-3/4" />
-          <span className="dbx-loading-bar w-2/3" />
-          <span className="dbx-loading-bar w-1/2" />
-        </div>
+        <PanelLoading label="Running funding simulation" rows={1} className="dbx-divider mt-1 pt-2" />
       ) : simulation ? (
         <div className="dbx-divider mt-1 pt-2">
           <p>

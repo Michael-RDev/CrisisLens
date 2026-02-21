@@ -3,10 +3,17 @@ import { motion } from "framer-motion";
 import { LayerMode, CountryMetrics } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
 import { layerConfig } from "@/components/dashboard/layer-config";
+import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
 const Globe3D = dynamic(() => import("@/components/Globe3D"), {
   ssr: false,
-  loading: () => <div className="globe-canvas globe-loading">Loading 3D globe...</div>
+  loading: () => (
+    <div className="globe-canvas globe-loading">
+      <div className="w-full max-w-[460px]">
+        <PanelLoading label="Loading 3D globe" rows={3} />
+      </div>
+    </div>
+  )
 });
 
 type GlobePanelProps = {

@@ -103,7 +103,7 @@ Open `http://localhost:3000`.
 - `npm run typecheck` runs TypeScript checks.
 - `npm run test:unit` runs Vitest unit tests.
 - `npm run test:e2e` runs Playwright end-to-end tests.
-- `npm run test:e2e:ui` runs only dashboard Playwright UI tests.
+- `npm run test:e2e:ui` runs landing + dashboard Playwright UI tests.
 - `npm run test:e2e:api` runs only Playwright API contract tests.
 - `npm run playwright:install` installs the Playwright Chromium browser.
 - `npm run build` builds production assets.
@@ -114,7 +114,8 @@ Playwright note: e2e scripts use `npx playwright ...`; if Playwright is not inst
 
 ### Key Paths
 
-- `app/page.tsx`: dashboard entry page.
+- `app/page.tsx`: landing page with header/footer/CTA.
+- `app/dashboard/page.tsx`: dashboard entry page.
 - `components/GlobeDashboard.tsx`: command-center dashboard and integration panels.
 - `components/Globe3D.tsx`: Three.js globe renderer (orbit, zoom, click/hover select, pulse highlights).
 - `lib/api/crisiswatch.ts`: typed frontend API client for REST + WebSocket.

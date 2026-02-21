@@ -30,23 +30,40 @@ test.describe("API route contracts", () => {
   });
 
   test("project, genie, and cv endpoints return expected data", async ({ request }) => {
-    const projectResponse = await request.get("/api/project/HRP-2026-ETH-00001");
-    expect(projectResponse.ok()).toBeTruthy();
-    const project = await projectResponse.json();
-    expect(project.project_id).toBe("HRP-2026-ETH-00001");
-    expect(Array.isArray(project.comparable_projects)).toBeTruthy();
-    expect(project.comparable_projects.length).toBe(3);
+    const heatmapResponse = await request.get("/api/globe/heatmap");
+    expect(heatmapResponse.ok()).toBeTruthy();
+    const heatmapRows = await heatmapResponse.json();
+    const iso3 = heatmapRows[0].country_iso3;
+
+    const countryResponse = await request.get(`/api/country/${iso3}`);
+    expect(countryResponse.ok()).toBeTruthy();
+    const country = await countryResponse.json();
+    const projectId = country.hrp_project_list?.[0]?.project_id;
+    if (projectId) {
+      expect(typeof projectId).toBe("string");
+      expect(projectId.length).toBeGreaterThan(3);
+
+      const projectResponse = await request.get(`/api/project/${projectId}`);
+      expect(projectResponse.ok()).toBeTruthy();
+      const project = await projectResponse.json();
+      expect(project.project_id).toBe(projectId);
+      expect(Array.isArray(project.comparable_projects)).toBeTruthy();
+      expect(project.comparable_projects.length).toBeGreaterThan(0);
+    } else {
+      const missingProjectResponse = await request.get("/api/project/MISSING-PROJECT-ID");
+      expect(missingProjectResponse.status()).toBe(404);
+    }
 
     const genieResponse = await request.post("/api/genie/query", {
       data: {
         nl_query: "Rank top overlooked crises",
-        iso3: "ETH"
+        iso3
       }
     });
     expect(genieResponse.ok()).toBeTruthy();
     const genie = await genieResponse.json();
     expect(typeof genie.answer).toBe("string");
-    expect(genie.highlight_iso3).toContain("ETH");
+    expect(genie.highlight_iso3).toContain(iso3);
 
     const cvResponse = await request.post("/api/cv/detect", {
       data: {

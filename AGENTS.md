@@ -14,6 +14,13 @@ This file gives Codex (and other coding agents) a source-of-truth guide for work
   - `npm run test:unit`
   - `npm run test:e2e` (or targeted `test:e2e:ui` / `test:e2e:api` while iterating)
 
+## Commit Convention
+- Use Conventional Commits for all git commit messages.
+- Format: `<type>(<optional scope>): <description>`
+- Common types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `build`, `ci`.
+- Keep the subject concise and imperative (example: `feat(landing): add hero CTA and footer`).
+- If a change is breaking, include `!` after type/scope and note `BREAKING CHANGE:` in the body.
+
 ## Repository Snapshot
 - Project: `CrisisLens`
 - Frontend: Next.js 14 (App Router), React 18, TypeScript, Three.js via `react-globe.gl`
@@ -88,6 +95,7 @@ and hit `/` and `/health`.
   - `tests/lib/cv-globe-bridge.test.ts`
   - `tests/lib/globe-picking.test.ts`
 - Playwright e2e tests live in:
+  - `tests/e2e/landing.spec.js`
   - `tests/e2e/dashboard.spec.js`
   - `tests/e2e/api-routes.spec.js`
 - Playwright config: `playwright.config.mjs`
@@ -97,7 +105,8 @@ and hit `/` and `/health`.
 - TypeScript config: `tsconfig.json` (strict mode enabled)
 
 ## Architecture Map (High-Value Files)
-- App shell: `app/layout.tsx`, `app/page.tsx`
+- App shell + landing route (`/`): `app/layout.tsx`, `app/page.tsx`
+- Dashboard route (`/dashboard`): `app/dashboard/page.tsx`
 - Main dashboard UI: `components/GlobeDashboard.tsx`
 - 3D globe + hand controls: `components/Globe3D.tsx`
 - API route stubs:

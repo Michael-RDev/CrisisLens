@@ -16,6 +16,13 @@ export async function loadSnapshot(): Promise<DataSnapshot> {
 
 export async function loadProjectProfiles(): Promise<ProjectProfile[]> {
   const filePath = path.join(process.cwd(), "public", "data", "project-profiles.json");
-  const raw = await fs.readFile(filePath, "utf-8");
-  return JSON.parse(raw) as ProjectProfile[];
+  try {
+    const raw = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(raw) as ProjectProfile[];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
 }

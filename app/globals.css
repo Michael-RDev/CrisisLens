@@ -21,6 +21,135 @@ body {
   min-height: 100vh;
 }
 
+.landing-shell {
+  min-height: 100vh;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.2rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 1rem;
+}
+
+.landing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #10202d;
+}
+
+.landing-brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.landing-header nav {
+  display: flex;
+  gap: 0.9rem;
+}
+
+.landing-header a {
+  color: #d5e6f2;
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.landing-header a:hover {
+  color: #f5b768;
+}
+
+.landing-hero {
+  border: 1px solid #335066;
+  border-radius: 16px;
+  background: radial-gradient(circle at 20% 10%, #18384e 0%, #10202d 38%, #0b1620 100%);
+  padding: clamp(1.2rem, 3vw, 2.2rem);
+}
+
+.landing-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+  color: #9cc0d8;
+}
+
+.landing-hero h1 {
+  margin: 0.32rem 0 0.45rem;
+  font-size: clamp(2.2rem, 7vw, 4rem);
+}
+
+.landing-copy {
+  margin: 0;
+  max-width: 60ch;
+  color: #bfd3e2;
+}
+
+.landing-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.landing-primary-cta,
+.landing-secondary-cta {
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 0.58rem 0.92rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.landing-primary-cta {
+  color: #0b1620;
+  background: #f2a73d;
+  border: 1px solid #f2a73d;
+}
+
+.landing-secondary-cta {
+  color: #d5e6f2;
+  background: transparent;
+  border: 1px solid #476880;
+}
+
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.landing-features article {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: #10202d;
+}
+
+.landing-features h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.landing-features p {
+  margin: 0.45rem 0 0;
+  color: #adc4d5;
+  font-size: 0.9rem;
+}
+
+.landing-footer {
+  border-top: 1px solid #325067;
+  padding-top: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #9cb5c7;
+  font-size: 0.86rem;
+}
+
 .page-shell {
   max-width: 1460px;
   margin: 0 auto;
@@ -525,6 +654,14 @@ body {
 }
 
 @media (max-width: 1080px) {
+  .landing-features {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-footer {
+    flex-direction: column;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

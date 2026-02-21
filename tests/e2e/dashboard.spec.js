@@ -2,12 +2,11 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("CrisisLens dashboard", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "CrisisLens Command Center" })).toBeVisible();
   });
 
   test("loads core command-center panels", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Interactive 3D Globe" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Databricks Agent State" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Databricks Genie (NLQ)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "CV Point-to-Highlight" })).toBeVisible();

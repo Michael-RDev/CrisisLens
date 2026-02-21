@@ -64,6 +64,67 @@
     --dbx-globe-hint-text: #7a4a33;
   }
 
+  :root[data-theme="dark"] {
+    --cl-bg: #0f172a;
+    --cl-surface: #111b2e;
+    --cl-surface-elevated: #162235;
+    --cl-border: #2f3f58;
+    --cl-border-soft: #344965;
+    --cl-text: #e5edf7;
+    --cl-text-muted: #94a3b8;
+    --cl-accent: #f97316;
+    --cl-accent-strong: #fb923c;
+
+    --dbx-bg: #0b1220;
+    --dbx-surface: #111b2e;
+    --dbx-surface-raised: #152235;
+    --dbx-surface-strong: #1b2a40;
+    --dbx-border: #2f3f58;
+    --dbx-border-soft: #344965;
+    --dbx-text: #e6eef8;
+    --dbx-text-muted: #94a3b8;
+    --dbx-accent: #f97316;
+    --dbx-accent-soft: #fb923c;
+    --dbx-cyan: #38bdf8;
+    --dbx-tab-border: #3c506d;
+    --dbx-tab-bg: #111b2e;
+    --dbx-tab-text: #d5e4f3;
+    --dbx-tab-active-bg: rgba(249, 115, 22, 0.18);
+    --dbx-tab-active-text: #ffe8de;
+    --dbx-chip-bg: #0f1a2b;
+    --dbx-chip-border: #32465f;
+    --dbx-input-border: #39506a;
+    --dbx-input-bg: #0d1625;
+    --dbx-btn-secondary-border: #435d77;
+    --dbx-btn-secondary-bg: #132237;
+    --dbx-btn-secondary-text: #e3effa;
+    --dbx-list-border: #35516b;
+    --dbx-list-bg: #0e1a2a;
+    --dbx-scroll-thumb: #4b607e;
+    --dbx-scroll-track: #101a2b;
+    --dbx-chat-fab-bg: #2a1a14;
+    --dbx-chat-fab-text: #ffe3d8;
+    --dbx-modal-backdrop: rgba(3, 8, 14, 0.75);
+
+    --dbx-globe-frame-border: #2f4058;
+    --dbx-globe-frame-bg: #0a121a;
+    --dbx-globe-overlay-bg: rgba(11, 18, 27, 0.93);
+    --dbx-globe-overlay-border: #324355;
+    --dbx-globe-overlay-text: #b1c2d2;
+    --dbx-globe-toggle-border: #f97316;
+    --dbx-globe-toggle-bg: #251913;
+    --dbx-globe-toggle-text: #ffe3d8;
+    --dbx-globe-mini-btn-border: #4b6179;
+    --dbx-globe-mini-btn-bg: #132231;
+    --dbx-globe-mini-btn-text: #d6e5f1;
+    --dbx-globe-cursor-border: #ff7b53;
+    --dbx-globe-cursor-fill: rgba(255, 95, 46, 0.24);
+    --dbx-globe-cursor-shadow: rgba(255, 184, 70, 0.12);
+    --dbx-globe-hint-bg: rgba(8, 14, 20, 0.84);
+    --dbx-globe-hint-border: #324557;
+    --dbx-globe-hint-text: #c4d7e7;
+  }
+
   html,
   body {
     @apply m-0 min-h-full font-['IBM_Plex_Sans','Avenir_Next','Segoe_UI',sans-serif];

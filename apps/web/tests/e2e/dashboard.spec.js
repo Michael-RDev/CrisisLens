@@ -17,6 +17,7 @@ test.describe("CrisisLens dashboard", () => {
   });
 
   test("switches layer mode and updates ranking title", async ({ page }) => {
+    await page.getByRole("tab", { name: "Priority View" }).click();
     await page.getByRole("button", { name: "Funding Gap" }).click();
     await expect(page.getByRole("heading", { name: "Priority Ranking (Funding Gap)" })).toBeVisible();
 
@@ -42,6 +43,7 @@ test.describe("CrisisLens dashboard", () => {
     expect(targetIso.length).toBe(3);
 
     await rankingButtons.nth(1).click();
+    await page.getByRole("tab", { name: "Country Ops" }).click();
     await expect(page.locator(".country-card h2")).toContainText(targetIso);
   });
 

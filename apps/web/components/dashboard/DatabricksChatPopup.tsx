@@ -39,28 +39,30 @@ export function DatabricksChatPopup({
     <>
       <button
         type="button"
-        className="dbx-chat-fab"
+        className="fixed bottom-5 right-5 z-20 rounded-full border border-[var(--dbx-accent)] bg-[var(--dbx-chat-fab-bg)] px-4 py-2 text-sm font-semibold text-[var(--dbx-chat-fab-text)] shadow-lg transition-colors hover:border-[var(--dbx-accent-soft)] hover:bg-[var(--dbx-accent-soft)]"
         onClick={() => setOpen(true)}
       >
         Open Databricks Chat
       </button>
 
       {open ? (
-        <div className="dbx-modal-backdrop">
+        <div className="fixed inset-0 z-30 grid place-items-center bg-[var(--dbx-modal-backdrop)] p-4">
           <section
-            className="dbx-modal"
+            className="w-full max-w-[680px] rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4"
             role="dialog"
             aria-modal="true"
             aria-label="Databricks Chat"
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
-                <p className="dbx-kicker">Databricks Genie</p>
-                <h2 className="dbx-title">Databricks Chat</h2>
+                <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+                  Databricks Genie
+                </p>
+                <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Databricks Chat</h2>
               </div>
               <button
                 type="button"
-                className="dbx-btn-secondary px-2 py-1 text-xs"
+                className="inline-flex items-center justify-center rounded-[10px] border border-[var(--dbx-btn-secondary-border)] bg-[var(--dbx-btn-secondary-bg)] px-2 py-1 text-xs font-semibold text-[var(--dbx-btn-secondary-text)] transition-colors hover:border-[var(--dbx-cyan)] hover:text-[var(--dbx-text)]"
                 onClick={() => setOpen(false)}
               >
                 Close
@@ -71,7 +73,7 @@ export function DatabricksChatPopup({
                 <button
                   key={template}
                   type="button"
-                  className="dbx-chip"
+                  className="rounded-full border border-[var(--dbx-chip-border)] bg-[var(--dbx-chip-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.08em] text-[var(--dbx-text-muted)]"
                   onClick={() => onSetQuestion(template)}
                 >
                   Use Template
@@ -80,7 +82,7 @@ export function DatabricksChatPopup({
             </div>
             <form onSubmit={onSubmit} className="grid gap-2">
               <textarea
-                className="dbx-textarea"
+                className="w-full resize-y rounded-[10px] border border-[var(--dbx-input-border)] bg-[var(--dbx-input-bg)] px-3 py-2 text-sm text-[var(--dbx-text)]"
                 value={question}
                 onChange={(event) => onSetQuestion(event.target.value)}
                 rows={3}
@@ -88,18 +90,18 @@ export function DatabricksChatPopup({
               />
               <button
                 type="submit"
-                className="dbx-btn-primary w-fit disabled:cursor-progress disabled:opacity-70"
+                className="inline-flex w-fit items-center justify-center rounded-[10px] border border-[var(--dbx-accent)] bg-[var(--dbx-accent)] px-3 py-2 text-sm font-semibold text-[#140a08] transition-colors hover:border-[var(--dbx-accent-soft)] hover:bg-[var(--dbx-accent-soft)] disabled:cursor-progress disabled:opacity-70"
                 disabled={genieLoading}
               >
                 {genieLoading ? "Loading..." : "Send"}
               </button>
             </form>
             {genieLoading ? (
-              <PanelLoading label="Querying Databricks chat" rows={3} className="dbx-divider mt-2 pt-2" />
+              <PanelLoading label="Querying Databricks chat" rows={3} className="mt-2 border-t border-dashed border-[var(--dbx-border)] pt-2" />
             ) : genieAnswer ? (
-              <div className="dbx-divider mt-2 pt-2">
+              <div className="mt-2 border-t border-dashed border-[var(--dbx-border)] pt-2">
                 <p>{genieAnswer}</p>
-                <p className="dbx-subtitle mt-2">
+                <p className="m-0 mt-2 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
                   Source: {genieSource ?? "mock"} • Globe highlights sync from query results.
                 </p>
                 {genieResults.length > 0 ? (
@@ -107,7 +109,7 @@ export function DatabricksChatPopup({
                     {genieResults.slice(0, 3).map((row) => (
                       <li
                         key={`${row.iso3}-${row.metric}`}
-                        className="dbx-list-row"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm"
                       >
                         <span className="min-w-0 break-words">
                           {displayCountry(row.iso3)} • {row.metric}

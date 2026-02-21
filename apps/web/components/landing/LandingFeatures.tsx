@@ -33,10 +33,12 @@ export function LandingFeatures() {
   ];
 
   return (
-    <section className="landing-card" id="features">
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="features">
       <div className="mb-4">
-        <h2 className="landing-section-title">What CrisisLens Gives You</h2>
-        <p className="landing-body mt-1">
+        <h2 className="m-0 text-2xl font-semibold text-[var(--cl-text)] sm:text-3xl">
+          What CrisisLens Gives You
+        </h2>
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
           The platform is designed to move teams from signal detection to action with explainable outputs,
           not just static dashboards.
         </p>

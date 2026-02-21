@@ -12,7 +12,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" data-theme="dark">
-      <body className="app-body">{children}</body>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

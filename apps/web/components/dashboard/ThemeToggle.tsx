@@ -32,7 +32,11 @@ export function ThemeToggle() {
   }
 
   return (
-    <button type="button" className="dbx-btn-secondary" onClick={toggleTheme}>
+    <button
+      type="button"
+      className="inline-flex items-center justify-center rounded-[10px] border border-[var(--dbx-btn-secondary-border)] bg-[var(--dbx-btn-secondary-bg)] px-3 py-2 text-sm font-semibold text-[var(--dbx-btn-secondary-text)] transition-colors hover:border-[var(--dbx-cyan)] hover:text-[var(--dbx-text)]"
+      onClick={toggleTheme}
+    >
       Theme: {theme === "dark" ? "Dark" : "Light"}
     </button>
   );

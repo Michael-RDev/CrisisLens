@@ -1,11 +1,18 @@
 import { allCountriesSorted, countryByIso3 } from "@/lib/countries";
 import { RiskBand } from "@/lib/types";
 
+export const riskClassByBand: Record<RiskBand, string> = {
+  low: "inline-block w-fit rounded-full border border-[var(--chip-low-border)] bg-[var(--chip-low-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-low-text)]",
+  moderate:
+    "inline-block w-fit rounded-full border border-[var(--chip-moderate-border)] bg-[var(--chip-moderate-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-moderate-text)]",
+  high: "inline-block w-fit rounded-full border border-[var(--chip-high-border)] bg-[var(--chip-high-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-high-text)]",
+  critical:
+    "inline-block w-fit rounded-full border border-[var(--chip-critical-border)] bg-[var(--chip-critical-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-critical-text)]"
+};
+
 export function getRiskClass(riskBand?: RiskBand): string {
-  if (riskBand === "critical") return "chip-critical";
-  if (riskBand === "high") return "chip-high";
-  if (riskBand === "moderate") return "chip-moderate";
-  return "chip-low";
+  if (!riskBand) return riskClassByBand.low;
+  return riskClassByBand[riskBand];
 }
 
 export function getOutlierLabel(flag: "low" | "high" | "none"): string {

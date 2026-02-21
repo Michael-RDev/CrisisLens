@@ -341,22 +341,26 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }
 
   return (
-    <main className="dbx-workspace max-w-[1560px]">
+    <main className="mx-auto w-full max-w-[1560px] bg-[var(--dbx-bg)] px-4 pb-5 pt-4 sm:px-5 sm:pb-6">
       <HeroSection generatedAt={generatedAt} />
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] 2xl:items-start">
         <div ref={leftStackRef} className="grid min-w-0 content-start gap-3">
           <motion.section
-            className="dbx-panel"
+            className="rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)]"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.36, ease: "easeOut" }}
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="dbx-kicker">Display Layer</p>
-                <h2 className="dbx-title">Signal Overlay</h2>
-                <p className="dbx-subtitle mt-1">Choose the metric used to color the globe and rankings.</p>
+                <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+                  Display Layer
+                </p>
+                <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Signal Overlay</h2>
+                <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
+                  Choose the metric used to color the globe and rankings.
+                </p>
               </div>
             </div>
             <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
@@ -377,7 +381,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         </div>
 
         <motion.aside
-          className="dbx-panel flex min-h-0 min-w-0 flex-col overflow-hidden"
+          className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)]"
           style={
             workspacePanelHeight !== null
               ? {
@@ -390,14 +394,20 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.36, ease: "easeOut" }}
         >
-          <p className="dbx-kicker">Decision Workspace</p>
-          <h2 className="dbx-title">Operations Panels</h2>
+          <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+            Decision Workspace
+          </p>
+          <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Operations Panels</h2>
           <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               role="tab"
               aria-selected={activePanel === "country"}
-              className={`dbx-tab ${activePanel === "country" ? "dbx-tab-active" : ""}`}
+              className={`whitespace-nowrap rounded-full border border-[var(--dbx-tab-border)] bg-[var(--dbx-tab-bg)] px-3 py-1 text-sm text-[var(--dbx-tab-text)] transition-colors ${
+                activePanel === "country"
+                  ? "border-[var(--dbx-accent)] bg-[var(--dbx-tab-active-bg)] text-[var(--dbx-tab-active-text)]"
+                  : ""
+              }`}
               onClick={() => setActivePanel("country")}
             >
               Country Ops
@@ -406,7 +416,11 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               type="button"
               role="tab"
               aria-selected={activePanel === "priority"}
-              className={`dbx-tab ${activePanel === "priority" ? "dbx-tab-active" : ""}`}
+              className={`whitespace-nowrap rounded-full border border-[var(--dbx-tab-border)] bg-[var(--dbx-tab-bg)] px-3 py-1 text-sm text-[var(--dbx-tab-text)] transition-colors ${
+                activePanel === "priority"
+                  ? "border-[var(--dbx-accent)] bg-[var(--dbx-tab-active-bg)] text-[var(--dbx-tab-active-text)]"
+                  : ""
+              }`}
               onClick={() => setActivePanel("priority")}
             >
               Priority View
@@ -415,7 +429,11 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               type="button"
               role="tab"
               aria-selected={activePanel === "simulation"}
-              className={`dbx-tab ${activePanel === "simulation" ? "dbx-tab-active" : ""}`}
+              className={`whitespace-nowrap rounded-full border border-[var(--dbx-tab-border)] bg-[var(--dbx-tab-bg)] px-3 py-1 text-sm text-[var(--dbx-tab-text)] transition-colors ${
+                activePanel === "simulation"
+                  ? "border-[var(--dbx-accent)] bg-[var(--dbx-tab-active-bg)] text-[var(--dbx-tab-active-text)]"
+                  : ""
+              }`}
               onClick={() => setActivePanel("simulation")}
             >
               Simulation
@@ -424,24 +442,30 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
           <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-strong)] p-3 sm:grid-cols-3">
             <div className="min-w-0">
-              <p className="dbx-kicker">Focus Country</p>
+              <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+                Focus Country
+              </p>
               <p className="m-0 pt-1 text-sm font-semibold break-words">{selectedLabel}</p>
             </div>
             <div className="min-w-0">
-              <p className="dbx-kicker">Active Layer</p>
+              <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+                Active Layer
+              </p>
               <p className="m-0 pt-1 text-sm font-semibold">
                 {layerConfig[layerMode].label}
                 {selectedLayerValue !== null ? ` • ${selectedLayerValue.toFixed(1)}` : ""}
               </p>
             </div>
             <div className="min-w-0">
-              <p className="dbx-kicker">Highlights</p>
+              <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+                Highlights
+              </p>
               <p className="m-0 pt-1 text-sm font-semibold">{highlightedIso3.length} active</p>
             </div>
           </div>
 
           <div
-            className="dbx-scroll mt-3 grid min-w-0 flex-1 content-start gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
+            className="[scrollbar-width:thin] [scrollbar-color:var(--dbx-scroll-thumb)_var(--dbx-scroll-track)] mt-3 grid min-w-0 flex-1 content-start gap-3 overflow-x-hidden 2xl:min-h-0 2xl:overflow-y-auto"
             role="tabpanel"
           >
             {activePanel === "country" ? (
@@ -473,7 +497,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
             {activePanel === "priority" ? (
               <div className="grid min-w-0 gap-3">
-                <h3 className="dbx-title text-lg">Priority Stack</h3>
+                <h3 className="m-0 text-lg font-semibold text-[var(--dbx-text)]">Priority Stack</h3>
                 <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
                   <div className="min-w-0">
                     <PriorityRankingPanel
@@ -502,7 +526,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
             {activePanel === "simulation" ? (
               <>
-                <h3 className="dbx-title text-lg">Response Runbook</h3>
+                <h3 className="m-0 text-lg font-semibold text-[var(--dbx-text)]">Response Runbook</h3>
                 <SimulationPanel
                   selectedIso3={selectedIso3}
                   allocationUsd={allocationUsd}

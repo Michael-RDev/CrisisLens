@@ -22,20 +22,22 @@ export function CvPanel({
 
   return (
     <motion.article
-      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <p className="dbx-kicker">Computer Vision Bridge</p>
-      <h2 className="dbx-title">CV Point-to-Highlight</h2>
-      <p className="dbx-subtitle mt-2">
+      <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+        Computer Vision Bridge
+      </p>
+      <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">CV Point-to-Highlight</h2>
+      <p className="m-0 mt-2 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
         Gesture control is enabled on the globe. CV endpoint remains available for external camera
         streams and country auto-select integration.
       </p>
       <div className="grid gap-2">
         <textarea
-          className="dbx-textarea"
+          className="w-full resize-y rounded-[10px] border border-[var(--dbx-input-border)] bg-[var(--dbx-input-bg)] px-3 py-2 text-sm text-[var(--dbx-text)]"
           value={cvFrameInput}
           onChange={(event) => onCvInputChange(event.target.value)}
           rows={3}
@@ -43,7 +45,7 @@ export function CvPanel({
         />
         <button
           type="button"
-          className="dbx-btn-secondary w-fit disabled:cursor-progress disabled:opacity-70"
+          className="inline-flex w-fit items-center justify-center rounded-[10px] border border-[var(--dbx-btn-secondary-border)] bg-[var(--dbx-btn-secondary-bg)] px-3 py-2 text-sm font-semibold text-[var(--dbx-btn-secondary-text)] transition-colors hover:border-[var(--dbx-cyan)] hover:text-[var(--dbx-text)] disabled:cursor-progress disabled:opacity-70"
           onClick={onDetect}
           disabled={cvLoading}
         >
@@ -53,16 +55,16 @@ export function CvPanel({
       {cvLoading ? (
         <PanelLoading label="Detecting country from CV input" rows={1} />
       ) : cvDetection ? (
-        <div className="dbx-divider mt-1 pt-2">
+        <div className="mt-1 border-t border-dashed border-[var(--dbx-border)] pt-2">
           <p>
             Detected: <strong>{detectedCountryName}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
           </p>
-          <p className="dbx-subtitle mt-1">
+          <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
             Mock frame timestamp: {new Date(cvDetection.frameTimestamp).toLocaleTimeString()}
           </p>
         </div>
       ) : (
-        <p className="dbx-subtitle mt-1">No detection yet.</p>
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--dbx-text-muted)]">No detection yet.</p>
       )}
     </motion.article>
   );

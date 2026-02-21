@@ -20,12 +20,12 @@ export function CountryPanel({
 
   return (
     <motion.article
-      className="country-card dbx-panel-raised min-w-0 overflow-hidden"
+      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <h2 className="dbx-title break-words">
+      <h2 className="m-0 break-words text-xl font-semibold text-[var(--dbx-text)]">
         {selected
           ? selected.country
           : selectedCountryMeta
@@ -34,23 +34,23 @@ export function CountryPanel({
       </h2>
       {selected && selectedDerived ? (
         <dl className="mt-2 grid gap-2">
-          <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
             <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Overlooked Index (OCI)</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedOci?.totalScore?.toFixed(2) ?? "—"}</dd>
           </div>
-          <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
             <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Severity Score</dt>
             <dd className="m-0 shrink-0 font-bold">{selected.severityScore.toFixed(1)}</dd>
           </div>
-          <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
             <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">People In Need %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.inNeedPct.toFixed(1)}%</dd>
           </div>
-          <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
             <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Coverage %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.coveragePct.toFixed(1)}%</dd>
           </div>
-          <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
             <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Funding Gap %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
           </div>
@@ -67,19 +67,19 @@ export function CountryPanel({
       <h3 className="mb-2 mt-4 text-sm text-[var(--dbx-text-muted)]">OCI Component Breakdown</h3>
       {selectedOci ? (
         <ul className="grid list-none gap-1.5 p-0">
-          <li className="dbx-list-row">
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
             <span className="min-w-0 break-words">Severity Component</span>
             <strong className="shrink-0">{selectedOci.severityComponent.toFixed(1)}</strong>
           </li>
-          <li className="dbx-list-row">
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
             <span className="min-w-0 break-words">In-Need Rate Component</span>
             <strong className="shrink-0">{selectedOci.inNeedRateComponent.toFixed(1)}</strong>
           </li>
-          <li className="dbx-list-row">
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
             <span className="min-w-0 break-words">Funding Gap Component</span>
             <strong className="shrink-0">{selectedOci.fundingGapComponent.toFixed(1)}</strong>
           </li>
-          <li className="dbx-list-row">
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
             <span className="min-w-0 break-words">Coverage Mismatch Component</span>
             <strong className="shrink-0">{selectedOci.coverageMismatchComponent.toFixed(1)}</strong>
           </li>
@@ -96,7 +96,7 @@ export function CountryPanel({
           clusterBreakdown.slice(0, 6).map((cluster) => (
             <li
               key={cluster.cluster_name}
-              className="dbx-list-row"
+              className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm"
             >
               <span className="min-w-0 break-words">{cluster.cluster_name}</span>
               <strong className="shrink-0">{cluster.bbr_z_score.toFixed(2)} z</strong>

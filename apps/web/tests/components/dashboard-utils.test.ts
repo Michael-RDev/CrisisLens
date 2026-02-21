@@ -3,15 +3,16 @@ import {
   getCountrySuggestions,
   getOutlierLabel,
   getRiskClass,
+  riskClassByBand,
   resolveJumpToCountryIso3
 } from "@/components/dashboard/dashboard-utils";
 
 describe("dashboard utils", () => {
   it("maps risk band to css class", () => {
-    expect(getRiskClass("critical")).toBe("chip-critical");
-    expect(getRiskClass("high")).toBe("chip-high");
-    expect(getRiskClass("moderate")).toBe("chip-moderate");
-    expect(getRiskClass("low")).toBe("chip-low");
+    expect(getRiskClass("critical")).toBe(riskClassByBand.critical);
+    expect(getRiskClass("high")).toBe(riskClassByBand.high);
+    expect(getRiskClass("moderate")).toBe(riskClassByBand.moderate);
+    expect(getRiskClass("low")).toBe(riskClassByBand.low);
   });
 
   it("maps outlier flag to user label", () => {

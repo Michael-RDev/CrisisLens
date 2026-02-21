@@ -116,16 +116,18 @@ export function LandingGlobe() {
   );
 
   return (
-    <section className="landing-card" id="monitor">
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="monitor">
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <h2 className="m-0 text-2xl font-semibold sm:text-3xl">Live Global Pulse</h2>
-          <p className="landing-body mt-1">
+          <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
             Interactive watchboard for locating high-risk and underfunded contexts before you open the
             decision panels.
           </p>
         </div>
-        <span className="landing-chip">Signal Preview</span>
+        <span className="rounded-full border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] px-3 py-1 text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">
+          Signal Preview
+        </span>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
@@ -164,7 +166,7 @@ export function LandingGlobe() {
             </div>
           )}
         </div>
-        <aside className="landing-card-muted p-4">
+        <aside className="rounded-2xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] p-4">
           <h3 className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">
             Sample priority reads
           </h3>

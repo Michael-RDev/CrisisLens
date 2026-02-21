@@ -45,18 +45,20 @@ export function GlobePanel({
 }: GlobePanelProps) {
   return (
     <motion.article
-      className="dbx-panel globe-card xl:row-span-2"
+      className="rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)] xl:row-span-2"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <div className="card-header-row flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="dbx-kicker">Realtime Geospatial Layer</p>
-          <h2 className="dbx-title">Live Global Pulse</h2>
+          <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+            Realtime Geospatial Layer
+          </p>
+          <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Live Global Pulse</h2>
         </div>
         <input
-          className="dbx-input lg:min-w-[260px]"
+          className="min-w-0 rounded-[10px] border border-[var(--dbx-input-border)] bg-[var(--dbx-input-bg)] px-3 py-2 text-sm text-[var(--dbx-text)] lg:min-w-[260px]"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Jump to country (example: Sudan)"
@@ -70,7 +72,7 @@ export function GlobePanel({
         </datalist>
         <button
           type="button"
-          className="dbx-btn-secondary"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--dbx-btn-secondary-border)] bg-[var(--dbx-btn-secondary-bg)] px-3 py-2 text-sm font-semibold text-[var(--dbx-btn-secondary-text)] transition-colors hover:border-[var(--dbx-cyan)] hover:text-[var(--dbx-text)]"
           onClick={onJump}
         >
           Jump
@@ -84,7 +86,7 @@ export function GlobePanel({
         onSelect={onSelectIso3}
         onHover={onHoverIso3}
       />
-      <div className="dbx-divider mt-2 pt-2 text-sm text-[var(--dbx-text-muted)]">
+      <div className="mt-2 border-t border-dashed border-[var(--dbx-border)] pt-2 text-sm text-[var(--dbx-text-muted)]">
         <p>{hoverText}</p>
       </div>
     </motion.article>

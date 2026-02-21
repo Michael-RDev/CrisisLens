@@ -7,10 +7,12 @@ const footprintStats = [
 
 export function LandingFootprint() {
   return (
-    <section className="landing-card" id="footprint">
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="footprint">
       <div className="mb-4">
-        <h2 className="landing-section-title">Platform Footprint</h2>
-        <p className="landing-body mt-1">
+        <h2 className="m-0 text-2xl font-semibold text-[var(--cl-text)] sm:text-3xl">
+          Platform Footprint
+        </h2>
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
           Quick context on the operating scope so teams know what the current model cycle includes.
         </p>
       </div>

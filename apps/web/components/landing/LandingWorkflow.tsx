@@ -18,10 +18,12 @@ const workflowSteps = [
 
 export function LandingWorkflow() {
   return (
-    <section className="landing-card" id="workflow">
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="workflow">
       <div className="mb-4">
-        <h2 className="landing-section-title">From Alert to Action</h2>
-        <p className="landing-body mt-1">
+        <h2 className="m-0 text-2xl font-semibold text-[var(--cl-text)] sm:text-3xl">
+          From Alert to Action
+        </h2>
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
           This is the core operating loop: detect risk, explain priority, and simulate intervention before
           committing funding decisions.
         </p>

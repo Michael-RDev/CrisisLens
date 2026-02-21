@@ -15,22 +15,30 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
 
   return (
     <motion.article
-      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <p className="dbx-kicker">Agent Runtime</p>
-      <h2 className="dbx-title">Databricks Agent State</h2>
-      {selectedCountryName ? <p className="dbx-subtitle mt-1">Country scope: {selectedCountryName}</p> : null}
+      <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+        Agent Runtime
+      </p>
+      <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Databricks Agent State</h2>
+      {selectedCountryName ? (
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
+          Country scope: {selectedCountryName}
+        </p>
+      ) : null}
       {agentLoading ? <PanelLoading label="Loading agent state" rows={2} /> : null}
       {!agentLoading && agentState ? (
         <>
           <p className={getRiskClass(agentState.riskBand)}>Risk band: {agentState.riskBand ?? "n/a"}</p>
-          <p className="dbx-subtitle mt-1">
+          <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
             Confidence: {agentState.confidence ? `${(agentState.confidence * 100).toFixed(0)}%` : "n/a"}
           </p>
-          <p className="dbx-subtitle mt-1 break-words">{agentState.narrative}</p>
+          <p className="m-0 mt-1 break-words text-sm leading-relaxed text-[var(--dbx-text-muted)]">
+            {agentState.narrative}
+          </p>
         </>
       ) : null}
       <h3 className="mb-1 mt-3 text-sm text-[var(--dbx-text-muted)]">Mock Risk Drivers</h3>
@@ -42,7 +50,10 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
             ? agentState.riskDrivers.slice(0, 3)
             : ["Agent mock signals will appear once country state is available."]
           ).map((driver) => (
-            <li key={driver} className="dbx-list-row break-words">
+            <li
+              key={driver}
+              className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm break-words"
+            >
               {driver}
             </li>
           ))}
@@ -57,14 +68,19 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
             ? agentState.recommendedActions.slice(0, 3)
             : ["Actions are generated from mock heuristics in this demo mode."]
           ).map((action) => (
-            <li key={action} className="dbx-list-row break-words">
+            <li
+              key={action}
+              className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm break-words"
+            >
               {action}
             </li>
           ))}
         </ul>
       )}
       {!agentLoading && !agentState ? (
-        <p className="dbx-subtitle mt-2">No agent payload. Wire Databricks serving endpoint next.</p>
+        <p className="m-0 mt-2 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
+          No agent payload. Wire Databricks serving endpoint next.
+        </p>
       ) : null}
     </motion.article>
   );

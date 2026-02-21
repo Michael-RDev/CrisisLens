@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { SimulationResponse } from "@/lib/api/crisiswatch";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
@@ -19,7 +20,12 @@ export function SimulationPanel({
   onSimulate
 }: SimulationPanelProps) {
   return (
-    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+    <motion.article
+      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
+    >
       <p className="dbx-kicker">Scenario Modeling</p>
       <h2 className="dbx-title">Funding What-if Simulator</h2>
       <p className="dbx-subtitle mt-2">
@@ -58,6 +64,6 @@ export function SimulationPanel({
           </p>
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }

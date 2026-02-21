@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { countryByIso3 } from "@/lib/countries";
 import {
   fetchAnalyticsOverview,
@@ -306,7 +307,12 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">
-          <section className="dbx-panel">
+          <motion.section
+            className="dbx-panel"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.36, ease: "easeOut" }}
+          >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="dbx-kicker">Display Layer</p>
@@ -316,7 +322,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               <span className="dbx-chip">Active: {layerConfig[layerMode].label}</span>
             </div>
             <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
-          </section>
+          </motion.section>
           <GlobePanel
             metrics={metrics}
             layerMode={layerMode}
@@ -332,7 +338,12 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           />
         </div>
 
-        <aside className="dbx-panel flex min-w-0 flex-col overflow-hidden 2xl:max-h-[calc(100vh-220px)]">
+        <motion.aside
+          className="dbx-panel flex min-w-0 flex-col overflow-hidden 2xl:max-h-[calc(100vh-220px)]"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: "easeOut" }}
+        >
           <p className="dbx-kicker">Decision Workspace</p>
           <h2 className="dbx-title">Operations Panels</h2>
           <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
@@ -456,7 +467,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               </>
             ) : null}
           </div>
-        </aside>
+        </motion.aside>
       </section>
       <DatabricksChatPopup
         queryTemplates={queryTemplates}

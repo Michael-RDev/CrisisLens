@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { CountryDrilldown, ProjectDetail } from "@/lib/api/crisiswatch";
 import { getOutlierLabel } from "@/components/dashboard/dashboard-utils";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
@@ -16,7 +17,12 @@ export function ProjectOutliersPanel({
   onSelectProjectId
 }: ProjectOutliersPanelProps) {
   return (
-    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+    <motion.article
+      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
+    >
       <p className="dbx-kicker">Project Intelligence</p>
       <h2 className="dbx-title">Project Outliers & Benchmarks</h2>
       {projectOutliers.length === 0 ? (
@@ -70,6 +76,6 @@ export function ProjectOutliersPanel({
           </ul>
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }

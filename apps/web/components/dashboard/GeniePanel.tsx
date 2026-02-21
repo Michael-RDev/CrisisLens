@@ -1,4 +1,5 @@
 import { FormEvent } from "react";
+import { motion } from "framer-motion";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
 type GeniePanelProps = {
@@ -28,7 +29,12 @@ export function GeniePanel({
   onSubmit
 }: GeniePanelProps) {
   return (
-    <article className="integration-card dbx-panel-raised">
+    <motion.article
+      className="integration-card dbx-panel-raised"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
+    >
       <p className="dbx-kicker">Databricks Genie</p>
       <h2 className="dbx-title">Databricks Genie (NLQ)</h2>
       <div className="flex flex-wrap gap-2">
@@ -85,6 +91,6 @@ export function GeniePanel({
           ) : null}
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }

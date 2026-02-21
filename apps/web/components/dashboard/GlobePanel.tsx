@@ -46,9 +46,9 @@ export function GlobePanel({
   return (
     <motion.article
       className="dbx-panel globe-card xl:row-span-2"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: 0.14 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
     >
       <div className="card-header-row flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>

@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { CVDetection } from "@/lib/cv/provider";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
@@ -17,7 +18,12 @@ export function CvPanel({
   onDetect
 }: CvPanelProps) {
   return (
-    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+    <motion.article
+      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
+    >
       <p className="dbx-kicker">Computer Vision Bridge</p>
       <h2 className="dbx-title">CV Point-to-Highlight</h2>
       <p className="dbx-subtitle mt-2">
@@ -55,6 +61,6 @@ export function CvPanel({
       ) : (
         <p className="dbx-subtitle mt-1">No detection yet.</p>
       )}
-    </article>
+    </motion.article>
   );
 }

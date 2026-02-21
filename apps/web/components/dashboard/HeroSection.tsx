@@ -9,9 +9,9 @@ export function HeroSection({ generatedAt }: HeroSectionProps) {
   return (
     <motion.section
       className="dbx-panel flex flex-col justify-between gap-4 lg:flex-row lg:items-end"
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
     >
       <div>
         <p className="dbx-kicker">Databricks ML Ops Surface</p>

@@ -23,7 +23,7 @@ export function CountryPanel({
       className="country-card dbx-panel-raised min-w-0 overflow-hidden"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, delay: 0.2 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
     >
       <h2 className="dbx-title break-words">
         {selected

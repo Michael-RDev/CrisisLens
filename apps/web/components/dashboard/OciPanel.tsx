@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { AnalyticsOverviewResponse } from "@/lib/api/crisiswatch";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
@@ -15,7 +16,12 @@ export function OciPanel({
   onHighlightIso3
 }: OciPanelProps) {
   return (
-    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+    <motion.article
+      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
+    >
       <p className="dbx-kicker">Explainability</p>
       <h2 className="dbx-title">Overlooked Crisis Index (Explainable)</h2>
       <p className="dbx-subtitle mt-2">
@@ -43,6 +49,6 @@ export function OciPanel({
           ))}
         </ul>
       ) : null}
-    </article>
+    </motion.article>
   );
 }

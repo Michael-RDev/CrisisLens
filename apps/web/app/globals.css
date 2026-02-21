@@ -4,27 +4,64 @@
 
 @layer base {
   :root {
-    --cl-bg: #0a131d;
-    --cl-surface: #111f2c;
-    --cl-surface-elevated: #152738;
-    --cl-border: #2e4b61;
-    --cl-border-soft: #294258;
-    --cl-text: #eaf3f8;
-    --cl-text-muted: #adc3d3;
-    --cl-accent: #f0b25d;
-    --cl-accent-strong: #ffd194;
+    --cl-bg: #ffffff;
+    --cl-surface: #ffffff;
+    --cl-surface-elevated: #f8fafc;
+    --cl-border: #e2e8f0;
+    --cl-border-soft: #edf2f7;
+    --cl-text: #111827;
+    --cl-text-muted: #4b5563;
+    --cl-accent: #f97316;
+    --cl-accent-strong: #fb923c;
 
-    --dbx-bg: #090d12;
-    --dbx-surface: #111821;
-    --dbx-surface-raised: #151f2b;
-    --dbx-surface-strong: #1b2734;
-    --dbx-border: #2b3a4a;
-    --dbx-border-soft: #243241;
-    --dbx-text: #edf3f9;
-    --dbx-text-muted: #9bb0c6;
-    --dbx-accent: #ff5f2e;
-    --dbx-accent-soft: #ff8f6b;
+    --dbx-bg: #ffffff;
+    --dbx-surface: #ffffff;
+    --dbx-surface-raised: #fff7f2;
+    --dbx-surface-strong: #fff1e8;
+    --dbx-border: #eed6c8;
+    --dbx-border-soft: #f3dfd2;
+    --dbx-text: #1f2937;
+    --dbx-text-muted: #64748b;
+    --dbx-accent: #f97316;
+    --dbx-accent-soft: #fb923c;
     --dbx-cyan: #5fb7ff;
+    --dbx-tab-border: #f2d3c2;
+    --dbx-tab-bg: #fff8f4;
+    --dbx-tab-text: #7c4a30;
+    --dbx-tab-active-bg: #f97316;
+    --dbx-tab-active-text: #ffffff;
+    --dbx-chip-bg: #fff3ec;
+    --dbx-chip-border: #ffd6bd;
+    --dbx-input-border: #f2cfbb;
+    --dbx-input-bg: #ffffff;
+    --dbx-btn-secondary-border: #f1c9b1;
+    --dbx-btn-secondary-bg: #fff6f1;
+    --dbx-btn-secondary-text: #8a4b2d;
+    --dbx-list-border: #f0d3c4;
+    --dbx-list-bg: #fffaf7;
+    --dbx-scroll-thumb: #d7a892;
+    --dbx-scroll-track: #fdeee6;
+    --dbx-chat-fab-bg: #f97316;
+    --dbx-chat-fab-text: #fff7f2;
+    --dbx-modal-backdrop: rgba(50, 30, 20, 0.35);
+
+    --dbx-globe-frame-border: #e8d8cf;
+    --dbx-globe-frame-bg: #fffdfb;
+    --dbx-globe-overlay-bg: rgba(255, 250, 246, 0.95);
+    --dbx-globe-overlay-border: #e8cfc2;
+    --dbx-globe-overlay-text: #6b7280;
+    --dbx-globe-toggle-border: #f97316;
+    --dbx-globe-toggle-bg: #fff4ed;
+    --dbx-globe-toggle-text: #9a3412;
+    --dbx-globe-mini-btn-border: #d8c1b6;
+    --dbx-globe-mini-btn-bg: #fff8f4;
+    --dbx-globe-mini-btn-text: #7c2d12;
+    --dbx-globe-cursor-border: #fb923c;
+    --dbx-globe-cursor-fill: rgba(251, 146, 60, 0.2);
+    --dbx-globe-cursor-shadow: rgba(251, 146, 60, 0.16);
+    --dbx-globe-hint-bg: rgba(255, 249, 244, 0.92);
+    --dbx-globe-hint-border: #e7cfbf;
+    --dbx-globe-hint-text: #7a4a33;
   }
 
   html,
@@ -169,35 +206,35 @@
 
   .dbx-tab {
     @apply rounded-full border px-3 py-1 text-sm transition-colors;
-    border-color: #3a4f63;
-    background: #101923;
-    color: #d4e3f0;
+    border-color: var(--dbx-tab-border);
+    background: var(--dbx-tab-bg);
+    color: var(--dbx-tab-text);
   }
 
   .dbx-tab-active {
     border-color: var(--dbx-accent);
-    background: rgba(255, 95, 46, 0.14);
-    color: #ffe5db;
+    background: var(--dbx-tab-active-bg);
+    color: var(--dbx-tab-active-text);
   }
 
   .dbx-chip {
     @apply rounded-full border px-2.5 py-1 text-xs uppercase tracking-[0.08em];
-    border-color: var(--dbx-border-soft);
+    border-color: var(--dbx-chip-border);
     color: var(--dbx-text-muted);
-    background: #0c131b;
+    background: var(--dbx-chip-bg);
   }
 
   .dbx-input {
     @apply min-w-0 rounded-[10px] border px-3 py-2 text-sm;
-    border-color: #35506a;
-    background: #0b141d;
+    border-color: var(--dbx-input-border);
+    background: var(--dbx-input-bg);
     color: var(--dbx-text);
   }
 
   .dbx-textarea {
     @apply w-full resize-y rounded-[10px] border px-3 py-2 text-sm;
-    border-color: #35506a;
-    background: #0b141d;
+    border-color: var(--dbx-input-border);
+    background: var(--dbx-input-bg);
     color: var(--dbx-text);
   }
 
@@ -215,20 +252,20 @@
 
   .dbx-btn-secondary {
     @apply inline-flex items-center justify-center rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors;
-    border-color: #425d75;
-    background: #102233;
-    color: #e3eff9;
+    border-color: var(--dbx-btn-secondary-border);
+    background: var(--dbx-btn-secondary-bg);
+    color: var(--dbx-btn-secondary-text);
   }
 
   .dbx-btn-secondary:hover {
     border-color: var(--dbx-cyan);
-    color: #f1f8ff;
+    color: var(--dbx-text);
   }
 
   .dbx-list-button {
     @apply flex w-full items-center justify-between gap-2 rounded-[10px] border px-2.5 py-2 text-left text-sm;
-    border-color: #325169;
-    background: #0d1721;
+    border-color: var(--dbx-list-border);
+    background: var(--dbx-list-bg);
     color: var(--dbx-text);
   }
 
@@ -238,30 +275,30 @@
 
   .dbx-list-row {
     @apply flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm;
-    border-color: #2e4a60;
-    background: #101a25;
+    border-color: var(--dbx-list-border);
+    background: var(--dbx-list-bg);
   }
 
   .dbx-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #3a4f63 #101821;
+    scrollbar-color: var(--dbx-scroll-thumb) var(--dbx-scroll-track);
   }
 
   .dbx-chat-fab {
     @apply fixed bottom-5 right-5 z-20 rounded-full border px-4 py-2 text-sm font-semibold shadow-lg transition-colors;
     border-color: var(--dbx-accent);
-    background: #1e1a1a;
-    color: #ffe0d6;
+    background: var(--dbx-chat-fab-bg);
+    color: var(--dbx-chat-fab-text);
   }
 
   .dbx-chat-fab:hover {
-    background: #2a1d1a;
+    background: var(--dbx-accent-soft);
     border-color: var(--dbx-accent-soft);
   }
 
   .dbx-modal-backdrop {
     @apply fixed inset-0 z-30 grid place-items-center p-4;
-    background: rgba(4, 8, 12, 0.72);
+    background: var(--dbx-modal-backdrop);
   }
 
   .dbx-modal {
@@ -275,10 +312,10 @@
   position: relative;
   margin-top: 0.55rem;
   height: min(58vh, 640px);
-  border: 1px solid #2b3a4a;
+  border: 1px solid var(--dbx-globe-frame-border);
   border-radius: 14px;
   overflow: hidden;
-  background: #0a121a;
+  background: var(--dbx-globe-frame-bg);
 }
 
 .globe-hands-overlay {
@@ -287,8 +324,8 @@
   left: 0.6rem;
   z-index: 4;
   max-width: 320px;
-  background: rgba(11, 18, 27, 0.93);
-  border: 1px solid #324355;
+  background: var(--dbx-globe-overlay-bg);
+  border: 1px solid var(--dbx-globe-overlay-border);
   border-radius: 10px;
   padding: 0.45rem 0.55rem;
   padding-top: 0.9rem;
@@ -303,15 +340,15 @@
 
 .globe-hands-overlay p {
   margin: 0.35rem 0 0;
-  color: #b1c2d2;
+  color: var(--dbx-globe-overlay-text);
   font-size: 0.78rem;
   line-height: 1.3;
 }
 
 .globe-hands-toggle {
-  border: 1px solid #ff5f2e;
-  background: #251913;
-  color: #ffe3d8;
+  border: 1px solid var(--dbx-globe-toggle-border);
+  background: var(--dbx-globe-toggle-bg);
+  color: var(--dbx-globe-toggle-text);
   border-radius: 8px;
   padding: 0.34rem 0.58rem;
   font-size: 0.8rem;
@@ -322,9 +359,9 @@
   position: absolute;
   top: 0.32rem;
   right: 0.32rem;
-  border: 1px solid #4b6179;
-  background: #132231;
-  color: #d6e5f1;
+  border: 1px solid var(--dbx-globe-mini-btn-border);
+  background: var(--dbx-globe-mini-btn-bg);
+  color: var(--dbx-globe-mini-btn-text);
   border-radius: 999px;
   width: 1.2rem;
   height: 1.2rem;
@@ -339,9 +376,9 @@
 }
 
 .globe-hands-expand {
-  border: 1px solid #4b6179;
-  background: rgba(11, 18, 27, 0.92);
-  color: #d6e5f1;
+  border: 1px solid var(--dbx-globe-mini-btn-border);
+  background: var(--dbx-globe-mini-btn-bg);
+  color: var(--dbx-globe-mini-btn-text);
   border-radius: 999px;
   width: 1.2rem;
   height: 1.2rem;
@@ -380,10 +417,10 @@
   width: 16px;
   height: 16px;
   border-radius: 999px;
-  border: 2px solid #ff7b53;
-  background: rgba(255, 95, 46, 0.24);
+  border: 2px solid var(--dbx-globe-cursor-border);
+  background: var(--dbx-globe-cursor-fill);
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 6px rgba(255, 184, 70, 0.12);
+  box-shadow: 0 0 0 6px var(--dbx-globe-cursor-shadow);
 }
 
 .globe-hand-cursor small {
@@ -406,15 +443,15 @@
   z-index: 5;
   display: grid;
   gap: 0.15rem;
-  background: rgba(8, 14, 20, 0.84);
-  border: 1px solid #324557;
+  background: var(--dbx-globe-hint-bg);
+  border: 1px solid var(--dbx-globe-hint-border);
   border-radius: 9px;
   padding: 0.35rem 0.45rem;
 }
 
 .globe-hand-hint span {
   font-size: 0.72rem;
-  color: #c4d7e7;
+  color: var(--dbx-globe-hint-text);
 }
 
 .globe-canvas canvas {

@@ -357,7 +357,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-[#2f3f50] bg-[#0e1822] p-3 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-strong)] p-3 sm:grid-cols-3">
             <div className="min-w-0">
               <p className="dbx-kicker">Focus Country</p>
               <p className="m-0 pt-1 text-sm font-semibold break-words">{selectedLabel}</p>

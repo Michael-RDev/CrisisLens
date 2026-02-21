@@ -20,7 +20,7 @@ export function HeroSection({ generatedAt }: HeroSectionProps) {
           Explainable overlooked-crisis analytics for UN decision support: OCI ranking, cluster-level
           beneficiary-to-budget outliers, benchmark lookalikes, and funding what-if simulation.
         </p>
-        <p className="mt-2 text-sm text-[#9bb0c6]">Snapshot: {new Date(generatedAt).toLocaleString()}</p>
+        <p className="dbx-subtitle mt-2">Snapshot: {new Date(generatedAt).toLocaleString()}</p>
       </div>
       <div className="grid content-start gap-2 sm:grid-cols-3 lg:grid-cols-1">
         <ThemeToggle />

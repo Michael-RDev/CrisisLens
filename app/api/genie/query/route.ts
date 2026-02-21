@@ -17,19 +17,23 @@ export async function POST(request: Request) {
   const answer = await client.ask(nlQuery, payload.iso3?.trim().toUpperCase());
 
   const scopedIso3 = payload.iso3?.trim().toUpperCase();
-  const highlightIso3 = scopedIso3 ? [scopedIso3] : [];
+  const highlightIso3 = answer.highlights?.length
+    ? answer.highlights
+    : scopedIso3
+      ? [scopedIso3]
+      : [];
 
   return NextResponse.json({
     nl_query: nlQuery,
     answer: answer.answer,
     source: answer.source ?? "mock",
-    results: [
-      {
-        iso3: scopedIso3 ?? "GLOBAL",
-        metric: "coverage_mismatch_index",
-        score: 74.2
-      }
-    ],
+    results:
+      answer.rows?.map((row) => ({
+        iso3: row.iso3,
+        metric: row.metric,
+        score: row.score,
+        rationale: row.rationale
+      })) ?? [],
     highlight_iso3: highlightIso3
   });
 }

@@ -23,6 +23,9 @@ export async function GET(_: Request, { params }: Params) {
     iso3,
     narrative: "No Databricks state yet. Connect agent endpoint to hydrate this panel.",
     riskBand: riskBandFromScore(45),
-    agentTimestamp: new Date().toISOString()
+    agentTimestamp: new Date().toISOString(),
+    confidence: 0.61,
+    riskDrivers: ["No signals available in fallback mode."],
+    recommendedActions: ["Connect provider endpoint to replace this fallback response."]
   });
 }

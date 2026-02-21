@@ -16,9 +16,34 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
       {!agentLoading && agentState ? (
         <>
           <p className={getRiskClass(agentState.riskBand)}>Risk band: {agentState.riskBand ?? "n/a"}</p>
+          <p className="text-sm text-[#9db7c8]">
+            Confidence: {agentState.confidence ? `${(agentState.confidence * 100).toFixed(0)}%` : "n/a"}
+          </p>
           <p>{agentState.narrative}</p>
         </>
       ) : null}
+      <h3 className="mb-1 mt-2 text-sm text-[#b7ccda]">Mock Risk Drivers</h3>
+      <ul className="grid list-none gap-1.5 p-0">
+        {(agentState?.riskDrivers?.length
+          ? agentState.riskDrivers.slice(0, 3)
+          : ["Agent mock signals will appear once country state is available."]
+        ).map((driver) => (
+          <li key={driver} className="rounded-lg border border-[#2f5064] px-2.5 py-2 text-sm">
+            {driver}
+          </li>
+        ))}
+      </ul>
+      <h3 className="mb-1 mt-2 text-sm text-[#b7ccda]">Mock Recommended Actions</h3>
+      <ul className="grid list-none gap-1.5 p-0">
+        {(agentState?.recommendedActions?.length
+          ? agentState.recommendedActions.slice(0, 3)
+          : ["Actions are generated from mock heuristics in this demo mode."]
+        ).map((action) => (
+          <li key={action} className="rounded-lg border border-[#2f5064] px-2.5 py-2 text-sm">
+            {action}
+          </li>
+        ))}
+      </ul>
       {!agentLoading && !agentState ? (
         <p className="text-sm text-[#9db7c8]">No agent payload. Wire Databricks serving endpoint next.</p>
       ) : null}

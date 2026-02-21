@@ -44,6 +44,9 @@ export function CvPanel({
           <p>
             Detected: <strong>{cvDetection.iso3}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
           </p>
+          <p className="text-sm text-[#9db7c8]">
+            Mock frame timestamp: {new Date(cvDetection.frameTimestamp).toLocaleTimeString()}
+          </p>
         </div>
       ) : (
         <p className="text-sm text-[#9db7c8]">No detection yet.</p>

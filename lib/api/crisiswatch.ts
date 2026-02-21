@@ -117,9 +117,14 @@ export type SimulationResponse = {
 export type GenieQueryResponse = {
   nl_query: string;
   answer: string;
-  results: Array<Record<string, string | number | boolean | null>>;
-  highlight_iso3: string[];
   source?: string;
+  results: Array<{
+    iso3: string;
+    metric: string;
+    score: number;
+    rationale?: string;
+  }>;
+  highlight_iso3: string[];
 };
 
 export type GlobeEvent =

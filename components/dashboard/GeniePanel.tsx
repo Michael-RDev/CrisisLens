@@ -4,6 +4,13 @@ type GeniePanelProps = {
   queryTemplates: string[];
   question: string;
   genieAnswer: string;
+  genieSource?: string;
+  genieResults: Array<{
+    iso3: string;
+    metric: string;
+    score: number;
+    rationale?: string;
+  }>;
   genieLoading: boolean;
   onSetQuestion: (question: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -13,6 +20,8 @@ export function GeniePanel({
   queryTemplates,
   question,
   genieAnswer,
+  genieSource,
+  genieResults,
   genieLoading,
   onSetQuestion,
   onSubmit
@@ -51,7 +60,25 @@ export function GeniePanel({
       {genieAnswer ? (
         <div className="mt-1 border-t border-dashed border-[#35566f] pt-2">
           <p>{genieAnswer}</p>
-          <p className="text-sm text-[#9db7c8]">Globe highlights sync from `highlight_iso3`.</p>
+          <p className="text-sm text-[#9db7c8]">
+            Source: {genieSource ?? "mock"} • Globe highlights sync from `highlight_iso3`.
+          </p>
+          {genieResults.length > 0 ? (
+            <ul className="mt-2 grid list-none gap-1.5 p-0">
+              {genieResults.slice(0, 3).map((row) => (
+                <li
+                  key={`${row.iso3}-${row.metric}`}
+                  className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2 text-sm"
+                >
+                  <span>
+                    {row.iso3} • {row.metric}
+                    {row.rationale ? ` — ${row.rationale}` : ""}
+                  </span>
+                  <strong>{row.score.toFixed(1)}</strong>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
     </article>

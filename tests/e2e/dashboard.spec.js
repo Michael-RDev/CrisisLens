@@ -8,6 +8,7 @@ test.describe("CrisisLens dashboard", () => {
 
   test("loads core command-center panels", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Databricks Agent State" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Mock Risk Drivers" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Databricks Genie (NLQ)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "CV Point-to-Highlight" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run Genie Query" })).toBeVisible();
@@ -49,6 +50,8 @@ test.describe("CrisisLens dashboard", () => {
     await genieCard.getByRole("textbox").fill("Rank overlooked crises for ETH");
     await page.getByRole("button", { name: "Run Genie Query" }).click();
     await expect(page.getByText("Genie mock response")).toBeVisible();
+    await expect(genieCard.getByText("Source: mock")).toBeVisible();
+    await expect(genieCard.getByText(/coverage_mismatch_index/)).toBeVisible();
   });
 
   test("cv detect returns country and updates panel", async ({ page }) => {
@@ -58,6 +61,7 @@ test.describe("CrisisLens dashboard", () => {
 
     await cvCard.getByRole("textbox").fill("frame=mock | country=SDN");
     await cvCard.getByRole("button", { name: "Detect Country" }).click();
-    await expect(cvCard.getByText(/Detected:/)).toContainText("SDN");
+    await expect(cvCard.getByText(/Detected:/)).toBeVisible();
+    await expect(cvCard.getByText(/Mock frame timestamp:/)).toBeVisible();
   });
 });

@@ -68,6 +68,10 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     "Rank the top 10 most overlooked crises by Coverage Mismatch Index"
   );
   const [genieAnswer, setGenieAnswer] = useState<string>("");
+  const [genieSource, setGenieSource] = useState<string>("mock");
+  const [genieResults, setGenieResults] = useState<
+    Array<{ iso3: string; metric: string; score: number; rationale?: string }>
+  >([]);
   const [genieLoading, setGenieLoading] = useState(false);
 
   const [cvFrameInput, setCvFrameInput] = useState("frame: camera stream | candidate_country=ETH");
@@ -225,10 +229,14 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     try {
       const data = await queryGenie({ nl_query: question, iso3: selectedIso3 ?? undefined });
       setGenieAnswer(data.answer);
+      setGenieSource(data.source ?? "mock");
+      setGenieResults(data.results ?? []);
       setHighlightedIso3(data.highlight_iso3);
       if (data.highlight_iso3[0]) setSelectedIso3(data.highlight_iso3[0]);
     } catch {
       setGenieAnswer("Unable to reach Genie endpoint. Check backend wiring and auth.");
+      setGenieSource("error");
+      setGenieResults([]);
     } finally {
       setGenieLoading(false);
     }
@@ -341,6 +349,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           queryTemplates={queryTemplates}
           question={question}
           genieAnswer={genieAnswer}
+          genieSource={genieSource}
+          genieResults={genieResults}
           genieLoading={genieLoading}
           onSetQuestion={setQuestion}
           onSubmit={submitGenieQuestion}

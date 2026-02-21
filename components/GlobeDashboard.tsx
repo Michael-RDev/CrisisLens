@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { computeGlobalSummary, formatCompact } from "@/components/summary-utils";
+import { allCountriesSorted, countryByIso3 } from "@/lib/countries";
 import { fetchCountryDrilldown, queryGenie, subscribeToGlobeEvents } from "@/lib/api/crisiswatch";
 import { normalizeIso3, shouldApplyCVDetection } from "@/lib/cv/globeBridge";
 import { computeDerivedMetrics, getLayerValue } from "@/lib/metrics";
@@ -65,13 +66,11 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   >([]);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
+  const countryCatalogByIso = useMemo(() => countryByIso3, []);
   const summary = useMemo(() => computeGlobalSummary(metrics), [metrics]);
   const countrySuggestions = useMemo(
-    () =>
-      [...metrics]
-        .sort((a, b) => a.country.localeCompare(b.country))
-        .map((row) => `${row.country} (${row.iso3})`),
-    [metrics]
+    () => allCountriesSorted.map((row) => `${row.name} (${row.iso3})`),
+    []
   );
 
   const filtered = useMemo(() => {
@@ -83,7 +82,9 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }, [metrics, query]);
 
   const selected = selectedIso3 ? byIso.get(selectedIso3) ?? null : null;
-  const hoverCountry = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
+  const selectedCountryMeta = selectedIso3 ? countryCatalogByIso.get(selectedIso3) ?? null : null;
+  const hoverCountryMetric = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
+  const hoverCountryMeta = hoverIso3 ? countryCatalogByIso.get(hoverIso3) ?? null : null;
   const selectedDerived = selected ? computeDerivedMetrics(selected) : null;
 
   const ranked = useMemo(() => {
@@ -189,19 +190,19 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   function jumpToCountry() {
     const raw = query.trim();
     const isoFromLabel = raw.match(/\(([A-Za-z]{3})\)$/)?.[1]?.toUpperCase();
-    if (isoFromLabel && byIso.has(isoFromLabel)) {
+    if (isoFromLabel && countryCatalogByIso.has(isoFromLabel)) {
       setSelectedIso3(isoFromLabel);
       return;
     }
 
     const needle = raw.toLowerCase();
     if (!needle) return;
-    const exactIso = metrics.find((item) => item.iso3.toLowerCase() === needle);
+    const exactIso = allCountriesSorted.find((item) => item.iso3.toLowerCase() === needle);
     if (exactIso) {
       setSelectedIso3(exactIso.iso3);
       return;
     }
-    const nameMatch = metrics.find((item) => item.country.toLowerCase().includes(needle));
+    const nameMatch = allCountriesSorted.find((item) => item.name.toLowerCase().includes(needle));
     if (nameMatch) {
       setSelectedIso3(nameMatch.iso3);
     }
@@ -229,6 +230,14 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           <span>Genie Sync</span>
         </div>
       </motion.section>
+
+      <section className="top-tabs">
+        <button className="active">Global View</button>
+        <button>Country Drilldown</button>
+        <button>Agent Insights</button>
+        <button>Genie Query</button>
+        <button>CV Pointer</button>
+      </section>
 
       <motion.section
         className="kpi-grid"
@@ -303,11 +312,13 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           />
           <div className="globe-footer">
             <p>
-              {hoverCountry
-                ? `${hoverCountry.country} (${hoverCountry.iso3}) • ${layerConfig[layerMode].label}: ${getLayerValue(
-                    hoverCountry,
+              {hoverCountryMetric
+                ? `${hoverCountryMetric.country} (${hoverCountryMetric.iso3}) • ${layerConfig[layerMode].label}: ${getLayerValue(
+                    hoverCountryMetric,
                     layerMode
                   ).toFixed(1)}${layerConfig[layerMode].unit}`
+                : hoverCountryMeta
+                  ? `${hoverCountryMeta.name} (${hoverCountryMeta.iso3}) • no metrics in current snapshot`
                 : "Hover countries for details. Drag to rotate. Scroll to zoom. Click any country polygon to open drill-down."}
             </p>
           </div>
@@ -319,7 +330,13 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.2 }}
         >
-          <h2>{selected ? `${selected.country} (${selected.iso3})` : "Select a country"}</h2>
+          <h2>
+            {selected
+              ? `${selected.country} (${selected.iso3})`
+              : selectedCountryMeta
+                ? `${selectedCountryMeta.name} (${selectedCountryMeta.iso3})`
+                : "Select a country"}
+          </h2>
           {selected && selectedDerived ? (
             <dl>
               <div>
@@ -347,6 +364,12 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                 <dd>${selected.revisedPlanRequirements.toLocaleString()}</dd>
               </div>
             </dl>
+          ) : selectedCountryMeta ? (
+            <p>
+              {selectedCountryMeta.name} is selected, but this country has no current metric record in
+              the loaded snapshot yet. The selection is still valid and CV/Genie highlighting will work
+              for it.
+            </p>
           ) : (
             <p>Select a country from the globe or ranking list.</p>
           )}
@@ -436,8 +459,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         <article className="integration-card glass">
           <h2>CV Point-to-Highlight</h2>
           <p className="subtle">
-            This placeholder matches the future MediaPipe/WebRTC flow: detection emits ISO3 and the
-            globe auto-selects that country.
+            Live hand control is now available on the globe card. Use <strong>Start Hand Control</strong>,
+            then move one hand to rotate and pinch (thumb + index) to zoom.
           </p>
           <div className="integration-form">
             <textarea

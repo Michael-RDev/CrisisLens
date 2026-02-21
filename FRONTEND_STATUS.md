@@ -35,6 +35,7 @@
 - Added framer-motion animation wrappers for hero/KPI/main cards.
 - Improved query ergonomics:
   - Country jump box with autocomplete + one-click select.
+  - Jump/search now uses full global country catalog, not only countries with metrics (fixes missing-country jump cases like Germany).
   - Genie quick-template chips for frequent analyst questions.
 - Hardened client loading:
   - `Globe3D` now loads via `next/dynamic` with `ssr: false` to avoid `window is not defined` server runtime failures.
@@ -61,6 +62,8 @@
   - `/_next/static/css/app/layout.css?...` present in rendered page markup.
 - Runtime smoke after globe refactor:
   - App compiles and serves with globe component loaded (no unhandled runtime exception in dev logs).
+- Added full handoff/context document for next context window continuity:
+  - `docs/CONTEXT_HANDOFF.md`
 
 ## Ready For Databricks Integration
 - UI already calls stable internal API routes (`/api/globe/heatmap`, `/api/country/:iso3`, `/api/project/:id`, `/api/agent/...`, `/api/genie/query`, `/api/cv/detect`).

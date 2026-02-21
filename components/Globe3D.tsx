@@ -152,6 +152,7 @@ export default function Globe3D({
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
+  const [handOverlayMinimized, setHandOverlayMinimized] = useState(false);
   const [handStatus, setHandStatus] = useState("Camera control is off.");
   const [handSensitivity, setHandSensitivity] = useState(0.95);
   const [handCursor, setHandCursor] = useState<HandCursorState>({
@@ -628,28 +629,49 @@ export default function Globe3D({
 
   return (
     <div className="globe-canvas" ref={containerRef}>
-      <div className="globe-hands-overlay">
-        <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
-          {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
-        </button>
-        <p>{handStatus}</p>
-        <p>
-          Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
-          move hand to rotate globe.
-        </p>
-        <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
-          Sensitivity: {handSensitivity.toFixed(1)}x
-        </label>
-        <input
-          id="hand-sensitivity"
-          type="range"
-          min={0.25}
-          max={2.2}
-          step={0.05}
-          value={handSensitivity}
-          onChange={(event) => setHandSensitivity(Number(event.target.value))}
-        />
-      </div>
+      {handOverlayMinimized ? (
+        <div className="globe-hands-overlay-collapsed">
+          <button
+            type="button"
+            onClick={() => setHandOverlayMinimized((current) => !current)}
+            className="globe-hands-expand"
+            aria-label="Expand hand controls"
+          >
+            +
+          </button>
+        </div>
+      ) : (
+        <div className="globe-hands-overlay">
+          <button
+            type="button"
+            onClick={() => setHandOverlayMinimized(true)}
+            className="globe-hands-minimize"
+            aria-label="Minimize hand controls"
+          >
+            −
+          </button>
+          <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
+            {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
+          </button>
+          <p>{handStatus}</p>
+          <p>
+            Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
+            move hand to rotate globe.
+          </p>
+          <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
+            Sensitivity: {handSensitivity.toFixed(1)}x
+          </label>
+          <input
+            id="hand-sensitivity"
+            type="range"
+            min={0.25}
+            max={2.2}
+            step={0.05}
+            value={handSensitivity}
+            onChange={(event) => setHandSensitivity(Number(event.target.value))}
+          />
+        </div>
+      )}
       {handControlEnabled && handCursor.active ? (
         <div
           className="globe-hand-cursor"

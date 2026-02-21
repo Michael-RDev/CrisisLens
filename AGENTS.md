@@ -141,6 +141,8 @@ and hit `/` and `/health`.
 - Keep globe-related browser APIs in client components (`"use client"`). `Globe3D` is loaded dynamically with `ssr: false` for SSR safety.
 - Prefer extending provider interfaces (`DatabricksProvider`, `GenieClient`, `CVCountryDetector`) rather than wiring external services directly into UI components.
 - When touching metric formulas, update corresponding unit tests in `tests/lib/metrics.test.ts`.
+- Styling policy: use Tailwind utility classes by default for component/page styling.
+- Use `app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
 
 ## Known Gaps (Do Not Assume Implemented)
 - No Python linting (`ruff`/`flake8`) or Python test suite configured.

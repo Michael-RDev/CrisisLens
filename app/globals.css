@@ -51,6 +51,14 @@
   border: 1px solid #35566f;
   border-radius: 10px;
   padding: 0.45rem 0.55rem;
+  padding-top: 0.9rem;
+}
+
+.globe-hands-overlay-collapsed {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 4;
 }
 
 .globe-hands-overlay p {
@@ -67,6 +75,43 @@
   border-radius: 8px;
   padding: 0.34rem 0.58rem;
   font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.globe-hands-minimize {
+  position: absolute;
+  top: 0.32rem;
+  right: 0.32rem;
+  border: 1px solid #5d7790;
+  background: #0b2332;
+  color: #d6e6f2;
+  border-radius: 999px;
+  width: 1.2rem;
+  height: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.globe-hands-expand {
+  border: 1px solid #5d7790;
+  background: rgba(7, 15, 23, 0.92);
+  color: #d6e6f2;
+  border-radius: 999px;
+  width: 1.2rem;
+  height: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 

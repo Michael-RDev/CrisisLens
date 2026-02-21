@@ -3,9 +3,23 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --cl-bg: #0a131d;
+    --cl-surface: #111f2c;
+    --cl-surface-elevated: #152738;
+    --cl-border: #2e4b61;
+    --cl-border-soft: #294258;
+    --cl-text: #eaf3f8;
+    --cl-text-muted: #adc3d3;
+    --cl-accent: #f0b25d;
+    --cl-accent-strong: #ffd194;
+  }
+
   html,
   body {
-    @apply m-0 min-h-full bg-[#0b1620] font-['IBM_Plex_Sans','Avenir_Next','Segoe_UI',sans-serif] text-[#eaf3f8];
+    @apply m-0 min-h-full font-['IBM_Plex_Sans','Avenir_Next','Segoe_UI',sans-serif];
+    background: var(--cl-bg);
+    color: var(--cl-text);
   }
 }
 
@@ -28,6 +42,77 @@
 
   .chip-critical {
     @apply inline-block w-fit rounded-full border border-[#b23b48] bg-[#451820] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[#ffd7dc];
+  }
+
+  .landing-shell {
+    @apply mx-auto flex min-h-screen w-full max-w-[1180px] flex-col gap-5 px-5 py-5 sm:gap-6 sm:px-6 sm:py-6;
+  }
+
+  .landing-card {
+    @apply rounded-2xl border p-5 sm:p-6;
+    border-color: var(--cl-border);
+    background: var(--cl-surface);
+  }
+
+  .landing-card-muted {
+    @apply rounded-2xl border p-5 sm:p-6;
+    border-color: var(--cl-border-soft);
+    background: var(--cl-surface-elevated);
+  }
+
+  .landing-overline {
+    @apply m-0 text-xs uppercase tracking-[0.12em];
+    color: var(--cl-text-muted);
+  }
+
+  .landing-section-title {
+    @apply m-0 text-2xl font-semibold sm:text-3xl;
+    color: var(--cl-text);
+  }
+
+  .landing-body {
+    @apply m-0 text-sm leading-relaxed sm:text-base;
+    color: var(--cl-text-muted);
+  }
+
+  .landing-chip {
+    @apply rounded-full border px-3 py-1 text-xs uppercase tracking-[0.08em];
+    border-color: var(--cl-border-soft);
+    color: var(--cl-text-muted);
+    background: rgba(10, 19, 29, 0.72);
+  }
+
+  .landing-button-primary {
+    @apply inline-flex items-center justify-center rounded-[10px] border px-4 py-2 text-sm font-semibold transition-colors;
+    border-color: var(--cl-accent);
+    background: var(--cl-accent);
+    color: #10202d;
+  }
+
+  .landing-button-primary:hover {
+    background: var(--cl-accent-strong);
+    border-color: var(--cl-accent-strong);
+  }
+
+  .landing-button-secondary {
+    @apply inline-flex items-center justify-center rounded-[10px] border px-4 py-2 text-sm font-semibold transition-colors;
+    border-color: var(--cl-border);
+    color: var(--cl-text);
+    background: transparent;
+  }
+
+  .landing-button-secondary:hover {
+    border-color: var(--cl-accent);
+    color: var(--cl-accent-strong);
+  }
+
+  .landing-nav-link {
+    @apply text-sm transition-colors;
+    color: var(--cl-text-muted);
+  }
+
+  .landing-nav-link:hover {
+    color: var(--cl-accent-strong);
   }
 }
 

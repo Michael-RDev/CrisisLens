@@ -129,10 +129,7 @@
 
   .dbx-workspace {
     @apply mx-auto max-w-[1560px] px-4 pb-5 pt-4 sm:px-5 sm:pb-6;
-    background:
-      linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02)),
-      radial-gradient(circle at 15% 0%, rgba(255, 95, 46, 0.08), transparent 36%),
-      var(--dbx-bg);
+    background: var(--dbx-bg);
   }
 
   .dbx-panel {

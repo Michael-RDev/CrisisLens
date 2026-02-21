@@ -9,7 +9,7 @@ export function LandingHeader() {
         </div>
         <div>
           <p className="m-0 text-lg font-bold tracking-[0.02em]">CrisisLens</p>
-          <p className="m-0 text-xs text-[var(--cl-text-muted)]">Humanitarian decision support</p>
+          <p className="m-0 text-xs text-[var(--cl-text-muted)]">Prioritize overlooked crises with explainable signals</p>
         </div>
       </div>
       <nav className="flex flex-wrap items-center gap-4" aria-label="Primary">

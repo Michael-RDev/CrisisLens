@@ -1,8 +1,8 @@
 const footprintStats = [
-  { label: "Countries in scope", value: "118", detail: "Cross-region crisis coverage" },
-  { label: "Priority alerts", value: "24", detail: "High urgency this cycle" },
-  { label: "Gap estimate", value: "$2.6B", detail: "Modeled funding shortfall" },
-  { label: "Data refresh", value: "6h", detail: "Snapshot + analytics cadence" }
+  { label: "Countries in scope", value: "118", detail: "Contexts available for country triage" },
+  { label: "Priority alerts", value: "24", detail: "Contexts currently trending high risk" },
+  { label: "Gap estimate", value: "$2.6B", detail: "Modeled shortfall across active contexts" },
+  { label: "Data refresh", value: "6h", detail: "Snapshot and model refresh cadence" }
 ];
 
 export function LandingFootprint() {
@@ -11,7 +11,7 @@ export function LandingFootprint() {
       <div className="mb-4">
         <h2 className="landing-section-title">Platform Footprint</h2>
         <p className="landing-body mt-1">
-          Scope indicators provide a quick benchmark for what the dashboard currently tracks and updates.
+          Quick context on the operating scope so teams know what the current model cycle includes.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

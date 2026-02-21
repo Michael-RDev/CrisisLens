@@ -1,15 +1,18 @@
 const workflowSteps = [
   {
     title: "1. Detect",
-    description: "Spot unusual severity/funding divergence from the live globe and ranking streams."
+    description:
+      "Spot countries where severity and in-need pressure diverge from funding and coverage signals."
   },
   {
     title: "2. Explain",
-    description: "Open country context, inspect outliers, and review contributing indicators."
+    description:
+      "Open country and project panels to inspect OCI components, outliers, and the rationale behind rank movement."
   },
   {
     title: "3. Act",
-    description: "Model what-if funding shifts and share action-ready recommendations with teams."
+    description:
+      "Run what-if allocations, compare expected outcomes, and hand off a concrete recommendation to operations."
   }
 ];
 
@@ -19,7 +22,8 @@ export function LandingWorkflow() {
       <div className="mb-4">
         <h2 className="landing-section-title">From Alert to Action</h2>
         <p className="landing-body mt-1">
-          A simple handoff flow keeps analysts, planners, and decision makers aligned on priority changes.
+          This is the core operating loop: detect risk, explain priority, and simulate intervention before
+          committing funding decisions.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

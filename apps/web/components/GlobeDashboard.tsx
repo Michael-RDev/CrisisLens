@@ -341,7 +341,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }
 
   return (
-    <main className="dbx-workspace">
+    <main className="dbx-workspace max-w-[1560px]">
       <HeroSection generatedAt={generatedAt} />
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] 2xl:items-start">

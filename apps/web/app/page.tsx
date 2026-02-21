@@ -9,7 +9,7 @@ import {
 
 export default function Home() {
   return (
-    <main className="landing-shell">
+    <main className="landing-shell max-w-[1560px]">
       <LandingHero />
       <LandingGlobe />
       <LandingFootprint />

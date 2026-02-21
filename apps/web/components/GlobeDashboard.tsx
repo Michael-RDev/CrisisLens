@@ -36,6 +36,7 @@ import {
   SimulationPanel,
   buildHoverText
 } from "@/components/dashboard";
+import { layerConfig } from "@/components/dashboard/layer-config";
 import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 type GlobeDashboardProps = {
@@ -305,10 +306,17 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">
-          <div className="dbx-panel-raised">
-            <p className="dbx-kicker">Display Layer</p>
+          <section className="dbx-panel">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="dbx-kicker">Display Layer</p>
+                <h2 className="dbx-title">Signal Overlay</h2>
+                <p className="dbx-subtitle mt-1">Choose the metric used to color the globe and rankings.</p>
+              </div>
+              <span className="dbx-chip">Active: {layerConfig[layerMode].label}</span>
+            </div>
             <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
-          </div>
+          </section>
           <GlobePanel
             metrics={metrics}
             layerMode={layerMode}

@@ -314,7 +314,7 @@
   }
 
   .dbx-tab {
-    @apply rounded-full border px-3 py-1 text-sm transition-colors;
+    @apply whitespace-nowrap rounded-full border px-3 py-1 text-sm transition-colors;
     border-color: var(--dbx-tab-border);
     background: var(--dbx-tab-bg);
     color: var(--dbx-tab-text);

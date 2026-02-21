@@ -8,11 +8,13 @@ type LayerSelectorProps = {
 
 export function LayerSelector({ layerMode, onChange }: LayerSelectorProps) {
   return (
-    <section className="flex flex-wrap gap-2">
+    <section className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Display layer selector">
       {(Object.keys(layerConfig) as LayerMode[]).map((mode) => (
         <button
           key={mode}
           type="button"
+          role="tab"
+          aria-selected={mode === layerMode}
           className={`dbx-tab ${mode === layerMode ? "dbx-tab-active" : ""}`}
           onClick={() => onChange(mode)}
         >

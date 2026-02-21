@@ -119,7 +119,6 @@ ML training caveat:
 ## Architecture Map (High-Value Files)
 - App shell + landing route (`/`): `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`
 - Landing UI components:
-  - `apps/web/components/landing/LandingHeader.tsx`
   - `apps/web/components/landing/LandingHero.tsx`
   - `apps/web/components/landing/LandingGlobe.tsx`
   - `apps/web/components/landing/LandingFeatures.tsx`
@@ -174,8 +173,9 @@ ML training caveat:
 - Keep globe-related browser APIs in client components (`"use client"`). `apps/web/components/Globe3D.tsx` is loaded dynamically with `ssr: false` for SSR safety.
 - Prefer extending provider interfaces (`DatabricksProvider`, `GenieClient`, `CVCountryDetector`) rather than wiring external services directly into UI components.
 - When touching metric formulas, update corresponding unit tests in `apps/web/tests/lib/metrics.test.ts`.
-- Styling policy: use Tailwind utility classes by default for component/page styling.
-- Use `apps/web/app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
+- Styling policy (strict): use Tailwind utility classes for all component/page styling.
+- Do not introduce or expand semantic CSS utility wrappers (for example `dbx-*`, `landing-*`, `chip-*`) in `globals.css`.
+- Use `apps/web/app/globals.css` only for global/base styles, CSS variables, or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
 
 ## Code Style
 - Keep components small and composable; extract logic/helpers instead of growing monolithic UI files.

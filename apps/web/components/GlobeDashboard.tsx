@@ -26,8 +26,8 @@ import {
   AgentStatePanel,
   CountryPanel,
   CvPanel,
+  DatabricksChatPopup,
   DashboardFooter,
-  GeniePanel,
   GlobePanel,
   HeroSection,
   KpiGrid,
@@ -36,7 +36,6 @@ import {
   PriorityRankingPanel,
   ProjectOutliersPanel,
   SimulationPanel,
-  TopTabs,
   buildHoverText
 } from "@/components/dashboard";
 import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
@@ -45,6 +44,8 @@ type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
 };
+
+type DashboardPanelKey = "country" | "priority" | "simulation";
 
 const queryTemplates = [
   "What projects are most similar to PRJ-2025-SDN-health and how does their efficiency compare?",
@@ -57,6 +58,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [query, setQuery] = useState("");
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
+  const [activePanel, setActivePanel] = useState<DashboardPanelKey>("country");
 
   const [overview, setOverview] = useState<AnalyticsOverviewResponse | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -297,72 +299,139 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   return (
     <main className="mx-auto max-w-[1460px] p-4 sm:p-5">
       <HeroSection generatedAt={generatedAt} />
-      <TopTabs />
       <KpiGrid summary={summary} overview={overview} />
-      <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
 
-      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(520px,2fr)_minmax(330px,1fr)]">
-        <GlobePanel
-          metrics={metrics}
-          layerMode={layerMode}
-          selectedIso3={selectedIso3}
-          highlightedIso3={highlightedIso3}
-          query={query}
-          countrySuggestions={countrySuggestions}
-          hoverText={hoverText}
-          onSelectIso3={setSelectedIso3}
-          onHoverIso3={setHoverIso3}
-          onQueryChange={setQuery}
-          onJump={jumpToCountry}
-        />
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(620px,2fr)_minmax(340px,1fr)]">
+        <div className="grid content-start gap-3">
+          <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
+          <GlobePanel
+            metrics={metrics}
+            layerMode={layerMode}
+            selectedIso3={selectedIso3}
+            highlightedIso3={highlightedIso3}
+            query={query}
+            countrySuggestions={countrySuggestions}
+            hoverText={hoverText}
+            onSelectIso3={setSelectedIso3}
+            onHoverIso3={setHoverIso3}
+            onQueryChange={setQuery}
+            onJump={jumpToCountry}
+          />
+        </div>
 
-        <CountryPanel
-          selected={selected}
-          selectedCountryMeta={selectedCountryMeta}
-          selectedOci={selectedOci}
-          clusterBreakdown={clusterBreakdown}
-        />
+        <aside className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+          <h2 className="m-0 text-xl font-semibold">Operations Panels</h2>
+          <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activePanel === "country"}
+              className={`rounded-full border px-3 py-1 text-sm ${
+                activePanel === "country"
+                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
+                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
+              }`}
+              onClick={() => setActivePanel("country")}
+            >
+              Country Ops
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activePanel === "priority"}
+              className={`rounded-full border px-3 py-1 text-sm ${
+                activePanel === "priority"
+                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
+                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
+              }`}
+              onClick={() => setActivePanel("priority")}
+            >
+              Priority View
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activePanel === "simulation"}
+              className={`rounded-full border px-3 py-1 text-sm ${
+                activePanel === "simulation"
+                  ? "border-[#f0b25d] bg-[#273d4f] text-[#fff2dc]"
+                  : "border-[#4a6f87] bg-[#0f3044] text-[#d8e8f4]"
+              }`}
+              onClick={() => setActivePanel("simulation")}
+            >
+              Simulation
+            </button>
+          </div>
 
-        <PriorityRankingPanel ranked={ranked} layerMode={layerMode} onSelectIso3={setSelectedIso3} />
-        <OciPanel
-          overviewLoading={overviewLoading}
-          overview={overview}
-          onSelectIso3={setSelectedIso3}
-          onHighlightIso3={setHighlightedIso3}
-        />
-        <SimulationPanel
-          selectedIso3={selectedIso3}
-          allocationUsd={allocationUsd}
-          simulationLoading={simulationLoading}
-          simulation={simulation}
-          onAllocationChange={setAllocationUsd}
-          onSimulate={runSimulation}
-        />
-        <ProjectOutliersPanel
-          projectOutliers={projectOutliers}
-          projectDetailLoading={projectDetailLoading}
-          projectDetail={projectDetail}
-          onSelectProjectId={setSelectedProjectId}
-        />
-        <AgentStatePanel selectedIso3={selectedIso3} agentLoading={agentLoading} agentState={agentState} />
-        <GeniePanel
-          queryTemplates={queryTemplates}
-          question={question}
-          genieAnswer={genieAnswer}
-          genieSource={genieSource}
-          genieResults={genieResults}
-          genieLoading={genieLoading}
-          onSetQuestion={setQuestion}
-          onSubmit={submitGenieQuestion}
-        />
-        <CvPanel
-          cvFrameInput={cvFrameInput}
-          cvLoading={cvLoading}
-          cvDetection={cvDetection}
-          onCvInputChange={setCvFrameInput}
-          onDetect={triggerCvDetection}
-        />
+          <div className="mt-3 grid gap-3" role="tabpanel">
+            {activePanel === "country" ? (
+              <>
+                <CountryPanel
+                  selected={selected}
+                  selectedCountryMeta={selectedCountryMeta}
+                  selectedOci={selectedOci}
+                  clusterBreakdown={clusterBreakdown}
+                />
+                <AgentStatePanel
+                  selectedIso3={selectedIso3}
+                  agentLoading={agentLoading}
+                  agentState={agentState}
+                />
+                <CvPanel
+                  cvFrameInput={cvFrameInput}
+                  cvLoading={cvLoading}
+                  cvDetection={cvDetection}
+                  onCvInputChange={setCvFrameInput}
+                  onDetect={triggerCvDetection}
+                />
+              </>
+            ) : null}
+
+            {activePanel === "priority" ? (
+              <>
+                <h3 className="m-0 text-lg font-semibold">Priority Stack</h3>
+                <PriorityRankingPanel ranked={ranked} layerMode={layerMode} onSelectIso3={setSelectedIso3} />
+                <OciPanel
+                  overviewLoading={overviewLoading}
+                  overview={overview}
+                  onSelectIso3={setSelectedIso3}
+                  onHighlightIso3={setHighlightedIso3}
+                />
+                <ProjectOutliersPanel
+                  projectOutliers={projectOutliers}
+                  projectDetailLoading={projectDetailLoading}
+                  projectDetail={projectDetail}
+                  onSelectProjectId={setSelectedProjectId}
+                />
+              </>
+            ) : null}
+
+            {activePanel === "simulation" ? (
+              <>
+                <h3 className="m-0 text-lg font-semibold">Response Runbook</h3>
+                <SimulationPanel
+                  selectedIso3={selectedIso3}
+                  allocationUsd={allocationUsd}
+                  simulationLoading={simulationLoading}
+                  simulation={simulation}
+                  onAllocationChange={setAllocationUsd}
+                  onSimulate={runSimulation}
+                />
+              </>
+            ) : null}
+          </div>
+        </aside>
       </section>
+      <DatabricksChatPopup
+        queryTemplates={queryTemplates}
+        question={question}
+        genieAnswer={genieAnswer}
+        genieSource={genieSource}
+        genieResults={genieResults}
+        genieLoading={genieLoading}
+        onSetQuestion={setQuestion}
+        onSubmit={submitGenieQuestion}
+      />
       <DashboardFooter />
     </main>
   );

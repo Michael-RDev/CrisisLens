@@ -12,4 +12,5 @@ export * from "@/components/dashboard/OciPanel";
 export * from "@/components/dashboard/PriorityRankingPanel";
 export * from "@/components/dashboard/ProjectOutliersPanel";
 export * from "@/components/dashboard/SimulationPanel";
+export * from "@/components/dashboard/ThemeToggle";
 export * from "@/components/dashboard/TopTabs";

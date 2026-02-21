@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
 
 type HeroSectionProps = {
   generatedAt: string;
@@ -22,6 +23,7 @@ export function HeroSection({ generatedAt }: HeroSectionProps) {
         <p className="mt-2 text-sm text-[#9bb0c6]">Snapshot: {new Date(generatedAt).toLocaleString()}</p>
       </div>
       <div className="grid content-start gap-2 sm:grid-cols-3 lg:grid-cols-1">
+        <ThemeToggle />
         <span className="dbx-chip text-center">OCI Explainability</span>
         <span className="dbx-chip text-center">Outlier Benchmarking</span>
         <span className="dbx-chip text-center">What-if Simulator</span>

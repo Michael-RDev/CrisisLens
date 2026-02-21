@@ -5,6 +5,7 @@ import readline from "node:readline";
 const root = process.cwd();
 const dataDir = path.join(root, "data");
 const outputDir = path.join(root, "public", "data");
+const goldScoresPath = path.join(root, "models", "artifacts", "gold_country_scores.json");
 
 function parseCsvLine(line) {
   const values = [];
@@ -220,11 +221,65 @@ async function buildMetrics() {
     return {
       ...row,
       country: row.country || row.iso3,
-      severityScore: Number(severityScore.toFixed(2))
+      severityScore: Number(severityScore.toFixed(2)),
+      // ML defaults (overwritten below if gold scores exist)
+      neglectScore: 0,
+      ensembleScore: 0,
+      modelScores: { lgbm: 0, rf: 0, xgb: 0, gbr: 0, stacking: 0, ensemble: 0 },
+      modelAgreement: 0,
+      fgiScore: 0,
+      cmiScore: 0,
+      cbpfTotalUsd: 0,
+      cbpfShare: 0,
+      pinPctPop: 0,
+      anomalySeverity: "LOW",
+      neglectFlag: false,
+      topShapDriver: "fgi_score",
+      peerIso3: [],
+      clusterBreakdown: [],
+      fundingTrend: [],
+      reqUsd: row.fundingRequired,
+      fundedUsd: row.fundingReceived,
+      pin: row.inNeed,
+      planName: ""
     };
   });
 
-  rows.sort((a, b) => b.severityScore - a.severityScore);
+  // ── Merge ML enriched gold scores ──────────────────────────────────────────
+  if (fs.existsSync(goldScoresPath)) {
+    const goldRaw = fs.readFileSync(goldScoresPath, "utf-8");
+    const goldScores = JSON.parse(goldRaw);
+    const goldByIso = new Map(goldScores.map((g) => [g.iso3, g]));
+
+    for (const row of rows) {
+      const gold = goldByIso.get(row.iso3);
+      if (!gold) continue;
+      row.neglectScore    = gold.neglectScore    ?? 0;
+      row.ensembleScore   = gold.ensembleScore   ?? gold.neglectScore ?? 0;
+      row.modelScores     = gold.modelScores     ?? { lgbm: 0, rf: 0, xgb: 0, gbr: 0, stacking: 0, ensemble: 0 };
+      row.modelAgreement  = gold.modelAgreement  ?? 0;
+      row.fgiScore        = gold.fgiScore        ?? 0;
+      row.cmiScore        = gold.cmiScore        ?? 0;
+      row.cbpfTotalUsd    = gold.cbpfTotalUsd    ?? 0;
+      row.cbpfShare       = gold.cbpfShare       ?? 0;
+      row.pinPctPop       = gold.pinPctPop       ?? 0;
+      row.anomalySeverity = gold.anomalySeverity ?? "LOW";
+      row.neglectFlag     = gold.neglectFlag     ?? false;
+      row.topShapDriver   = gold.topShapDriver   ?? "fgi_score";
+      row.peerIso3        = gold.peerIso3        ?? [];
+      row.clusterBreakdown = gold.clusterBreakdown ?? [];
+      row.fundingTrend    = gold.fundingTrend    ?? [];
+      row.reqUsd          = gold.reqUsd          ?? row.fundingRequired;
+      row.fundedUsd       = gold.fundedUsd       ?? row.fundingReceived;
+      row.pin             = gold.pin             ?? row.inNeed;
+      row.planName        = gold.planName        ?? "";
+    }
+    console.log(`Merged ML scores for ${goldScores.length} countries from models/artifacts/gold_country_scores.json`);
+  } else {
+    console.warn("⚠  models/artifacts/gold_country_scores.json not found — ML fields will be zero.");
+  }
+
+  rows.sort((a, b) => b.ensembleScore - a.ensembleScore || b.neglectScore - a.neglectScore || b.severityScore - a.severityScore);
 
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "country-metrics.json"), JSON.stringify(rows, null, 2));

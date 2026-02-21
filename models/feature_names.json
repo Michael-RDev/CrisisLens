@@ -1,0 +1,15 @@
+[
+  "fgi_score",
+  "cmi_score",
+  "cbpf_share",
+  "pin_pct_pop",
+  "log_req_usd",
+  "log_cbpf",
+  "funded_pct",
+  "cbpf_per_pin",
+  "req_per_pin",
+  "bbr_median_z",
+  "bbr_max_z",
+  "n_cluster_anomalies",
+  "n_clusters"
+]

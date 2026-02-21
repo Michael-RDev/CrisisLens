@@ -305,6 +305,10 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">
+          <div className="dbx-panel-raised">
+            <p className="dbx-kicker">Display Layer</p>
+            <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
+          </div>
           <GlobePanel
             metrics={metrics}
             layerMode={layerMode}
@@ -318,10 +322,6 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             onQueryChange={setQuery}
             onJump={jumpToCountry}
           />
-          <div className="dbx-panel-raised">
-            <p className="dbx-kicker">Display Layer</p>
-            <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
-          </div>
         </div>
 
         <aside className="dbx-panel flex min-w-0 flex-col overflow-hidden 2xl:max-h-[calc(100vh-220px)]">

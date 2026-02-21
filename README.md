@@ -101,8 +101,16 @@ Open `http://localhost:3000`.
   - `public/data/snapshot.json`
 - `npm run lint` runs Next.js lint rules.
 - `npm run typecheck` runs TypeScript checks.
+- `npm run test:unit` runs Vitest unit tests.
+- `npm run test:e2e` runs Playwright end-to-end tests.
+- `npm run test:e2e:ui` runs only dashboard Playwright UI tests.
+- `npm run test:e2e:api` runs only Playwright API contract tests.
+- `npm run playwright:install` installs the Playwright Chromium browser.
 - `npm run build` builds production assets.
 - `npm run test` runs lint + typecheck.
+- `npm run test:all` runs lint + typecheck + unit + e2e.
+
+Playwright note: e2e scripts use `npx playwright ...`; if Playwright is not installed locally yet, first run needs network access.
 
 ### Key Paths
 

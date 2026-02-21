@@ -3,10 +3,21 @@
 ## Purpose
 This file gives Codex (and other coding agents) a source-of-truth guide for working in this repository quickly and safely.
 
+## Development Approach (TDD First)
+- We use TDD by default for feature work and bug fixes.
+- Workflow:
+  - `Red`: add/update a failing test first (Vitest for logic/helpers, Playwright for user flows/API contracts).
+  - `Green`: implement the minimal code change to pass.
+  - `Refactor`: clean up while keeping tests green.
+- Minimum validation before handoff:
+  - `npm run test`
+  - `npm run test:unit`
+  - `npm run test:e2e` (or targeted `test:e2e:ui` / `test:e2e:api` while iterating)
+
 ## Repository Snapshot
 - Project: `CrisisLens`
 - Frontend: Next.js 14 (App Router), React 18, TypeScript, Three.js via `react-globe.gl`
-- Tests: Vitest unit tests in `tests/**/*.test.ts`
+- Tests: Vitest unit tests + Playwright e2e tests
 - Backend (current code): minimal Flask app in `api/main.py`
 - Data pipeline: CSV aggregation script in `scripts/generate-country-metrics.mjs`
 
@@ -42,7 +53,13 @@ Backend URL: `http://127.0.0.1:9777`
 - `npm run lint`: ESLint (`next/core-web-vitals` + `next/typescript`)
 - `npm run typecheck`: TypeScript compile check, no emit
 - `npm run test:unit`: run Vitest tests
+- `npm run test:e2e`: run Playwright end-to-end tests (auto-starts local app server)
+- `npm run test:e2e:headed`: run Playwright e2e tests in headed mode
+- `npm run test:e2e:ui`: run only dashboard UI Playwright tests
+- `npm run test:e2e:api`: run only API contract Playwright tests
+- `npm run playwright:install`: install Chromium for Playwright
 - `npm run test`: lint + typecheck
+- `npm run test:all`: lint + typecheck + unit + e2e
 - `npm run generate:data`: regenerate `public/data/country-metrics.json` and `public/data/snapshot.json` from CSVs in `data/`
 
 ## Recommended Validation Before Finishing Changes
@@ -51,6 +68,11 @@ Run this sequence for frontend changes:
 npm run test:unit
 npm run test
 npm run build
+```
+
+For UI-flow changes, also run:
+```bash
+npm run test:e2e
 ```
 
 For backend-only changes, there is no formal Python test/lint setup in-repo yet; at minimum run:
@@ -65,6 +87,11 @@ and hit `/` and `/health`.
   - `tests/components/summary-utils.test.ts`
   - `tests/lib/cv-globe-bridge.test.ts`
   - `tests/lib/globe-picking.test.ts`
+- Playwright e2e tests live in:
+  - `tests/e2e/dashboard.spec.js`
+  - `tests/e2e/api-routes.spec.js`
+- Playwright config: `playwright.config.mjs`
+- Playwright note: e2e scripts use `npx playwright ...`; first run requires network access to fetch package/browsers if they are not already installed.
 - Vitest config: `vitest.config.ts` (Node environment, alias `@ -> repo root`)
 - ESLint config: `.eslintrc.json`
 - TypeScript config: `tsconfig.json` (strict mode enabled)
@@ -107,6 +134,5 @@ and hit `/` and `/health`.
 - When touching metric formulas, update corresponding unit tests in `tests/lib/metrics.test.ts`.
 
 ## Known Gaps (Do Not Assume Implemented)
-- No Playwright/e2e suite yet.
 - No Python linting (`ruff`/`flake8`) or Python test suite configured.
 - Backend described in docs is ahead of backend code currently in repository.

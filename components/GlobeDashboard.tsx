@@ -287,13 +287,13 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }
 
   return (
-    <main className="page-shell">
+    <main className="mx-auto max-w-[1460px] p-4 sm:p-5">
       <HeroSection generatedAt={generatedAt} />
       <TopTabs />
       <KpiGrid summary={summary} overview={overview} />
       <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
 
-      <section className="dashboard-grid">
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(520px,2fr)_minmax(330px,1fr)]">
         <GlobePanel
           metrics={metrics}
           layerMode={layerMode}

@@ -8,12 +8,16 @@ type LayerSelectorProps = {
 
 export function LayerSelector({ layerMode, onChange }: LayerSelectorProps) {
   return (
-    <section className="layer-row">
+    <section className="mt-3 flex flex-wrap gap-2">
       {(Object.keys(layerConfig) as LayerMode[]).map((mode) => (
         <button
           key={mode}
           type="button"
-          className={mode === layerMode ? "is-active" : ""}
+          className={`rounded-full border px-3 py-1.5 text-sm ${
+            mode === layerMode
+              ? "border-[#dab76b] bg-[rgba(57,44,24,0.95)] text-[#eaf3f8]"
+              : "border-[#33566e] bg-[rgba(10,26,39,0.92)] text-[#eaf3f8]"
+          }`}
           onClick={() => onChange(mode)}
         >
           {layerConfig[mode].label}

@@ -77,7 +77,7 @@ export function GlobePanel({
         onSelect={onSelectIso3}
         onHover={onHoverIso3}
       />
-      <div className="dbx-divider mt-2 pt-2 text-sm text-[#b5c8d6]">
+      <div className="dbx-divider mt-2 pt-2 text-sm text-[var(--dbx-text-muted)]">
         <p>{hoverText}</p>
       </div>
     </motion.article>

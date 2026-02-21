@@ -27,7 +27,7 @@ export function PriorityRankingPanel({
                 onClick={() => onSelectIso3(row.iso3)}
               >
                 <span className="min-w-0 break-words">
-                  {row.country} <small className="text-[#93acbc]">{row.iso3}</small>
+                  {row.country} <small className="text-[var(--dbx-text-muted)]">{row.iso3}</small>
                 </span>
                 <strong className="shrink-0">
                   {value.toFixed(1)}

@@ -23,7 +23,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
           <p className="dbx-subtitle mt-1 break-words">{agentState.narrative}</p>
         </>
       ) : null}
-      <h3 className="mb-1 mt-3 text-sm text-[#b7ccda]">Mock Risk Drivers</h3>
+      <h3 className="mb-1 mt-3 text-sm text-[var(--dbx-text-muted)]">Mock Risk Drivers</h3>
       <ul className="grid list-none gap-1.5 p-0">
         {(agentState?.riskDrivers?.length
           ? agentState.riskDrivers.slice(0, 3)
@@ -34,7 +34,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
           </li>
         ))}
       </ul>
-      <h3 className="mb-1 mt-2 text-sm text-[#b7ccda]">Mock Recommended Actions</h3>
+      <h3 className="mb-1 mt-2 text-sm text-[var(--dbx-text-muted)]">Mock Recommended Actions</h3>
       <ul className="grid list-none gap-1.5 p-0">
         {(agentState?.recommendedActions?.length
           ? agentState.recommendedActions.slice(0, 3)

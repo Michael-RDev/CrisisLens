@@ -35,23 +35,23 @@ export function CountryPanel({
       {selected && selectedDerived ? (
         <dl className="mt-2 grid gap-2">
           <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
-            <dt className="min-w-0 break-words text-[#9bb0c6]">Overlooked Index (OCI)</dt>
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Overlooked Index (OCI)</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedOci?.totalScore?.toFixed(2) ?? "—"}</dd>
           </div>
           <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
-            <dt className="min-w-0 break-words text-[#9bb0c6]">Severity Score</dt>
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Severity Score</dt>
             <dd className="m-0 shrink-0 font-bold">{selected.severityScore.toFixed(1)}</dd>
           </div>
           <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
-            <dt className="min-w-0 break-words text-[#9bb0c6]">People In Need %</dt>
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">People In Need %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.inNeedPct.toFixed(1)}%</dd>
           </div>
           <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
-            <dt className="min-w-0 break-words text-[#9bb0c6]">Coverage %</dt>
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Coverage %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.coveragePct.toFixed(1)}%</dd>
           </div>
           <div className="dbx-divider flex items-center justify-between gap-2 pb-1.5">
-            <dt className="min-w-0 break-words text-[#9bb0c6]">Funding Gap %</dt>
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Funding Gap %</dt>
             <dd className="m-0 shrink-0 font-bold">{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
           </div>
         </dl>
@@ -64,7 +64,7 @@ export function CountryPanel({
         <p>Select a country from the globe or ranking list.</p>
       )}
 
-      <h3 className="mb-2 mt-4 text-sm text-[#b7ccda]">OCI Component Breakdown</h3>
+      <h3 className="mb-2 mt-4 text-sm text-[var(--dbx-text-muted)]">OCI Component Breakdown</h3>
       {selectedOci ? (
         <ul className="grid list-none gap-1.5 p-0">
           <li className="dbx-list-row">
@@ -85,13 +85,13 @@ export function CountryPanel({
           </li>
         </ul>
       ) : (
-        <p className="text-sm text-[#9db7c8]">No OCI breakdown available for this selection.</p>
+        <p className="text-sm text-[var(--dbx-text-muted)]">No OCI breakdown available for this selection.</p>
       )}
 
-      <h3 className="mb-2 mt-4 text-sm text-[#b7ccda]">Cluster Outlier Severity</h3>
+      <h3 className="mb-2 mt-4 text-sm text-[var(--dbx-text-muted)]">Cluster Outlier Severity</h3>
       <ul className="grid list-none gap-1.5 p-0">
         {clusterBreakdown.length === 0 ? (
-          <li className="text-sm text-[#9db7c8]">No cluster rows available for this country.</li>
+          <li className="text-sm text-[var(--dbx-text-muted)]">No cluster rows available for this country.</li>
         ) : (
           clusterBreakdown.slice(0, 6).map((cluster) => (
             <li

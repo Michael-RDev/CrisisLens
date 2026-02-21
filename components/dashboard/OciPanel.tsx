@@ -25,7 +25,7 @@ export function OciPanel({
           {overview.top_overlooked.slice(0, 8).map((row) => (
             <li key={row.iso3}>
               <button
-                className="plain-list-btn flex w-full cursor-pointer items-center justify-between rounded-[9px] border border-[#345871] bg-[#0a1925] px-2.5 py-2 text-left text-[#eaf3f8]"
+                className="flex w-full cursor-pointer items-center justify-between rounded-[9px] border border-[#345871] bg-[#0a1925] px-2.5 py-2 text-left text-[#eaf3f8]"
                 type="button"
                 onClick={() => {
                   onSelectIso3(row.iso3);

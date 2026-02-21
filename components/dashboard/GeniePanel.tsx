@@ -41,7 +41,7 @@ export function GeniePanel({
           </button>
         ))}
       </div>
-      <form onSubmit={onSubmit} className="integration-form grid gap-2">
+      <form onSubmit={onSubmit} className="grid gap-2">
         <textarea
           className="w-full resize-y rounded-[9px] border border-[#2f5067] bg-[#0a1824] px-3 py-2 text-[#eaf3f8]"
           value={question}

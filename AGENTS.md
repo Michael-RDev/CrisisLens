@@ -144,6 +144,12 @@ and hit `/` and `/health`.
 - Styling policy: use Tailwind utility classes by default for component/page styling.
 - Use `app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
 
+## Code Style
+- Keep components small and composable; extract logic/helpers instead of growing monolithic UI files.
+- Prefer explicit domain types for API payloads/state over `Record<string, unknown>` shapes.
+- Remove unused CSS hook class names after Tailwind migration; avoid adding non-semantic class tokens when utilities already express the style.
+- Avoid duplicate state updates/effects and keep side effects contained in `useEffect`/callbacks with clear cleanup.
+
 ## Known Gaps (Do Not Assume Implemented)
 - No Python linting (`ruff`/`flake8`) or Python test suite configured.
 - Backend described in docs is ahead of backend code currently in repository.

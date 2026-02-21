@@ -22,7 +22,7 @@ export function CvPanel({
         Gesture control is enabled on the globe. CV endpoint remains available for external camera
         streams and country auto-select integration.
       </p>
-      <div className="integration-form grid gap-2">
+      <div className="grid gap-2">
         <textarea
           className="w-full resize-y rounded-[9px] border border-[#2f5067] bg-[#0a1824] px-3 py-2 text-[#eaf3f8]"
           value={cvFrameInput}

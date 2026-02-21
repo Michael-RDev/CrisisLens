@@ -23,7 +23,7 @@ export function SimulationPanel({
       <p className="text-sm text-[#9db7c8]">
         Test how adding pooled-fund allocation changes country OCI rank and global leaderboard.
       </p>
-      <div className="integration-form grid gap-2">
+      <div className="grid gap-2">
         <input
           className="w-full rounded-[9px] border border-[#2f5067] bg-[#0a1824] px-3 py-2 text-[#eaf3f8]"
           value={allocationUsd}

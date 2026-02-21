@@ -25,8 +25,26 @@ export function LandingGlobe() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [size, setSize] = useState({ width: 960, height: 380 });
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const canvas = document.createElement("canvas");
+      const supportsContext = Boolean(
+        window.WebGLRenderingContext &&
+          (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+      );
+      setWebglSupported(supportsContext);
+    } catch {
+      setWebglSupported(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!webglSupported) return;
+
     const controls = globeRef.current?.controls();
     if (controls) {
       controls.autoRotate = true;
@@ -36,7 +54,7 @@ export function LandingGlobe() {
     }
 
     globeRef.current?.pointOfView({ lat: 14, lng: 18, altitude: 2.1 });
-  }, []);
+  }, [webglSupported]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -67,39 +85,70 @@ export function LandingGlobe() {
   );
 
   return (
-    <section className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+    <section className="landing-card" id="monitor">
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
-          <h2 className="m-0 text-2xl font-semibold">Live Global Pulse</h2>
-          <p className="mt-1 text-sm text-[#9db7c8]">
-            Decorative operations globe for quick situational context on landing.
+          <h2 className="m-0 text-2xl font-semibold sm:text-3xl">Live Global Pulse</h2>
+          <p className="landing-body mt-1">
+            Country-level watchboard with rotating signal markers for rapid situational awareness.
           </p>
         </div>
-        <span className="rounded-full border border-[#3c5f77] bg-[rgba(10,26,39,0.8)] px-3 py-1 text-xs text-[#c9dbea]">
+        <span className="landing-chip">
           Mock Signals
         </span>
       </div>
 
-      <div ref={containerRef} className="h-[320px] w-full overflow-hidden rounded-xl border border-[#2b4e66] bg-[#08131d]">
-        <Globe
-          ref={globeRef}
-          width={size.width}
-          height={size.height}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundColor="rgba(0,0,0,0)"
-          pointsData={hotspots}
-          pointColor={() => "#f2a73d"}
-          pointAltitude={(d) => (d as Hotspot).size}
-          pointRadius={0.35}
-          pointResolution={12}
-          ringsData={rings}
-          ringColor={() => "#ffb86f"}
-          ringMaxRadius={(d) => (d as { maxR: number }).maxR}
-          ringPropagationSpeed={(d) => (d as { propagationSpeed: number }).propagationSpeed}
-          ringRepeatPeriod={(d) => (d as { repeatPeriod: number }).repeatPeriod}
-          enablePointerInteraction={false}
-        />
+      <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
+        <div
+          ref={containerRef}
+          className="h-[320px] w-full overflow-hidden rounded-xl border border-[#2b4e66] bg-[#08131d] sm:h-[360px]"
+        >
+          {webglSupported ? (
+            <Globe
+              ref={globeRef}
+              width={size.width}
+              height={size.height}
+              globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+              bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+              backgroundColor="rgba(0,0,0,0)"
+              pointsData={hotspots}
+              pointColor={() => "#f0b25d"}
+              pointAltitude={(d) => (d as Hotspot).size}
+              pointRadius={0.35}
+              pointResolution={12}
+              ringsData={rings}
+              ringColor={() => "#ffd194"}
+              ringMaxRadius={(d) => (d as { maxR: number }).maxR}
+              ringPropagationSpeed={(d) => (d as { propagationSpeed: number }).propagationSpeed}
+              ringRepeatPeriod={(d) => (d as { repeatPeriod: number }).repeatPeriod}
+              enablePointerInteraction={false}
+            />
+          ) : (
+            <div className="grid h-full place-items-center p-5 text-center">
+              <div>
+                <p className="m-0 text-sm font-semibold text-[#eaf3f8]">3D map unavailable</p>
+                <p className="mt-2 text-xs text-[#adc3d3]">
+                  WebGL is not available in this runtime. Live signal summaries remain accessible.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        <aside className="landing-card-muted p-4">
+          <h3 className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-[#b4c6d3]">
+            Active monitors
+          </h3>
+          <ul className="m-0 mt-3 grid list-none gap-2 p-0">
+            {hotspots.map((spot) => (
+              <li key={spot.label} className="rounded-lg border border-[#2e4b61] bg-[#111f2c] p-3">
+                <p className="m-0 text-sm font-semibold">{spot.label}</p>
+                <p className="m-0 pt-1 text-xs text-[#9fb7c7]">
+                  Lat {spot.lat.toFixed(2)} | Lng {spot.lng.toFixed(2)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
     </section>
   );

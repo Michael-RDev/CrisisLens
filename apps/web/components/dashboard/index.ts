@@ -5,6 +5,7 @@ export * from "@/components/dashboard/DashboardFooter";
 export * from "@/components/dashboard/GeniePanel";
 export * from "@/components/dashboard/GlobePanel";
 export * from "@/components/dashboard/HeroSection";
+export * from "@/components/dashboard/InsightPanel";
 export * from "@/components/dashboard/KpiGrid";
 export * from "@/components/dashboard/LayerSelector";
 export * from "@/components/dashboard/OciPanel";

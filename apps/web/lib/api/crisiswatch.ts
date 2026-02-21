@@ -127,6 +127,40 @@ export type GenieQueryResponse = {
   highlight_iso3: string[];
 };
 
+export type InsightMetricsResponse = {
+  countryCode: string;
+  countryName: string;
+  cards: {
+    pin: number;
+    funding: number;
+    pinFundingRatio: number | null;
+    rank: number;
+  };
+  details: {
+    percentFunded: number;
+    fundingRequired: number;
+    inNeedRate: number;
+    fundingGapPct: number;
+    coveragePct: number;
+    severityScore: number;
+    latestFundingYear: number;
+  };
+  chart: Array<{ label: string; value: number }>;
+};
+
+export type GenieSummaryResponse = {
+  status: string;
+  conversationId: string;
+  messageId: string;
+  summaryText: string;
+  keyDrivers: string[];
+  outliers: string[];
+  sql?: string | null;
+  topList?: Array<{ label: string; value: string; note?: string }>;
+  attachments?: Array<{ attachment_id: string; [key: string]: unknown }>;
+  rows?: Array<Record<string, unknown>>;
+};
+
 export type GlobeEvent =
   | {
       type: "anomaly";
@@ -142,28 +176,36 @@ export type GlobeEvent =
 
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new Error(`Request failed with ${response.status}`);
+    let detail = "";
+    try {
+      const payload = (await response.json()) as { error?: string; details?: string };
+      const parts = [payload.error, payload.details].filter((item): item is string => Boolean(item));
+      detail = parts.join(" | ");
+    } catch {
+      detail = "";
+    }
+    throw new Error(detail || `Request failed with ${response.status}`);
   }
   return (await response.json()) as T;
 }
 
 export async function fetchGlobeHeatmap(): Promise<GlobeHeatmapRow[]> {
-  const response = await fetch("/api/globe/heatmap", { method: "GET" });
+  const response = await fetch("/api/globe-heatmap", { method: "GET" });
   return parseJson<GlobeHeatmapRow[]>(response);
 }
 
 export async function fetchCountryDrilldown(iso3: string): Promise<CountryDrilldown> {
-  const response = await fetch(`/api/country/${iso3}`, { method: "GET" });
+  const response = await fetch(`/api/country?iso3=${encodeURIComponent(iso3)}`, { method: "GET" });
   return parseJson<CountryDrilldown>(response);
 }
 
 export async function fetchProjectDetail(projectId: string): Promise<ProjectDetail> {
-  const response = await fetch(`/api/project/${projectId}`, { method: "GET" });
+  const response = await fetch(`/api/project?projectId=${encodeURIComponent(projectId)}`, { method: "GET" });
   return parseJson<ProjectDetail>(response);
 }
 
 export async function fetchAnalyticsOverview(): Promise<AnalyticsOverviewResponse> {
-  const response = await fetch("/api/analytics/overview", { method: "GET" });
+  const response = await fetch("/api/analytics-overview", { method: "GET" });
   return parseJson<AnalyticsOverviewResponse>(response);
 }
 
@@ -171,7 +213,7 @@ export async function simulateFundingScenario(payload: {
   iso3: string;
   allocation_usd: number;
 }): Promise<SimulationResponse> {
-  const response = await fetch("/api/analytics/simulate", {
+  const response = await fetch("/api/analytics-simulate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -183,12 +225,42 @@ export async function queryGenie(payload: {
   nl_query: string;
   iso3?: string;
 }): Promise<GenieQueryResponse> {
-  const response = await fetch("/api/genie/query", {
+  const response = await fetch("/api/genie-query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
   return parseJson<GenieQueryResponse>(response);
+}
+
+export async function ensureGenieSession(): Promise<{ conversationId: string }> {
+  const response = await fetch("/api/genie-session", {
+    method: "POST"
+  });
+  return parseJson<{ conversationId: string }>(response);
+}
+
+export async function fetchCountryInsightMetrics(countryCode: string): Promise<InsightMetricsResponse> {
+  const response = await fetch("/api/country-metrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ countryCode })
+  });
+  return parseJson<InsightMetricsResponse>(response);
+}
+
+export async function fetchGenieSummary(payload: {
+  countryCode: string;
+  countryName?: string;
+  conversationId?: string;
+  followUpQuestion?: string;
+}): Promise<GenieSummaryResponse> {
+  const response = await fetch("/api/genie-summary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseJson<GenieSummaryResponse>(response);
 }
 
 export function subscribeToGlobeEvents(

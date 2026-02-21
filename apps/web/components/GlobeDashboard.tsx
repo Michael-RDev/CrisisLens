@@ -2,10 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { computeGlobalSummary } from "@/components/summary-utils";
-import { countryByIso3 } from "@/lib/countries";
+import { countryByIso3, iso3ByIso2 } from "@/lib/countries";
 import {
+  ensureGenieSession,
   fetchAnalyticsOverview,
   fetchCountryDrilldown,
+  fetchCountryInsightMetrics,
+  fetchGenieSummary,
   fetchProjectDetail,
   queryGenie,
   simulateFundingScenario,
@@ -14,6 +17,8 @@ import {
 import type {
   AnalyticsOverviewResponse,
   CountryDrilldown,
+  GenieSummaryResponse,
+  InsightMetricsResponse,
   ProjectDetail,
   SimulationResponse
 } from "@/lib/api/crisiswatch";
@@ -30,6 +35,7 @@ import {
   GeniePanel,
   GlobePanel,
   HeroSection,
+  InsightPanel,
   KpiGrid,
   LayerSelector,
   OciPanel,
@@ -45,6 +51,18 @@ type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
 };
+
+type PinchSelection = {
+  countryCode: string;
+  countryName?: string;
+};
+
+function normalizeCountryCode(countryCode: string): string | null {
+  const normalized = countryCode.trim().toUpperCase();
+  if (normalized.length === 3) return countryByIso3.has(normalized) ? normalized : null;
+  if (normalized.length === 2) return iso3ByIso2.get(normalized) ?? null;
+  return null;
+}
 
 const queryTemplates = [
   "What projects are most similar to PRJ-2025-SDN-health and how does their efficiency compare?",
@@ -89,6 +107,17 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [allocationUsd, setAllocationUsd] = useState("5000000");
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [insightOpen, setInsightOpen] = useState(false);
+  const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
+  const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
+  const [insightMetrics, setInsightMetrics] = useState<InsightMetricsResponse | null>(null);
+  const [insightSummary, setInsightSummary] = useState<GenieSummaryResponse | null>(null);
+  const [insightMetricsLoading, setInsightMetricsLoading] = useState(false);
+  const [insightSummaryLoading, setInsightSummaryLoading] = useState(false);
+  const [insightMetricsError, setInsightMetricsError] = useState<string | null>(null);
+  const [insightSummaryError, setInsightSummaryError] = useState<string | null>(null);
+  const [insightProgressLabel, setInsightProgressLabel] = useState("Waiting for country selection.");
+  const [followUpQuestion, setFollowUpQuestion] = useState("");
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const summary = useMemo(() => computeGlobalSummary(metrics), [metrics]);
@@ -145,7 +174,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     setAgentLoading(true);
 
     Promise.all([
-      fetch(`/api/agent/country/${selectedIso3}`, { signal: controller.signal }).then(async (res) => {
+      fetch(`/api/agent?iso3=${encodeURIComponent(selectedIso3)}`, { signal: controller.signal }).then(async (res) => {
         if (!res.ok) throw new Error("Agent fetch failed");
         return (await res.json()) as DatabricksCountryState;
       }),
@@ -245,7 +274,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   async function triggerCvDetection() {
     setCvLoading(true);
     try {
-      const response = await fetch("/api/cv/detect", {
+      const response = await fetch("/api/cv-detect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageDataUrl: cvFrameInput })
@@ -287,6 +316,86 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     }
   }
 
+  async function ensureConversationId(): Promise<string> {
+    if (genieConversationId) return genieConversationId;
+    const session = await ensureGenieSession();
+    setGenieConversationId(session.conversationId);
+    return session.conversationId;
+  }
+
+  async function loadInsightForCountry(selection: PinchSelection, followUp?: string) {
+    const normalized = normalizeCountryCode(selection.countryCode);
+    if (!normalized) {
+      setInsightMetricsError("Selected country code is invalid. Use ISO3 or ISO2.");
+      setInsightSummaryError("Cannot query Genie because the country code is invalid.");
+      return;
+    }
+
+    setInsightSelection({ countryCode: normalized, countryName: selection.countryName });
+    setSelectedIso3(normalized);
+    setInsightOpen(true);
+    setInsightMetricsError(null);
+    setInsightSummaryError(null);
+    setInsightProgressLabel("Loading country metrics...");
+    setInsightMetricsLoading(true);
+    setInsightSummaryLoading(true);
+
+    const metricsPromise = fetchCountryInsightMetrics(normalized)
+      .then((payload) => setInsightMetrics(payload))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Unable to load country metrics.";
+        setInsightMetricsError(message);
+        setInsightMetrics(null);
+      })
+      .finally(() => setInsightMetricsLoading(false));
+
+    const summaryPromise = (async () => {
+      try {
+        setInsightProgressLabel("Starting Genie session...");
+        const conversationId = await ensureConversationId();
+        setInsightProgressLabel("Asking Databricks Genie for country summary...");
+        const summaryPayload = await fetchGenieSummary({
+          countryCode: normalized,
+          countryName: selection.countryName,
+          conversationId,
+          followUpQuestion: followUp
+        });
+        if (summaryPayload.conversationId && summaryPayload.conversationId !== genieConversationId) {
+          setGenieConversationId(summaryPayload.conversationId);
+        }
+        setInsightSummary(summaryPayload);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to load Genie summary.";
+        setInsightSummaryError(message);
+        setInsightSummary(null);
+      } finally {
+        setInsightSummaryLoading(false);
+        setInsightProgressLabel("Summary ready.");
+      }
+    })();
+
+    await Promise.all([metricsPromise, summaryPromise]);
+  }
+
+  function onCountryPinch(selection: PinchSelection) {
+    // Plug your existing globe pinch callback into this handler.
+    // Expected payload shape: onCountryPinch({ countryCode, countryName? }).
+    setFollowUpQuestion("");
+    void loadInsightForCountry(selection);
+  }
+
+  async function refreshInsightSummary() {
+    if (!insightSelection) return;
+    await loadInsightForCountry(insightSelection);
+  }
+
+  async function submitInsightFollowUp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!insightSelection || !followUpQuestion.trim()) return;
+    await loadInsightForCountry(insightSelection, followUpQuestion.trim());
+    setFollowUpQuestion("");
+  }
+
   function jumpToCountry() {
     const iso3 = resolveJumpToCountryIso3(query);
     if (iso3) {
@@ -310,7 +419,12 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           query={query}
           countrySuggestions={countrySuggestions}
           hoverText={hoverText}
-          onSelectIso3={setSelectedIso3}
+          onSelectIso3={(iso3) =>
+            onCountryPinch({
+              countryCode: iso3,
+              countryName: countryByIso3.get(iso3)?.name
+            })
+          }
           onHoverIso3={setHoverIso3}
           onQueryChange={setQuery}
           onJump={jumpToCountry}
@@ -363,6 +477,23 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           onDetect={triggerCvDetection}
         />
       </section>
+      <InsightPanel
+        isOpen={insightOpen}
+        countryCode={insightSelection?.countryCode}
+        countryName={insightSelection?.countryName}
+        metrics={insightMetrics}
+        summary={insightSummary}
+        metricsLoading={insightMetricsLoading}
+        summaryLoading={insightSummaryLoading}
+        metricsError={insightMetricsError}
+        summaryError={insightSummaryError}
+        progressLabel={insightProgressLabel}
+        followUpQuestion={followUpQuestion}
+        onClose={() => setInsightOpen(false)}
+        onRefreshSummary={() => void refreshInsightSummary()}
+        onFollowUpChange={setFollowUpQuestion}
+        onSubmitFollowUp={submitInsightFollowUp}
+      />
       <DashboardFooter />
     </main>
   );

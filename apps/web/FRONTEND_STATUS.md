@@ -18,12 +18,12 @@
   - `CV Mode` panel that detects ISO3 from incoming frame payload and auto-focuses the country.
 - Added shared metric helpers in `lib/metrics.ts` so UI logic and future backend logic use the same formulas.
 - Added API route stubs to decouple UI from provider internals:
-  - `app/api/agent/country/[iso3]/route.ts`
-  - `app/api/genie/query/route.ts`
-  - `app/api/cv/detect/route.ts`
-  - `app/api/globe/heatmap/route.ts` (spec-aligned heatmap payload)
-  - `app/api/country/[iso3]/route.ts` (spec-aligned country drill-down payload)
-  - `app/api/project/[project_id]/route.ts` (spec-aligned project detail payload)
+  - `app/api/agent/route.ts`
+  - `app/api/genie-query/route.ts`
+  - `app/api/cv-detect/route.ts`
+  - `app/api/globe-heatmap/route.ts` (spec-aligned heatmap payload)
+  - `app/api/country/route.ts` (spec-aligned country drill-down payload via `?iso3=`)
+  - `app/api/project/route.ts` (spec-aligned project detail payload via `?projectId=`)
 - Added typed frontend API client for spec endpoints and WebSocket subscription hook:
   - `lib/api/crisiswatch.ts`
 - Enhanced mock adapters for realistic end-to-end demo behavior while keeping swap-in contracts intact:
@@ -66,7 +66,7 @@
   - `docs/CONTEXT_HANDOFF.md`
 
 ## Ready For Databricks Integration
-- UI already calls stable internal API routes (`/api/globe/heatmap`, `/api/country/:iso3`, `/api/project/:id`, `/api/agent/...`, `/api/genie/query`, `/api/cv/detect`).
+- UI already calls stable internal API routes (`/api/globe-heatmap`, `/api/country?iso3=...`, `/api/project?projectId=...`, `/api/agent?iso3=...`, `/api/genie-query`, `/api/cv-detect`).
 - WebSocket event integration is plumbed behind `NEXT_PUBLIC_GLOBE_WS_URL` and supports anomaly/highlight event handling in the globe.
 - To connect real services, replace mock internals behind these contracts:
   - `DatabricksProvider` in `lib/databricks/client.ts`

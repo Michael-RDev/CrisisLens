@@ -1,13 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDatabricksProvider } from "@/lib/databricks/client";
 import { riskBandFromScore } from "@/lib/metrics";
 
-type Params = {
-  params: { iso3: string };
-};
-
-export async function GET(_: Request, { params }: Params) {
-  const iso3 = params.iso3.trim().toUpperCase();
+export async function GET(request: NextRequest) {
+  const iso3 = request.nextUrl.searchParams.get("iso3")?.trim().toUpperCase() ?? "";
   if (!iso3 || iso3.length !== 3) {
     return NextResponse.json({ error: "Invalid ISO3 code." }, { status: 400 });
   }

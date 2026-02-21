@@ -44,7 +44,7 @@ export function GlobePanel({
       transition={{ duration: 0.45, delay: 0.14 }}
     >
       <div className="card-header-row flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="m-0 text-xl font-semibold">Interactive Globe</h2>
+        <h2 className="m-0 text-xl font-semibold">Live Global Pulse</h2>
         <input
           className="min-w-0 rounded-[9px] border border-[#2f5168] bg-[#0a1824] px-3 py-2 text-[#eaf3f8] lg:min-w-[260px]"
           value={query}

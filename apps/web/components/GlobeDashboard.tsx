@@ -321,7 +321,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           </div>
         </div>
 
-        <aside className="min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4 xl:max-h-[calc(100vh-220px)] xl:overflow-y-auto">
           <h2 className="m-0 text-xl font-semibold">Operations Panels</h2>
           <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
             <button
@@ -367,45 +367,59 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
           <div className="mt-3 grid min-w-0 gap-3 overflow-x-hidden" role="tabpanel">
             {activePanel === "country" ? (
-              <>
-                <CountryPanel
-                  selected={selected}
-                  selectedCountryMeta={selectedCountryMeta}
-                  selectedOci={selectedOci}
-                  clusterBreakdown={clusterBreakdown}
-                />
-                <AgentStatePanel
-                  selectedIso3={selectedIso3}
-                  agentLoading={agentLoading}
-                  agentState={agentState}
-                />
-                <CvPanel
-                  cvFrameInput={cvFrameInput}
-                  cvLoading={cvLoading}
-                  cvDetection={cvDetection}
-                  onCvInputChange={setCvFrameInput}
-                  onDetect={triggerCvDetection}
-                />
-              </>
+              <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
+                <div className="min-w-0">
+                  <CountryPanel
+                    selected={selected}
+                    selectedCountryMeta={selectedCountryMeta}
+                    selectedOci={selectedOci}
+                    clusterBreakdown={clusterBreakdown}
+                  />
+                </div>
+                <div className="grid min-w-0 content-start gap-3">
+                  <AgentStatePanel
+                    selectedIso3={selectedIso3}
+                    agentLoading={agentLoading}
+                    agentState={agentState}
+                  />
+                  <CvPanel
+                    cvFrameInput={cvFrameInput}
+                    cvLoading={cvLoading}
+                    cvDetection={cvDetection}
+                    onCvInputChange={setCvFrameInput}
+                    onDetect={triggerCvDetection}
+                  />
+                </div>
+              </div>
             ) : null}
 
             {activePanel === "priority" ? (
-              <>
+              <div className="grid min-w-0 gap-3">
                 <h3 className="m-0 text-lg font-semibold">Priority Stack</h3>
-                <PriorityRankingPanel ranked={ranked} layerMode={layerMode} onSelectIso3={setSelectedIso3} />
-                <OciPanel
-                  overviewLoading={overviewLoading}
-                  overview={overview}
-                  onSelectIso3={setSelectedIso3}
-                  onHighlightIso3={setHighlightedIso3}
-                />
-                <ProjectOutliersPanel
-                  projectOutliers={projectOutliers}
-                  projectDetailLoading={projectDetailLoading}
-                  projectDetail={projectDetail}
-                  onSelectProjectId={setSelectedProjectId}
-                />
-              </>
+                <div className="grid min-w-0 gap-3 2xl:grid-cols-2">
+                  <div className="min-w-0">
+                    <PriorityRankingPanel
+                      ranked={ranked}
+                      layerMode={layerMode}
+                      onSelectIso3={setSelectedIso3}
+                    />
+                  </div>
+                  <div className="grid min-w-0 content-start gap-3">
+                    <OciPanel
+                      overviewLoading={overviewLoading}
+                      overview={overview}
+                      onSelectIso3={setSelectedIso3}
+                      onHighlightIso3={setHighlightedIso3}
+                    />
+                    <ProjectOutliersPanel
+                      projectOutliers={projectOutliers}
+                      projectDetailLoading={projectDetailLoading}
+                      projectDetail={projectDetail}
+                      onSelectProjectId={setSelectedProjectId}
+                    />
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             {activePanel === "simulation" ? (

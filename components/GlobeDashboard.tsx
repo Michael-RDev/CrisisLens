@@ -26,6 +26,7 @@ import {
   AgentStatePanel,
   CountryPanel,
   CvPanel,
+  DashboardFooter,
   GeniePanel,
   GlobePanel,
   HeroSection,
@@ -352,6 +353,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           onDetect={triggerCvDetection}
         />
       </section>
+      <DashboardFooter />
     </main>
   );
 }

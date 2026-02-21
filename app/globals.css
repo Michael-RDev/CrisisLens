@@ -156,6 +156,17 @@ body {
   padding: 1.1rem;
 }
 
+.dashboard-footer {
+  margin-top: 0.9rem;
+  border-top: 1px solid #325067;
+  padding-top: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #9cb5c7;
+  font-size: 0.86rem;
+}
+
 .glass {
   background: #10202d;
   border: 1px solid var(--line);
@@ -659,6 +670,10 @@ body {
   }
 
   .landing-footer {
+    flex-direction: column;
+  }
+
+  .dashboard-footer {
     flex-direction: column;
   }
 

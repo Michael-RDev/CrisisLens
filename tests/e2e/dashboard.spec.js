@@ -11,6 +11,7 @@ test.describe("CrisisLens dashboard", () => {
     await expect(page.getByRole("heading", { name: "Databricks Genie (NLQ)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "CV Point-to-Highlight" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run Genie Query" })).toBeVisible();
+    await expect(page.getByRole("contentinfo")).toContainText("CrisisLens Command Center");
   });
 
   test("switches layer mode and updates ranking title", async ({ page }) => {

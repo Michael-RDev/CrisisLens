@@ -1,6 +1,7 @@
 export * from "@/components/dashboard/AgentStatePanel";
 export * from "@/components/dashboard/CountryPanel";
 export * from "@/components/dashboard/CvPanel";
+export * from "@/components/dashboard/DashboardFooter";
 export * from "@/components/dashboard/GeniePanel";
 export * from "@/components/dashboard/GlobePanel";
 export * from "@/components/dashboard/HeroSection";

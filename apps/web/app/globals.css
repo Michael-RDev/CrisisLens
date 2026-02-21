@@ -62,6 +62,11 @@
     --dbx-globe-hint-bg: rgba(255, 249, 244, 0.92);
     --dbx-globe-hint-border: #e7cfbf;
     --dbx-globe-hint-text: #7a4a33;
+    --dbx-globe-sensitivity-text: #8b5c44;
+    --dbx-globe-label-text: #7c4a33;
+    --dbx-globe-label-bg: rgba(255, 250, 246, 0.95);
+    --dbx-globe-label-border: #e7cfbf;
+    --dbx-loading-text: #7a4a33;
 
     --chip-low-border: #86bb9f;
     --chip-low-bg: #eaf8ef;
@@ -136,6 +141,11 @@
     --dbx-globe-hint-bg: rgba(8, 14, 20, 0.84);
     --dbx-globe-hint-border: #324557;
     --dbx-globe-hint-text: #c4d7e7;
+    --dbx-globe-sensitivity-text: #d0deea;
+    --dbx-globe-label-text: #eef6fd;
+    --dbx-globe-label-bg: rgba(8, 13, 19, 0.87);
+    --dbx-globe-label-border: #32485f;
+    --dbx-loading-text: #b9cbd9;
 
     --chip-low-border: #3f845f;
     --chip-low-bg: #203829;
@@ -494,7 +504,7 @@
 .globe-hands-sensitivity {
   display: block;
   margin-top: 0.45rem;
-  color: #d0deea;
+  color: var(--dbx-globe-sensitivity-text);
   font-size: 0.76rem;
 }
 
@@ -526,9 +536,9 @@
   position: absolute;
   top: 12px;
   left: 10px;
-  color: #eef6fd;
-  background: rgba(8, 13, 19, 0.87);
-  border: 1px solid #32485f;
+  color: var(--dbx-globe-label-text);
+  background: var(--dbx-globe-label-bg);
+  border: 1px solid var(--dbx-globe-label-border);
   border-radius: 7px;
   padding: 0.16rem 0.35rem;
   font-size: 0.68rem;
@@ -567,7 +577,7 @@
 .globe-loading {
   display: grid;
   place-items: center;
-  color: #b9cbd9;
+  color: var(--dbx-loading-text);
   font-size: 0.95rem;
 }
 

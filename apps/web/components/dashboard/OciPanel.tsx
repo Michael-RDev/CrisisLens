@@ -17,7 +17,7 @@ export function OciPanel({
 }: OciPanelProps) {
   return (
     <motion.article
-      className="integration-card dbx-panel-raised flex h-full min-w-0 flex-col overflow-hidden"
+      className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}

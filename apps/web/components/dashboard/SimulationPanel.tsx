@@ -18,7 +18,7 @@ export function SimulationPanel({
   onSimulate
 }: SimulationPanelProps) {
   return (
-    <article className="integration-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+    <article className="integration-card min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
       <h2 className="m-0 text-xl font-semibold">Funding What-if Simulator</h2>
       <p className="text-sm text-[#9db7c8]">
         Test how adding pooled-fund allocation changes country OCI rank and global leaderboard.

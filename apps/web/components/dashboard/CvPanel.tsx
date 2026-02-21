@@ -16,7 +16,7 @@ export function CvPanel({
   onDetect
 }: CvPanelProps) {
   return (
-    <article className="integration-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+    <article className="integration-card min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
       <h2 className="m-0 text-xl font-semibold">CV Point-to-Highlight</h2>
       <p className="text-sm text-[#9db7c8]">
         Gesture control is enabled on the globe. CV endpoint remains available for external camera

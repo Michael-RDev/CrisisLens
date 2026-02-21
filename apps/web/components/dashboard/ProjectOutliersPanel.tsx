@@ -15,16 +15,17 @@ export function ProjectOutliersPanel({
   onSelectProjectId
 }: ProjectOutliersPanelProps) {
   return (
-    <article className="integration-card min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
-      <h2 className="m-0 text-xl font-semibold">Project Outliers & Benchmarks</h2>
+    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+      <p className="dbx-kicker">Project Intelligence</p>
+      <h2 className="dbx-title">Project Outliers & Benchmarks</h2>
       {projectOutliers.length === 0 ? (
-        <p className="text-sm text-[#9db7c8]">No outlier projects for this country.</p>
+        <p className="dbx-subtitle mt-2">No outlier projects for this country.</p>
       ) : (
-        <ul className="grid list-none gap-1.5 p-0">
+        <ul className="dbx-scroll mt-2 grid list-none gap-1.5 p-0">
           {projectOutliers.slice(0, 8).map((project) => (
             <li key={project.project_id}>
               <button
-                className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-[9px] border border-[#345871] bg-[#0a1925] px-2.5 py-2 text-left text-[#eaf3f8]"
+                className="dbx-list-button"
                 type="button"
                 onClick={() => onSelectProjectId(project.project_id)}
               >
@@ -39,11 +40,11 @@ export function ProjectOutliersPanel({
       )}
       {projectDetailLoading ? <p>Loading comparable projects...</p> : null}
       {!projectDetailLoading && projectDetail ? (
-        <div className="mt-1 border-t border-dashed border-[#35566f] pt-2">
+        <div className="dbx-divider mt-1 pt-2">
           <p>
             <strong>{projectDetail.project_name}</strong>
           </p>
-          <p className="text-sm text-[#9db7c8]">
+          <p className="dbx-subtitle mt-1">
             Budget ${Math.round(projectDetail.metrics.budget_usd).toLocaleString()} • Targeted{" "}
             {Math.round(projectDetail.metrics.people_targeted).toLocaleString()}
           </p>
@@ -51,7 +52,7 @@ export function ProjectOutliersPanel({
             {projectDetail.comparable_projects.map((peer) => (
               <li
                 key={peer.project_id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-[#2f5064] px-2.5 py-2"
+                className="dbx-list-row"
               >
                 <span className="min-w-0 break-words">
                   {peer.project_id} • {peer.rationale}

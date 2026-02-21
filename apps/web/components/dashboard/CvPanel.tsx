@@ -16,15 +16,16 @@ export function CvPanel({
   onDetect
 }: CvPanelProps) {
   return (
-    <article className="integration-card min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
-      <h2 className="m-0 text-xl font-semibold">CV Point-to-Highlight</h2>
-      <p className="text-sm text-[#9db7c8]">
+    <article className="integration-card dbx-panel-raised min-w-0 overflow-hidden">
+      <p className="dbx-kicker">Computer Vision Bridge</p>
+      <h2 className="dbx-title">CV Point-to-Highlight</h2>
+      <p className="dbx-subtitle mt-2">
         Gesture control is enabled on the globe. CV endpoint remains available for external camera
         streams and country auto-select integration.
       </p>
       <div className="grid gap-2">
         <textarea
-          className="w-full resize-y rounded-[9px] border border-[#2f5067] bg-[#0a1824] px-3 py-2 text-[#eaf3f8]"
+          className="dbx-textarea"
           value={cvFrameInput}
           onChange={(event) => onCvInputChange(event.target.value)}
           rows={3}
@@ -32,7 +33,7 @@ export function CvPanel({
         />
         <button
           type="button"
-          className="w-fit cursor-pointer rounded-lg border border-[#416986] bg-[#12344a] px-3 py-2 text-[#dbeaf2] disabled:cursor-progress disabled:opacity-70"
+          className="dbx-btn-secondary w-fit disabled:cursor-progress disabled:opacity-70"
           onClick={onDetect}
           disabled={cvLoading}
         >
@@ -40,16 +41,16 @@ export function CvPanel({
         </button>
       </div>
       {cvDetection ? (
-        <div className="mt-1 border-t border-dashed border-[#35566f] pt-2">
+        <div className="dbx-divider mt-1 pt-2">
           <p>
             Detected: <strong>{cvDetection.iso3}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
           </p>
-          <p className="text-sm text-[#9db7c8]">
+          <p className="dbx-subtitle mt-1">
             Mock frame timestamp: {new Date(cvDetection.frameTimestamp).toLocaleTimeString()}
           </p>
         </div>
       ) : (
-        <p className="text-sm text-[#9db7c8]">No detection yet.</p>
+        <p className="dbx-subtitle mt-1">No detection yet.</p>
       )}
     </article>
   );

@@ -14,15 +14,16 @@ export function PriorityRankingPanel({
   onSelectIso3
 }: PriorityRankingPanelProps) {
   return (
-    <article className="list-card min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
-      <h2 className="m-0 text-xl font-semibold">Priority Ranking ({layerConfig[layerMode].label})</h2>
-      <ol className="mt-2 grid max-h-[480px] list-none gap-1.5 overflow-auto p-0">
+    <article className="list-card dbx-panel-raised min-w-0 overflow-hidden">
+      <p className="dbx-kicker">Model Priority</p>
+      <h2 className="dbx-title">Priority Ranking ({layerConfig[layerMode].label})</h2>
+      <ol className="dbx-scroll mt-2 grid max-h-[480px] list-none gap-1.5 overflow-auto p-0">
         {ranked.map((row) => {
           const value = getLayerValue(row, layerMode);
           return (
             <li key={row.iso3}>
               <button
-                className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-[9px] border border-[#345871] bg-[#0a1925] px-3 py-2 text-left text-[#eaf3f8]"
+                className="dbx-list-button"
                 onClick={() => onSelectIso3(row.iso3)}
               >
                 <span className="min-w-0 break-words">

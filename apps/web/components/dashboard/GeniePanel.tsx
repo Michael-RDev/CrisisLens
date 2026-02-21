@@ -1,6 +1,7 @@
 import { FormEvent } from "react";
 import { motion } from "framer-motion";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
+import { countryByIso3 } from "@/lib/countries";
 
 type GeniePanelProps = {
   queryTemplates: string[];
@@ -28,6 +29,8 @@ export function GeniePanel({
   onSetQuestion,
   onSubmit
 }: GeniePanelProps) {
+  const displayCountry = (iso3: string) => countryByIso3.get(iso3)?.name ?? iso3;
+
   return (
     <motion.article
       className="integration-card dbx-panel-raised"
@@ -71,7 +74,7 @@ export function GeniePanel({
         <div className="dbx-divider mt-1 pt-2">
           <p>{genieAnswer}</p>
           <p className="dbx-subtitle mt-1">
-            Source: {genieSource ?? "mock"} • Globe highlights sync from `highlight_iso3`.
+            Source: {genieSource ?? "mock"} • Globe highlights sync from query results.
           </p>
           {genieResults.length > 0 ? (
             <ul className="mt-2 grid list-none gap-1.5 p-0">
@@ -81,7 +84,7 @@ export function GeniePanel({
                   className="dbx-list-row"
                 >
                   <span className="min-w-0 break-words">
-                    {row.iso3} • {row.metric}
+                    {displayCountry(row.iso3)} • {row.metric}
                     {row.rationale ? ` — ${row.rationale}` : ""}
                   </span>
                   <strong className="shrink-0">{row.score.toFixed(1)}</strong>

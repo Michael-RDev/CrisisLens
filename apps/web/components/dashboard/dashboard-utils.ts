@@ -15,7 +15,7 @@ export function getOutlierLabel(flag: "low" | "high" | "none"): string {
 }
 
 export function getCountrySuggestions(): string[] {
-  return allCountriesSorted.map((row) => `${row.name} (${row.iso3})`);
+  return allCountriesSorted.map((row) => row.name);
 }
 
 export function resolveJumpToCountryIso3(rawQuery: string): string | null {

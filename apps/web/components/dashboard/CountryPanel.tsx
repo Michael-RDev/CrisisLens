@@ -27,9 +27,9 @@ export function CountryPanel({
     >
       <h2 className="dbx-title break-words">
         {selected
-          ? `${selected.country} (${selected.iso3})`
+          ? selected.country
           : selectedCountryMeta
-            ? `${selectedCountryMeta.name} (${selectedCountryMeta.iso3})`
+            ? selectedCountryMeta.name
             : "Select a country"}
       </h2>
       {selected && selectedDerived ? (

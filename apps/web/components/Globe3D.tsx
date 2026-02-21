@@ -525,7 +525,7 @@ export default function Globe3D({
 
       if (shouldClickSelect && hoveredCountry?.iso3) {
         onSelect(hoveredCountry.iso3);
-        setHandStatusSafely(`Selected ${hoveredCountry.country} (${hoveredCountry.iso3})`);
+        setHandStatusSafely(`Selected ${hoveredCountry.country}`);
       }
 
       pinchDownRef.current = false;
@@ -542,7 +542,7 @@ export default function Globe3D({
           ? "Drag mode active: keep pinch held and move hand to rotate globe."
           : "Pinch started: release quickly to select target, or keep holding to enter drag mode."
         : hoveredCountry?.iso3
-          ? `Target: ${hoveredCountry.country} (${hoveredCountry.iso3}) | Quick pinch to select`
+          ? `Target: ${hoveredCountry.country} | Quick pinch to select`
           : "Aim cursor over a country. Quick pinch selects. Hold pinch to drag-rotate globe."
     );
     handLoopRef.current = requestAnimationFrame(runHandLoop);
@@ -691,7 +691,7 @@ export default function Globe3D({
           <span />
           {handCursor.iso3 ? (
             <small>
-              {handCursor.country} ({handCursor.iso3})
+              {handCursor.country}
             </small>
           ) : (
             <small>No country target</small>

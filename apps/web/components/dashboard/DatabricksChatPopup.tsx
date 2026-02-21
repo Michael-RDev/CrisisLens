@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
+import { countryByIso3 } from "@/lib/countries";
 
 type GenieRow = {
   iso3: string;
@@ -32,6 +33,7 @@ export function DatabricksChatPopup({
   onSubmit
 }: DatabricksChatPopupProps) {
   const [open, setOpen] = useState(false);
+  const displayCountry = (iso3: string) => countryByIso3.get(iso3)?.name ?? iso3;
 
   return (
     <>
@@ -98,7 +100,7 @@ export function DatabricksChatPopup({
               <div className="dbx-divider mt-2 pt-2">
                 <p>{genieAnswer}</p>
                 <p className="dbx-subtitle mt-2">
-                  Source: {genieSource ?? "mock"} • Globe highlights sync from `highlight_iso3`.
+                  Source: {genieSource ?? "mock"} • Globe highlights sync from query results.
                 </p>
                 {genieResults.length > 0 ? (
                   <ul className="mt-2 grid list-none gap-1.5 p-0">
@@ -108,7 +110,7 @@ export function DatabricksChatPopup({
                         className="dbx-list-row"
                       >
                         <span className="min-w-0 break-words">
-                          {row.iso3} • {row.metric}
+                          {displayCountry(row.iso3)} • {row.metric}
                           {row.rationale ? ` — ${row.rationale}` : ""}
                         </span>
                         <strong className="shrink-0">{row.score.toFixed(1)}</strong>

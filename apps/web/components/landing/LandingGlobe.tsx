@@ -19,35 +19,35 @@ const hotspots: Hotspot[] = [
     lat: 15.3694,
     lng: 44.191,
     size: 0.42,
-    label: "YEM",
+    label: "Yemen",
     note: "High severity and persistent funding pressure."
   },
   {
     lat: 9.145,
     lng: 40.4897,
     size: 0.34,
-    label: "ETH",
+    label: "Ethiopia",
     note: "Rising in-need signal with uneven coverage."
   },
   {
     lat: 6.877,
     lng: 31.307,
     size: 0.38,
-    label: "SSD",
+    label: "South Sudan",
     note: "Underfunded context with elevated response risk."
   },
   {
     lat: 33.9391,
     lng: 67.71,
     size: 0.33,
-    label: "AFG",
+    label: "Afghanistan",
     note: "Coverage mismatch relative to modeled need."
   },
   {
     lat: 34.8021,
     lng: 38.9968,
     size: 0.29,
-    label: "SYR",
+    label: "Syria",
     note: "Sustained high-priority profile across indicators."
   }
 ];

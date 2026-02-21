@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { allCountriesSorted } from "@/lib/countries";
 import {
+  getCountrySuggestions,
   getOutlierLabel,
   getRiskClass,
   resolveJumpToCountryIso3
@@ -31,9 +31,10 @@ describe("dashboard utils", () => {
     expect(resolveJumpToCountryIso3("NOT-A-REAL-COUNTRY")).toBeNull();
   });
 
-  it("exposes country suggestions in Name (ISO3) format", () => {
-    const suggestions = allCountriesSorted.map((row) => `${row.name} (${row.iso3})`);
+  it("exposes country suggestions in name-only format", () => {
+    const suggestions = getCountrySuggestions();
     expect(suggestions.length).toBeGreaterThan(100);
-    expect(suggestions.some((item) => item.endsWith("(DEU)"))).toBe(true);
+    expect(suggestions.includes("Germany")).toBe(true);
+    expect(suggestions.some((item) => /\([A-Z]{3}\)$/.test(item))).toBe(false);
   });
 });

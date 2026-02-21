@@ -33,10 +33,10 @@ export function KpiGrid({ summary, overview }: KpiGridProps) {
       </article>
       <article className="dbx-panel-raised">
         <h3 className="m-0 text-xs uppercase tracking-[0.04em] text-[var(--dbx-text-muted)]">Top Overlooked</h3>
-        <p className="my-2 text-3xl font-bold">{overview?.top_overlooked[0]?.iso3 ?? "—"}</p>
+        <p className="my-2 text-2xl font-bold leading-tight break-words">{overview?.top_overlooked[0]?.country ?? "—"}</p>
         <small className="text-[var(--dbx-text-muted)]">
           OCI {overview?.top_overlooked[0]?.oci_score?.toFixed(1) ?? "—"} •{" "}
-          {overview?.top_overlooked[0]?.country ?? "—"}
+          Rank #{overview?.top_overlooked[0]?.rank ?? "—"}
         </small>
       </article>
     </motion.section>

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { getRiskClass } from "@/components/dashboard/dashboard-utils";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
+import { countryByIso3 } from "@/lib/countries";
 import { DatabricksCountryState } from "@/lib/databricks/client";
 
 type AgentStatePanelProps = {
@@ -10,6 +11,8 @@ type AgentStatePanelProps = {
 };
 
 export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: AgentStatePanelProps) {
+  const selectedCountryName = selectedIso3 ? countryByIso3.get(selectedIso3)?.name ?? selectedIso3 : null;
+
   return (
     <motion.article
       className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
@@ -19,7 +22,7 @@ export function AgentStatePanel({ selectedIso3, agentLoading, agentState }: Agen
     >
       <p className="dbx-kicker">Agent Runtime</p>
       <h2 className="dbx-title">Databricks Agent State</h2>
-      {selectedIso3 ? <p className="dbx-subtitle mt-1">Country scope: {selectedIso3}</p> : null}
+      {selectedCountryName ? <p className="dbx-subtitle mt-1">Country scope: {selectedCountryName}</p> : null}
       {agentLoading ? <PanelLoading label="Loading agent state" rows={2} /> : null}
       {!agentLoading && agentState ? (
         <>

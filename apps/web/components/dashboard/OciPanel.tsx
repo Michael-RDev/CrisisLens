@@ -41,7 +41,7 @@ export function OciPanel({
                 }}
               >
                 <span className="min-w-0 break-words">
-                  #{row.rank} {row.country} ({row.iso3})
+                  #{row.rank} {row.country}
                 </span>
                 <strong className="shrink-0">OCI {row.oci_score.toFixed(1)}</strong>
               </button>

@@ -59,7 +59,7 @@ export function GlobePanel({
           className="dbx-input lg:min-w-[260px]"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Jump to country or ISO3 (example: Sudan, SDN)"
+          placeholder="Jump to country (example: Sudan)"
           aria-label="Search country"
           list="country-suggestions"
         />
@@ -98,14 +98,14 @@ export function buildHoverText(params: {
 }): string {
   if (params.hoverCountryMetric) {
     const metric = params.hoverCountryMetric;
-    return `${metric.country} (${metric.iso3}) • ${layerConfig[params.layerMode].label}: ${getLayerValue(
+    return `${metric.country} • ${layerConfig[params.layerMode].label}: ${getLayerValue(
       metric,
       params.layerMode
     ).toFixed(1)}${layerConfig[params.layerMode].unit}`;
   }
 
   if (params.hoverCountryMeta) {
-    return `${params.hoverCountryMeta.name} (${params.hoverCountryMeta.iso3}) • no metrics in current snapshot`;
+    return `${params.hoverCountryMeta.name} • no metrics in current snapshot`;
   }
 
   return "Hover countries for details. Drag to rotate. Scroll to zoom. Pinch-control is available from the overlay.";

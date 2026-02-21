@@ -32,9 +32,7 @@ export function PriorityRankingPanel({
                 className="dbx-list-button"
                 onClick={() => onSelectIso3(row.iso3)}
               >
-                <span className="min-w-0 break-words">
-                  {row.country} <small className="text-[var(--dbx-text-muted)]">{row.iso3}</small>
-                </span>
+                <span className="min-w-0 break-words">{row.country}</span>
                 <strong className="shrink-0">
                   {value.toFixed(1)}
                   {layerConfig[layerMode].unit}

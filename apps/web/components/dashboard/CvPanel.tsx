@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { CVDetection } from "@/lib/cv/provider";
 import { PanelLoading } from "@/components/dashboard/PanelLoading";
+import { countryByIso3 } from "@/lib/countries";
 
 type CvPanelProps = {
   cvFrameInput: string;
@@ -17,6 +18,8 @@ export function CvPanel({
   onCvInputChange,
   onDetect
 }: CvPanelProps) {
+  const detectedCountryName = cvDetection ? countryByIso3.get(cvDetection.iso3)?.name ?? cvDetection.iso3 : null;
+
   return (
     <motion.article
       className="integration-card dbx-panel-raised min-w-0 overflow-hidden"
@@ -36,7 +39,7 @@ export function CvPanel({
           value={cvFrameInput}
           onChange={(event) => onCvInputChange(event.target.value)}
           rows={3}
-          placeholder="Example: fingertip=0.42,0.31|country=SDN"
+          placeholder="Example: fingertip=0.42,0.31|country=Sudan"
         />
         <button
           type="button"
@@ -52,7 +55,7 @@ export function CvPanel({
       ) : cvDetection ? (
         <div className="dbx-divider mt-1 pt-2">
           <p>
-            Detected: <strong>{cvDetection.iso3}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
+            Detected: <strong>{detectedCountryName}</strong> ({(cvDetection.confidence * 100).toFixed(1)}%)
           </p>
           <p className="dbx-subtitle mt-1">
             Mock frame timestamp: {new Date(cvDetection.frameTimestamp).toLocaleTimeString()}

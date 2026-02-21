@@ -27,10 +27,10 @@ test.describe("CrisisLens dashboard", () => {
 
   test("jump search updates selected country", async ({ page }) => {
     await page
-      .getByPlaceholder("Jump to country or ISO3 (example: Sudan, SDN)")
-      .fill("Germany (DEU)");
+      .getByPlaceholder("Jump to country (example: Sudan)")
+      .fill("Germany");
     await page.getByRole("button", { name: "Jump" }).click();
-    await expect(page.locator(".country-card h2")).toContainText("DEU");
+    await expect(page.locator(".country-card h2")).toContainText("Germany");
   });
 
   test("ranking click updates selected country panel", async ({ page }) => {
@@ -39,18 +39,18 @@ test.describe("CrisisLens dashboard", () => {
     const count = await rankingButtons.count();
     expect(count).toBeGreaterThan(1);
 
-    const targetIso = ((await rankingButtons.nth(1).locator("small").textContent()) || "").trim();
-    expect(targetIso.length).toBe(3);
+    const targetCountry = ((await rankingButtons.nth(1).locator("span").first().textContent()) || "").trim();
+    expect(targetCountry.length).toBeGreaterThan(2);
 
     await rankingButtons.nth(1).click();
     await page.getByRole("tab", { name: "Country Ops" }).click();
-    await expect(page.locator(".country-card h2")).toContainText(targetIso);
+    await expect(page.locator(".country-card h2")).toContainText(targetCountry);
   });
 
   test("runs genie query and renders response output", async ({ page }) => {
     await page.getByRole("button", { name: "Open Databricks Chat" }).click();
     const genieDialog = page.getByRole("dialog", { name: "Databricks Chat" });
-    await genieDialog.getByPlaceholder("Ask Databricks Genie...").fill("Rank overlooked crises for ETH");
+    await genieDialog.getByPlaceholder("Ask Databricks Genie...").fill("Rank overlooked crises for Ethiopia");
     await genieDialog.getByRole("button", { name: "Send" }).click();
     await expect(page.getByText("Genie mock response")).toBeVisible();
     await expect(genieDialog.getByText("Source: mock")).toBeVisible();
@@ -63,9 +63,10 @@ test.describe("CrisisLens dashboard", () => {
       .locator("article.integration-card")
       .filter({ has: page.getByRole("heading", { name: "CV Point-to-Highlight" }) });
 
-    await cvCard.getByRole("textbox").fill("frame=mock | country=SDN");
+    await cvCard.getByRole("textbox").fill("frame=mock | country=Sudan");
     await cvCard.getByRole("button", { name: "Detect Country" }).click();
     await expect(cvCard.getByText(/Detected:/)).toBeVisible();
+    await expect(cvCard.getByText(/Sudan/)).toBeVisible();
     await expect(cvCard.getByText(/Mock frame timestamp:/)).toBeVisible();
   });
 });

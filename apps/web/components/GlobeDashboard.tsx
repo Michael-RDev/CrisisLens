@@ -48,7 +48,7 @@ type GlobeDashboardProps = {
 type DashboardPanelKey = "country" | "priority" | "simulation";
 
 const queryTemplates = [
-  "What projects are most similar to PRJ-2025-SDN-health and how does their efficiency compare?",
+  "What projects are most similar to the Sudan health response project and how does their efficiency compare?",
   "Rank the top 10 most overlooked crises by OCI and explain why."
 ];
 
@@ -76,7 +76,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   >([]);
   const [genieLoading, setGenieLoading] = useState(false);
 
-  const [cvFrameInput, setCvFrameInput] = useState("frame: camera stream | candidate_country=ETH");
+  const [cvFrameInput, setCvFrameInput] = useState("frame: camera stream | country=Sudan");
   const [cvDetection, setCvDetection] = useState<CVDetection | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
 
@@ -109,9 +109,9 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const hoverCountryMeta = hoverIso3 ? countryByIso3.get(hoverIso3) ?? null : null;
   const selectedLayerValue = selected ? getLayerValue(selected, layerMode) : null;
   const selectedLabel = selected
-    ? `${selected.country} (${selected.iso3})`
+    ? selected.country
     : selectedCountryMeta
-      ? `${selectedCountryMeta.name} (${selectedCountryMeta.iso3})`
+      ? selectedCountryMeta.name
       : "No country selected";
 
   const ranked = useMemo(() => {
@@ -384,7 +384,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             <div className="min-w-0">
               <p className="dbx-kicker">Active Layer</p>
               <p className="m-0 pt-1 text-sm font-semibold">
-                {layerMode} {selectedLayerValue !== null ? `• ${selectedLayerValue.toFixed(1)}` : ""}
+                {layerConfig[layerMode].label}
+                {selectedLayerValue !== null ? ` • ${selectedLayerValue.toFixed(1)}` : ""}
               </p>
             </div>
             <div className="min-w-0">

@@ -112,8 +112,29 @@ ML training caveat:
 
 ## Architecture Map (High-Value Files)
 - App shell + landing route (`/`): `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`
+- Landing UI components:
+  - `apps/web/components/landing/LandingHeader.tsx`
+  - `apps/web/components/landing/LandingHero.tsx`
+  - `apps/web/components/landing/LandingGlobe.tsx`
+  - `apps/web/components/landing/LandingFeatures.tsx`
+  - `apps/web/components/landing/LandingWorkflow.tsx`
+  - `apps/web/components/landing/LandingFootprint.tsx`
+  - `apps/web/components/landing/LandingFooter.tsx`
 - Dashboard route (`/dashboard`): `apps/web/app/dashboard/page.tsx`
 - Main dashboard UI: `apps/web/components/GlobeDashboard.tsx`
+- Dashboard layout/theme controls:
+  - `apps/web/components/dashboard/HeroSection.tsx`
+  - `apps/web/components/dashboard/LayerSelector.tsx`
+  - `apps/web/components/dashboard/ThemeToggle.tsx`
+  - `apps/web/components/dashboard/DatabricksChatPopup.tsx`
+- Dashboard panel cards:
+  - `apps/web/components/dashboard/CountryPanel.tsx`
+  - `apps/web/components/dashboard/AgentStatePanel.tsx`
+  - `apps/web/components/dashboard/PriorityRankingPanel.tsx`
+  - `apps/web/components/dashboard/OciPanel.tsx`
+  - `apps/web/components/dashboard/ProjectOutliersPanel.tsx`
+  - `apps/web/components/dashboard/SimulationPanel.tsx`
+  - `apps/web/components/dashboard/CvPanel.tsx`
 - 3D globe + hand controls: `apps/web/components/Globe3D.tsx`
 - API route stubs:
   - `apps/web/app/api/globe/heatmap/route.ts`

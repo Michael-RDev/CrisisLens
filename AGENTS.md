@@ -10,9 +10,9 @@ This file gives Codex (and other coding agents) a source-of-truth guide for work
   - `Green`: implement the minimal code change to pass.
   - `Refactor`: clean up while keeping tests green.
 - Minimum validation before handoff:
-  - `npm run test`
-  - `npm run test:unit`
-  - `npm run test:e2e` (or targeted `test:e2e:ui` / `test:e2e:api` while iterating)
+  - `pnpm run test`
+  - `pnpm run test:unit`
+  - `pnpm run test:e2e` (or targeted `pnpm run test:e2e:ui` / `pnpm run test:e2e:api` while iterating)
 
 ## Commit Convention
 - Use Conventional Commits for all git commit messages.
@@ -23,23 +23,24 @@ This file gives Codex (and other coding agents) a source-of-truth guide for work
 
 ## Repository Snapshot
 - Project: `CrisisLens`
-- Frontend: Next.js 14 (App Router), React 18, TypeScript, Three.js via `react-globe.gl`
-- Tests: Vitest unit tests + Playwright e2e tests
-- Backend (current code): minimal Flask app in `api/main.py`
-- Data pipeline: CSV aggregation script in `scripts/generate-country-metrics.mjs`
+- Monorepo layout:
+  - `apps/web`: Next.js 14 (App Router), React 18, TypeScript, Three.js via `react-globe.gl`
+  - `apps/ml`: Python/ML training code and model artifacts
+- Frontend tests: Vitest unit tests + Playwright e2e tests in `apps/web/tests`
+- Data pipeline: CSV aggregation script in `apps/web/scripts/generate-country-metrics.mjs`
 
 ## Important Reality Checks
-- `README.md` describes a FastAPI + ML training workflow, but current backend code is Flask (`api/main.py`).
-- `models/train_model.py` is currently incomplete (file content is only `from`), so documented model training/export steps are not usable as-is.
-- `npm run test` runs lint + typecheck only. Unit tests are separate (`npm run test:unit`).
+- Use pnpm for JS workflow commands.
+- `pnpm run test` runs lint + typecheck only. Unit tests are separate (`pnpm run test:unit`).
+- There is no formal Python lint/test harness configured in-repo yet.
 
 ## Setup
 
 ### Frontend setup
 ```bash
-npm install
-npm run generate:data
-npm run dev
+pnpm install
+pnpm run generate:data
+pnpm run dev
 ```
 
 App URL: `http://localhost:3000`
@@ -48,101 +49,98 @@ App URL: `http://localhost:3000`
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python api/main.py
+pip install -r apps/ml/requirements.txt
+python apps/ml/models/train_model.py
 ```
 
-Backend URL: `http://127.0.0.1:9777`
-
 ## Core Dev Commands
-- `npm run dev`: start Next.js dev server
-- `npm run build`: production build (also validates types/lint during build)
-- `npm run lint`: ESLint (`next/core-web-vitals` + `next/typescript`)
-- `npm run typecheck`: TypeScript compile check, no emit
-- `npm run test:unit`: run Vitest tests
-- `npm run test:e2e`: run Playwright end-to-end tests (auto-starts local app server)
-- `npm run test:e2e:headed`: run Playwright e2e tests in headed mode
-- `npm run test:e2e:ui`: run only dashboard UI Playwright tests
-- `npm run test:e2e:api`: run only API contract Playwright tests
-- `npm run playwright:install`: install Chromium for Playwright
-- `npm run test`: lint + typecheck
-- `npm run test:all`: lint + typecheck + unit + e2e
-- `npm run generate:data`: regenerate `public/data/country-metrics.json` and `public/data/snapshot.json` from CSVs in `data/`
+- `pnpm run dev`: start Next.js dev server (`apps/web`)
+- `pnpm run build`: production build (`apps/web`)
+- `pnpm run lint`: ESLint (`apps/web`)
+- `pnpm run typecheck`: TypeScript compile check (`apps/web`)
+- `pnpm run test:unit`: run Vitest tests (`apps/web`)
+- `pnpm run test:e2e`: run Playwright end-to-end tests (`apps/web`)
+- `pnpm run test:e2e:headed`: run Playwright e2e tests in headed mode (`cd apps/web && pnpm run test:e2e:headed`)
+- `pnpm run test:e2e:ui`: run only dashboard UI Playwright tests (`apps/web`)
+- `pnpm run test:e2e:api`: run only API contract Playwright tests (`apps/web`)
+- `pnpm run playwright:install`: install Chromium for Playwright (`cd apps/web && pnpm run playwright:install`)
+- `pnpm run test`: lint + typecheck (`apps/web`)
+- `pnpm run test:all`: lint + typecheck + unit + e2e (`apps/web`)
+- `pnpm run generate:data`: regenerate `apps/web/public/data/*.json` from CSVs in `apps/web/data/`
 
 ## Recommended Validation Before Finishing Changes
 Run this sequence for frontend changes:
 ```bash
-npm run test:unit
-npm run test
-npm run build
+pnpm run test:unit
+pnpm run test
+pnpm run build
 ```
 
 For UI-flow changes, also run:
 ```bash
-npm run test:e2e
+pnpm run test:e2e
 ```
 
-For backend-only changes, there is no formal Python test/lint setup in-repo yet; at minimum run:
+For ML/backend-only changes, there is no formal Python test/lint setup in-repo yet; at minimum run:
 ```bash
-python api/main.py
+python apps/ml/models/train_model.py
 ```
-and hit `/` and `/health`.
 
 ## Testing and Linting Details
 - Unit tests live in:
-  - `tests/lib/metrics.test.ts`
-  - `tests/components/summary-utils.test.ts`
-  - `tests/lib/cv-globe-bridge.test.ts`
-  - `tests/lib/globe-picking.test.ts`
+  - `apps/web/tests/lib/metrics.test.ts`
+  - `apps/web/tests/components/summary-utils.test.ts`
+  - `apps/web/tests/lib/cv-globe-bridge.test.ts`
+  - `apps/web/tests/lib/globe-picking.test.ts`
 - Playwright e2e tests live in:
-  - `tests/e2e/landing.spec.js`
-  - `tests/e2e/dashboard.spec.js`
-  - `tests/e2e/api-routes.spec.js`
-- Playwright config: `playwright.config.mjs`
-- Playwright note: e2e scripts use `npx playwright ...`; first run requires network access to fetch package/browsers if they are not already installed.
-- Vitest config: `vitest.config.ts` (Node environment, alias `@ -> repo root`)
-- ESLint config: `.eslintrc.json`
-- TypeScript config: `tsconfig.json` (strict mode enabled)
+  - `apps/web/tests/e2e/landing.spec.js`
+  - `apps/web/tests/e2e/dashboard.spec.js`
+  - `apps/web/tests/e2e/api-routes.spec.js`
+- Playwright config: `apps/web/playwright.config.mjs`
+- Playwright note: e2e scripts use `pnpm exec playwright ...`; first run requires network access to fetch package/browsers if they are not already installed.
+- Vitest config: `apps/web/vitest.config.ts` (Node environment, alias `@ -> apps/web root`)
+- ESLint config: `apps/web/.eslintrc.json`
+- TypeScript config: `apps/web/tsconfig.json` (strict mode enabled)
 
 ## Architecture Map (High-Value Files)
-- App shell + landing route (`/`): `app/layout.tsx`, `app/page.tsx`
-- Dashboard route (`/dashboard`): `app/dashboard/page.tsx`
-- Main dashboard UI: `components/GlobeDashboard.tsx`
-- 3D globe + hand controls: `components/Globe3D.tsx`
+- App shell + landing route (`/`): `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`
+- Dashboard route (`/dashboard`): `apps/web/app/dashboard/page.tsx`
+- Main dashboard UI: `apps/web/components/GlobeDashboard.tsx`
+- 3D globe + hand controls: `apps/web/components/Globe3D.tsx`
 - API route stubs:
-  - `app/api/globe/heatmap/route.ts`
-  - `app/api/country/[iso3]/route.ts`
-  - `app/api/project/[project_id]/route.ts`
-  - `app/api/agent/country/[iso3]/route.ts`
-  - `app/api/genie/query/route.ts`
-  - `app/api/cv/detect/route.ts`
-- Frontend API client/types: `lib/api/crisiswatch.ts`
-- Domain helpers/types: `lib/types.ts`, `lib/metrics.ts`, `lib/countries.ts`
+  - `apps/web/app/api/globe/heatmap/route.ts`
+  - `apps/web/app/api/country/[iso3]/route.ts`
+  - `apps/web/app/api/project/[project_id]/route.ts`
+  - `apps/web/app/api/agent/country/[iso3]/route.ts`
+  - `apps/web/app/api/genie/query/route.ts`
+  - `apps/web/app/api/cv/detect/route.ts`
+- Frontend API client/types: `apps/web/lib/api/crisiswatch.ts`
+- Domain helpers/types: `apps/web/lib/types.ts`, `apps/web/lib/metrics.ts`, `apps/web/lib/countries.ts`
 - Integration seams (mock providers):
-  - `lib/databricks/client.ts`
-  - `lib/databricks/genie.ts`
-  - `lib/cv/provider.ts`
-  - `lib/cv/globeBridge.ts`
+  - `apps/web/lib/databricks/client.ts`
+  - `apps/web/lib/databricks/genie.ts`
+  - `apps/web/lib/cv/provider.ts`
+  - `apps/web/lib/cv/globeBridge.ts`
 
 ## Data Pipeline Notes
-- `data/` is gitignored and contains large CSV inputs required by `npm run generate:data`.
+- `apps/web/data/` contains large CSV inputs required by `pnpm run generate:data`.
 - Generated artifacts consumed by the app:
-  - `public/data/country-metrics.json`
-  - `public/data/snapshot.json`
-- If changes affect `lib/types.ts` metrics fields or API projections, regenerate data and run full validation.
+  - `apps/web/public/data/country-metrics.json`
+  - `apps/web/public/data/snapshot.json`
+- If changes affect `apps/web/lib/types.ts` metrics fields or API projections, regenerate data and run full validation.
 
 ## Environment Variables
 - Optional: `NEXT_PUBLIC_GLOBE_WS_URL`
-  - Used by `components/GlobeDashboard.tsx` for WebSocket anomaly/highlight events.
+  - Used by `apps/web/components/GlobeDashboard.tsx` for WebSocket anomaly/highlight events.
   - If unset, WebSocket subscription is skipped.
 
 ## Implementation Guardrails
-- Preserve API response shapes used by `lib/api/crisiswatch.ts` unless updating both server routes and client types together.
-- Keep globe-related browser APIs in client components (`"use client"`). `Globe3D` is loaded dynamically with `ssr: false` for SSR safety.
+- Preserve API response shapes used by `apps/web/lib/api/crisiswatch.ts` unless updating both server routes and client types together.
+- Keep globe-related browser APIs in client components (`"use client"`). `apps/web/components/Globe3D.tsx` is loaded dynamically with `ssr: false` for SSR safety.
 - Prefer extending provider interfaces (`DatabricksProvider`, `GenieClient`, `CVCountryDetector`) rather than wiring external services directly into UI components.
-- When touching metric formulas, update corresponding unit tests in `tests/lib/metrics.test.ts`.
+- When touching metric formulas, update corresponding unit tests in `apps/web/tests/lib/metrics.test.ts`.
 - Styling policy: use Tailwind utility classes by default for component/page styling.
-- Use `app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
+- Use `apps/web/app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
 
 ## Code Style
 - Keep components small and composable; extract logic/helpers instead of growing monolithic UI files.
@@ -152,4 +150,4 @@ and hit `/` and `/health`.
 
 ## Known Gaps (Do Not Assume Implemented)
 - No Python linting (`ruff`/`flake8`) or Python test suite configured.
-- Backend described in docs is ahead of backend code currently in repository.
+- ML scripts/artifacts are evolving quickly; verify assumptions from code, not stale docs.

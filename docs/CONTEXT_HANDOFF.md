@@ -28,9 +28,9 @@ Build a Tier-4 humanitarian operations frontend (Next.js) for the CrisisWatch AI
 
 ## Current App Surface
 - Route: `/` serves the operations dashboard.
-- Main component: `components/GlobeDashboard.tsx`.
-- Globe component: `components/Globe3D.tsx`.
-- Global style: `app/globals.css`.
+- Main component: `apps/web/components/GlobeDashboard.tsx`.
+- Globe component: `apps/web/components/Globe3D.tsx`.
+- Global style: `apps/web/app/globals.css`.
 
 ## API Seams Implemented (Spec-aligned stubs)
 - `GET /api/globe/heatmap`
@@ -44,12 +44,12 @@ These are currently mock/local-backed seams, intentionally designed for easy rep
 
 ## Data & Domain Modules
 - Country metrics types/helpers:
-  - `lib/types.ts`
-  - `lib/metrics.ts`
+  - `apps/web/lib/types.ts`
+  - `apps/web/lib/metrics.ts`
 - Country catalog (all countries, ISO3, optional ccn3/latlng):
-  - `lib/countries.ts`
+  - `apps/web/lib/countries.ts`
 - CV selection bridge helpers:
-  - `lib/cv/globeBridge.ts`
+  - `apps/web/lib/cv/globeBridge.ts`
 
 ## Globe Interaction Status
 Implemented and working:
@@ -60,12 +60,12 @@ Implemented and working:
 - Highlight support -> selected + highlighted polygon altitude/color treatment.
 
 Important improvement made:
-- Jump/search uses full country catalog (`lib/countries.ts`), not only countries with metrics.
+- Jump/search uses full country catalog (`apps/web/lib/countries.ts`), not only countries with metrics.
   - This prevents missing-country behavior (e.g. Germany) in jump UX.
 
 ## CV Readiness Status
 Implemented scaffolding:
-- `lib/cv/globeBridge.ts`
+- `apps/web/lib/cv/globeBridge.ts`
   - `normalizeIso3`
   - `shouldApplyCVDetection`
 - Dashboard consumes CV detection result and applies ISO3 selection if confidence threshold passes.
@@ -89,16 +89,16 @@ What remains:
 
 ## Testing & Validation Status
 Commands run successfully:
-- `npm run test:unit`
-- `npm run test` (lint + typecheck)
-- `npm run build`
-- `npm run dev` startup verified
+- `pnpm run test:unit`
+- `pnpm run test` (lint + typecheck)
+- `pnpm run build`
+- `pnpm run dev` startup verified
 
 Unit test files:
-- `tests/lib/metrics.test.ts`
-- `tests/components/summary-utils.test.ts`
-- `tests/lib/cv-globe-bridge.test.ts`
-- `tests/lib/globe-picking.test.ts`
+- `apps/web/tests/lib/metrics.test.ts`
+- `apps/web/tests/components/summary-utils.test.ts`
+- `apps/web/tests/lib/cv-globe-bridge.test.ts`
+- `apps/web/tests/lib/globe-picking.test.ts`
 
 ## Known Constraints / Caveats
 - Globe textures currently reference public URLs from unpkg examples.
@@ -122,13 +122,12 @@ Unit test files:
 - Add Playwright suite for click-hover-jump-drilldown flows.
 
 ## Quick File Map
-- App shell/layout: `app/layout.tsx`, `app/page.tsx`, `app/globals.css`
-- Dashboard UI: `components/GlobeDashboard.tsx`
-- 3D globe: `components/Globe3D.tsx`
-- Country catalog: `lib/countries.ts`
-- Metrics helpers: `lib/metrics.ts`
-- CV bridge: `lib/cv/globeBridge.ts`
-- API client: `lib/api/crisiswatch.ts`
-- API routes: `app/api/**`
-- Status tracker: `FRONTEND_STATUS.md`
-
+- App shell/layout: `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`, `apps/web/app/globals.css`
+- Dashboard UI: `apps/web/components/GlobeDashboard.tsx`
+- 3D globe: `apps/web/components/Globe3D.tsx`
+- Country catalog: `apps/web/lib/countries.ts`
+- Metrics helpers: `apps/web/lib/metrics.ts`
+- CV bridge: `apps/web/lib/cv/globeBridge.ts`
+- API client: `apps/web/lib/api/crisiswatch.ts`
+- API routes: `apps/web/app/api/**`
+- Status tracker: `apps/web/FRONTEND_STATUS.md`

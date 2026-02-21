@@ -2,10 +2,17 @@
 
 .env
 
-data/
+apps/web/data/
 .DS_Store
 node_modules/
+apps/**/node_modules/
 .next/
+apps/web/.next/
 tsconfig.tsbuildinfo
+apps/**/tsconfig.tsbuildinfo
 playwright-report/
+apps/web/playwright-report/
 test-results/
+apps/web/test-results/
+apps/ml/**/__pycache__/
+apps/ml/**/*.pyc

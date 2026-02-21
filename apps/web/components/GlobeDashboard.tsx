@@ -301,9 +301,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       <HeroSection generatedAt={generatedAt} />
       <KpiGrid summary={summary} overview={overview} />
 
-      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(620px,2fr)_minmax(340px,1fr)]">
-        <div className="grid content-start gap-3">
-          <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid min-w-0 content-start gap-3">
           <GlobePanel
             metrics={metrics}
             layerMode={layerMode}
@@ -317,9 +316,12 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             onQueryChange={setQuery}
             onJump={jumpToCountry}
           />
+          <div className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+            <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
+          </div>
         </div>
 
-        <aside className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
           <h2 className="m-0 text-xl font-semibold">Operations Panels</h2>
           <div role="tablist" aria-label="Operations panel selector" className="mt-3 flex flex-wrap gap-2">
             <button
@@ -363,7 +365,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             </button>
           </div>
 
-          <div className="mt-3 grid gap-3" role="tabpanel">
+          <div className="mt-3 grid min-w-0 gap-3 overflow-x-hidden" role="tabpanel">
             {activePanel === "country" ? (
               <>
                 <CountryPanel

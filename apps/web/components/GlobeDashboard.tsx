@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { computeGlobalSummary } from "@/components/summary-utils";
 import { countryByIso3 } from "@/lib/countries";
 import {
   fetchAnalyticsOverview,
@@ -30,7 +29,6 @@ import {
   DashboardFooter,
   GlobePanel,
   HeroSection,
-  KpiGrid,
   LayerSelector,
   OciPanel,
   PriorityRankingPanel,
@@ -93,7 +91,6 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [simulationLoading, setSimulationLoading] = useState(false);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
-  const summary = useMemo(() => computeGlobalSummary(metrics), [metrics]);
   const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
 
   const filtered = useMemo(() => {
@@ -305,7 +302,6 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   return (
     <main className="mx-auto max-w-[1460px] p-4 sm:p-5">
       <HeroSection generatedAt={generatedAt} />
-      <KpiGrid summary={summary} overview={overview} />
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-3">

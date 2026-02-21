@@ -460,7 +460,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
           <h2>CV Point-to-Highlight</h2>
           <p className="subtle">
             Live hand control is now available on the globe card. Use <strong>Start Hand Control</strong>,
-            then move one hand to rotate and pinch (thumb + index) to zoom.
+            then aim with the cursor, quick-pinch to select a country, or hold-pinch and move to drag
+            the globe.
           </p>
           <div className="integration-form">
             <textarea

@@ -58,15 +58,15 @@ const HAND_TASKS_WASM_URL =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.32/wasm";
 const HAND_MODEL_ASSET_URL =
   "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
-const HAND_POSITION_SMOOTHING = 0.28;
-const PINCH_SMOOTHING = 0.35;
-const ROTATE_DEADZONE = 0.004;
-const PINCH_DEADZONE = 0.0025;
-const PINCH_SELECT_THRESHOLD = 0.045;
-const PINCH_RELEASE_THRESHOLD = 0.062;
-const BASE_ROTATE_GAIN_X = 165;
-const BASE_ROTATE_GAIN_Y = 115;
-const BASE_ZOOM_GAIN = 6.2;
+const HAND_POSITION_SMOOTHING = 0.42;
+const PINCH_SMOOTHING = 0.45;
+const ROTATE_DEADZONE = 0.0025;
+const PINCH_DOWN_THRESHOLD = 0.047;
+const PINCH_UP_THRESHOLD = 0.062;
+const PINCH_HOLD_MS = 220;
+const PINCH_CLICK_MAX_MOVE = 0.03;
+const BASE_ROTATE_GAIN_X = 170;
+const BASE_ROTATE_GAIN_Y = 130;
 
 const palette = {
   neutral: "#32516a",
@@ -104,6 +104,27 @@ function normalizeLng(value: number): number {
   return value;
 }
 
+function wrapAcrossPoles(lat: number, lng: number): { lat: number; lng: number } {
+  let nextLat = lat;
+  let nextLng = lng;
+
+  // Reflect latitude when crossing poles and rotate longitude 180 deg.
+  while (nextLat > 90) {
+    nextLat = 180 - nextLat;
+    nextLng += 180;
+  }
+  while (nextLat < -90) {
+    nextLat = -180 - nextLat;
+    nextLng += 180;
+  }
+
+  return { lat: clamp(nextLat, -89.5, 89.5), lng: normalizeLng(nextLng) };
+}
+
+function sensitivityGain(value: number): number {
+  return value * value;
+}
+
 export default function Globe3D({
   metrics,
   layerMode,
@@ -119,17 +140,20 @@ export default function Globe3D({
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const handLoopRef = useRef<number | null>(null);
   const prevWristRef = useRef<{ x: number; y: number } | null>(null);
-  const prevPinchRef = useRef<number | null>(null);
+  const pinchDownRef = useRef(false);
+  const pinchHoldDragRef = useRef(false);
+  const pinchStartedAtRef = useRef(0);
+  const pinchStartPointRef = useRef<{ x: number; y: number } | null>(null);
+  const dragPrevPointRef = useRef<{ x: number; y: number } | null>(null);
   const smoothedHandRef = useRef<SmoothedHand | null>(null);
   const handPovRef = useRef<GeoPov | null>(null);
   const handStatusRef = useRef("Camera control is off.");
-  const pinchSelectArmedRef = useRef(true);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
   const [handStatus, setHandStatus] = useState("Camera control is off.");
-  const [handSensitivity, setHandSensitivity] = useState(2.6);
+  const [handSensitivity, setHandSensitivity] = useState(0.95);
   const [handCursor, setHandCursor] = useState<HandCursorState>({
     x: 0,
     y: 0,
@@ -334,10 +358,13 @@ export default function Globe3D({
       }
 
       prevWristRef.current = null;
-      prevPinchRef.current = null;
+      pinchDownRef.current = false;
+      pinchHoldDragRef.current = false;
+      pinchStartedAtRef.current = 0;
+      pinchStartPointRef.current = null;
+      dragPrevPointRef.current = null;
       smoothedHandRef.current = null;
       handPovRef.current = null;
-      pinchSelectArmedRef.current = true;
       if (controlsRef.current) controlsRef.current.autoRotate = true;
 
       setHandControlEnabled(false);
@@ -366,8 +393,11 @@ export default function Globe3D({
     const primaryHand = detection.landmarks?.[0];
     if (!primaryHand || !primaryHand[0] || !primaryHand[4] || !primaryHand[8]) {
       prevWristRef.current = null;
-      prevPinchRef.current = null;
-      pinchSelectArmedRef.current = true;
+      pinchDownRef.current = false;
+      pinchHoldDragRef.current = false;
+      pinchStartedAtRef.current = 0;
+      pinchStartPointRef.current = null;
+      dragPrevPointRef.current = null;
       setHandCursor((prev) =>
         prev.active ? { x: 0, y: 0, active: false, iso3: null, country: null } : prev
       );
@@ -413,23 +443,6 @@ export default function Globe3D({
       return;
     }
 
-    const prevWrist = prevWristRef.current;
-    if (prevWrist) {
-      const dx = smoothed.x - prevWrist.x;
-      const dy = smoothed.y - prevWrist.y;
-      const rotateDeadzone = ROTATE_DEADZONE / Math.max(handSensitivity * 0.85, 1);
-      const moveX = Math.abs(dx) > rotateDeadzone ? dx : 0;
-      const moveY = Math.abs(dy) > rotateDeadzone ? dy : 0;
-
-      handPovRef.current.lng = normalizeLng(
-        handPovRef.current.lng - moveX * BASE_ROTATE_GAIN_X * handSensitivity
-      );
-      handPovRef.current.lat = clamp(
-        handPovRef.current.lat + moveY * BASE_ROTATE_GAIN_Y * handSensitivity,
-        -80,
-        80
-      );
-    }
     prevWristRef.current = { x: smoothed.x, y: smoothed.y };
 
     const cursorX = clamp((1 - smoothed.x) * size.width, 0, size.width);
@@ -451,34 +464,75 @@ export default function Globe3D({
     });
     onHover(hoveredCountry?.iso3 ?? null);
 
-    const prevPinch = prevPinchRef.current;
     const pinchDistance = smoothed.pinch;
-    if (prevPinch !== null && pinchDistance > PINCH_RELEASE_THRESHOLD) {
-      const pinchDelta = smoothed.pinch - prevPinch;
-      const zoomDelta = Math.abs(pinchDelta) > PINCH_DEADZONE ? pinchDelta : 0;
-      handPovRef.current.altitude = clamp(
-        handPovRef.current.altitude + zoomDelta * BASE_ZOOM_GAIN * Math.max(1, handSensitivity * 0.85),
-        1.05,
-        3.7
-      );
+    const now = performance.now();
+
+    if (!pinchDownRef.current && pinchDistance < PINCH_DOWN_THRESHOLD) {
+      pinchDownRef.current = true;
+      pinchHoldDragRef.current = false;
+      pinchStartedAtRef.current = now;
+      pinchStartPointRef.current = { x: smoothed.x, y: smoothed.y };
+      dragPrevPointRef.current = { x: smoothed.x, y: smoothed.y };
     }
 
-    if (pinchDistance < PINCH_SELECT_THRESHOLD && pinchSelectArmedRef.current) {
-      pinchSelectArmedRef.current = false;
-      if (hoveredCountry?.iso3) {
+    if (pinchDownRef.current && !pinchHoldDragRef.current && now - pinchStartedAtRef.current >= PINCH_HOLD_MS) {
+      pinchHoldDragRef.current = true;
+      dragPrevPointRef.current = { x: smoothed.x, y: smoothed.y };
+      setHandStatusSafely("Drag mode active: keep pinch held and move hand to rotate globe.");
+    }
+
+    if (pinchDownRef.current && pinchHoldDragRef.current) {
+      const prevDrag = dragPrevPointRef.current;
+      if (prevDrag) {
+        const dx = smoothed.x - prevDrag.x;
+        const dy = smoothed.y - prevDrag.y;
+        const rotateDeadzone = ROTATE_DEADZONE / clamp(handSensitivity + 0.35, 0.5, 1.8);
+        const moveX = Math.abs(dx) > rotateDeadzone ? dx : 0;
+        const moveY = Math.abs(dy) > rotateDeadzone ? dy : 0;
+        const gain = sensitivityGain(handSensitivity);
+        const maxStepLng = 0.9 + handSensitivity * 3.2;
+        const maxStepLat = 0.7 + handSensitivity * 2.6;
+        const deltaLng = clamp(moveX * BASE_ROTATE_GAIN_X * gain, -maxStepLng, maxStepLng);
+        const deltaLat = clamp(moveY * BASE_ROTATE_GAIN_Y * gain, -maxStepLat, maxStepLat);
+        const nextLng = handPovRef.current.lng + deltaLng;
+        const nextLat = handPovRef.current.lat + deltaLat;
+        const wrapped = wrapAcrossPoles(nextLat, nextLng);
+        handPovRef.current.lng = wrapped.lng;
+        handPovRef.current.lat = wrapped.lat;
+      }
+      dragPrevPointRef.current = { x: smoothed.x, y: smoothed.y };
+    }
+
+    if (pinchDownRef.current && pinchDistance > PINCH_UP_THRESHOLD) {
+      const pinchDurationMs = now - pinchStartedAtRef.current;
+      const pinchStart = pinchStartPointRef.current;
+      const pinchMove =
+        pinchStart ? Math.hypot(smoothed.x - pinchStart.x, smoothed.y - pinchStart.y) : Number.MAX_VALUE;
+
+      const shouldClickSelect =
+        !pinchHoldDragRef.current && pinchDurationMs <= PINCH_HOLD_MS && pinchMove <= PINCH_CLICK_MAX_MOVE;
+
+      if (shouldClickSelect && hoveredCountry?.iso3) {
         onSelect(hoveredCountry.iso3);
         setHandStatusSafely(`Selected ${hoveredCountry.country} (${hoveredCountry.iso3})`);
       }
-    } else if (pinchDistance > PINCH_RELEASE_THRESHOLD) {
-      pinchSelectArmedRef.current = true;
-    }
-    prevPinchRef.current = pinchDistance;
 
-    globeRef.current?.pointOfView(handPovRef.current, 45);
+      pinchDownRef.current = false;
+      pinchHoldDragRef.current = false;
+      pinchStartedAtRef.current = 0;
+      pinchStartPointRef.current = null;
+      dragPrevPointRef.current = null;
+    }
+
+    globeRef.current?.pointOfView(handPovRef.current, 0);
     setHandStatusSafely(
-      hoveredCountry?.iso3
-        ? `Target: ${hoveredCountry.country} (${hoveredCountry.iso3}) | Pinch to select`
-        : "Tracking hand: move to rotate. Pinch in/out to zoom. Pinch closed to select target."
+      pinchDownRef.current
+        ? pinchHoldDragRef.current
+          ? "Drag mode active: keep pinch held and move hand to rotate globe."
+          : "Pinch started: release quickly to select target, or keep holding to enter drag mode."
+        : hoveredCountry?.iso3
+          ? `Target: ${hoveredCountry.country} (${hoveredCountry.iso3}) | Quick pinch to select`
+          : "Aim cursor over a country. Quick pinch selects. Hold pinch to drag-rotate globe."
     );
     handLoopRef.current = requestAnimationFrame(runHandLoop);
   }, [countryAtScreenPoint, handSensitivity, onHover, onSelect, setHandStatusSafely, size.height, size.width]);
@@ -543,7 +597,7 @@ export default function Globe3D({
 
       if (controlsRef.current) controlsRef.current.autoRotate = false;
       setHandControlEnabled(true);
-      setHandStatusSafely("Tracking hand: move hand to rotate, pinch thumb+index to zoom.");
+      setHandStatusSafely("Aim with cursor. Quick pinch selects. Hold pinch to drag-rotate.");
       handLoopRef.current = requestAnimationFrame(runHandLoop);
     } catch (error) {
       const reason =
@@ -580,8 +634,8 @@ export default function Globe3D({
         </button>
         <p>{handStatus}</p>
         <p>
-          Controls: move hand to rotate globe, pinch in/out to zoom, pinch closed to select country
-          under cursor.
+          Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
+          move hand to rotate globe.
         </p>
         <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
           Sensitivity: {handSensitivity.toFixed(1)}x
@@ -589,9 +643,9 @@ export default function Globe3D({
         <input
           id="hand-sensitivity"
           type="range"
-          min={1.2}
-          max={5}
-          step={0.1}
+          min={0.25}
+          max={2.2}
+          step={0.05}
           value={handSensitivity}
           onChange={(event) => setHandSensitivity(Number(event.target.value))}
         />

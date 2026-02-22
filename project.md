@@ -34,4 +34,4 @@ We learned that crisis-tech products need strong contracts between data, models,
 
 ## What's next for CrisisLens
 
-Next, we plan to expand voice controls from simple country selection to broader dashboard command workflows so users can drive more of the interface hands-free. We also want to harden production integrations for Databricks and backend services with stronger observability and error-handling paths, while adding automated ML artifact validation and drift monitoring in CI to protect model-to-UI reliability. On the product side, we intend to introduce richer simulation authoring so users can compare intervention plans side by side and add collaboration features such as saved views, shareable scenario reports, and team annotations.
+To improve CrisisLens, we could expand voice controls into a full hands-free command layer across the dashboard, tighten up the Databricks and backend integrations with better observability and ML validation, and add richer simulation comparisons with lightweight collaboration features like saved views and shareable reports. This would expand usability and reduce barrier of entry thereby making CrisisLine easier to use.

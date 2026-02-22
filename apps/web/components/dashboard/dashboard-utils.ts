@@ -47,3 +47,47 @@ export function resolveJumpToCountryIso3(rawQuery: string): string | null {
 
   return null;
 }
+
+const voiceCountryPrefixes = [
+  /^crisis\s*lens[:,\s-]*/i,
+  /^(?:go|move|jump|zoom|fly|navigate)\s+to\s+/i,
+  /^(?:take\s+me\s+to|focus\s+on|set\s+country\s+to|country)\s+/i,
+  /^(?:select|open|show)\s+/i
+];
+
+function cleanVoiceCandidate(value: string): string {
+  return value
+    .replace(/^[\s"'`]+|[\s"'`]+$/g, "")
+    .replace(/[!?.,;:]+/g, " ")
+    .replace(/\b(?:please|now|thanks|thank you)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function resolveVoiceCommandToCountryIso3(rawTranscript: string): string | null {
+  const base = cleanVoiceCandidate(rawTranscript);
+  if (!base) return null;
+
+  const candidates = new Set<string>([base]);
+  let stripped = base;
+
+  // Allow chained command prefixes such as "CrisisLens, go to Canada".
+  for (let i = 0; i < 3; i += 1) {
+    const before = stripped;
+    for (const prefix of voiceCountryPrefixes) {
+      stripped = stripped.replace(prefix, "").trim();
+    }
+    if (stripped && stripped !== before) {
+      candidates.add(stripped);
+      continue;
+    }
+    break;
+  }
+
+  for (const candidate of candidates) {
+    const iso3 = resolveJumpToCountryIso3(candidate);
+    if (iso3) return iso3;
+  }
+
+  return null;
+}

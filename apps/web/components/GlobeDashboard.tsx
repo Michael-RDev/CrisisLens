@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { countryByIso3 } from "@/lib/countries";
 import {
@@ -98,8 +98,6 @@ export default function GlobeDashboard({
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [showImpactArrows, setShowImpactArrows] = useState(true);
-  const [workspacePanelHeight, setWorkspacePanelHeight] = useState<number | null>(null);
-  const leftStackRef = useRef<HTMLDivElement | null>(null);
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
@@ -144,43 +142,6 @@ export default function GlobeDashboard({
   function setAllocationFromNumber(value: number) {
     setAllocationUsd(String(Math.max(0, Math.round(value))));
   }
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const leftStack = leftStackRef.current;
-    if (!leftStack) return;
-
-    const breakpoint = window.matchMedia("(min-width: 1536px)");
-    const syncWorkspaceHeight = () => {
-      if (!breakpoint.matches) {
-        setWorkspacePanelHeight(null);
-        return;
-      }
-
-      const nextHeight = Math.round(leftStack.getBoundingClientRect().height);
-      setWorkspacePanelHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
-    };
-
-    syncWorkspaceHeight();
-    const observer = new ResizeObserver(syncWorkspaceHeight);
-    observer.observe(leftStack);
-
-    if (breakpoint.addEventListener) {
-      breakpoint.addEventListener("change", syncWorkspaceHeight);
-    } else {
-      breakpoint.addListener(syncWorkspaceHeight);
-    }
-
-    return () => {
-      observer.disconnect();
-      if (breakpoint.removeEventListener) {
-        breakpoint.removeEventListener("change", syncWorkspaceHeight);
-      } else {
-        breakpoint.removeListener(syncWorkspaceHeight);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -383,8 +344,8 @@ export default function GlobeDashboard({
         onOpenSimulation={openSimulationPanel}
       />
 
-      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] 2xl:items-start">
-        <div ref={leftStackRef} className="grid min-w-0 content-start gap-3">
+      <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4">
+        <div className="grid min-w-0 content-start gap-3">
           <motion.section
             className="rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)]"
             initial={{ opacity: 0, y: 14 }}
@@ -422,14 +383,6 @@ export default function GlobeDashboard({
 
         <motion.aside
           className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)]"
-          style={
-            workspacePanelHeight !== null
-              ? {
-                  height: workspacePanelHeight,
-                  maxHeight: workspacePanelHeight
-                }
-              : undefined
-          }
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.36, ease: "easeOut" }}

@@ -4,7 +4,8 @@ import {
   getOutlierLabel,
   getRiskClass,
   riskClassByBand,
-  resolveJumpToCountryIso3
+  resolveJumpToCountryIso3,
+  resolveVoiceCommandToCountryIso3
 } from "@/components/dashboard/dashboard-utils";
 
 describe("dashboard utils", () => {
@@ -30,6 +31,17 @@ describe("dashboard utils", () => {
   it("returns null when query is empty or unmatched", () => {
     expect(resolveJumpToCountryIso3("   ")).toBeNull();
     expect(resolveJumpToCountryIso3("NOT-A-REAL-COUNTRY")).toBeNull();
+  });
+
+  it("resolves voice command country selections", () => {
+    expect(resolveVoiceCommandToCountryIso3("go to canada")).toBe("CAN");
+    expect(resolveVoiceCommandToCountryIso3("select Ethiopia please")).toBe("ETH");
+    expect(resolveVoiceCommandToCountryIso3("CrisisLens, jump to Germany now")).toBe("DEU");
+  });
+
+  it("returns null for unmatched voice commands", () => {
+    expect(resolveVoiceCommandToCountryIso3("increase the globe size")).toBeNull();
+    expect(resolveVoiceCommandToCountryIso3("   ")).toBeNull();
   });
 
   it("exposes country suggestions in name-only format", () => {

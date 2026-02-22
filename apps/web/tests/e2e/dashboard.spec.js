@@ -17,6 +17,21 @@ test.describe("CrisisLens dashboard", () => {
     await expect(page.getByRole("contentinfo")).toContainText("CrisisLens Command Center");
   });
 
+  test("uses a single dashboard column at desktop widths", async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Live Global Pulse" })).toBeVisible();
+
+    const trackCount = await page.evaluate(() => {
+      const grid = document.querySelector("section.dashboard-grid");
+      if (!grid) throw new Error("Missing dashboard grid");
+      const tracks = getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/);
+      return tracks.filter(Boolean).length;
+    });
+
+    expect(trackCount).toBe(1);
+  });
+
   test("opens simulation from the top button and exposes quick allocation controls", async ({ page }) => {
     await page.getByRole("button", { name: "Scenario Modeling" }).click();
     await expect(page.getByRole("heading", { name: "Funding What-if Simulator" })).toBeVisible();
@@ -77,5 +92,50 @@ test.describe("CrisisLens dashboard", () => {
     await expect(cvCard.getByText(/Detected:/)).toBeVisible();
     await expect(cvCard.getByText(/Sudan/)).toBeVisible();
     await expect(cvCard.getByText(/Mock frame timestamp:/)).toBeVisible();
+  });
+
+  test("keeps globe panel inside its grid column when desktop layout is constrained", async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Live Global Pulse" })).toBeVisible();
+
+    await page.addStyleTag({
+      content: "main { max-width: 520px !important; }"
+    });
+
+    const dimensions = await page.evaluate(() => {
+      const grid = document.querySelector("section.dashboard-grid");
+      if (!grid) {
+        throw new Error("Missing dashboard grid");
+      }
+
+      const leftStack = grid.firstElementChild;
+      if (!leftStack) {
+        throw new Error("Missing left dashboard stack");
+      }
+
+      const heading = Array.from(document.querySelectorAll("h2")).find((element) =>
+        element.textContent?.includes("Live Global Pulse")
+      );
+      if (!heading) {
+        throw new Error("Missing globe panel heading");
+      }
+
+      const globePanel = heading.closest("article");
+      if (!globePanel) {
+        throw new Error("Missing globe panel");
+      }
+
+      return {
+        leftStackWidth: leftStack.clientWidth,
+        globePanelWidth: globePanel.clientWidth,
+        globePanelScrollWidth: globePanel.scrollWidth
+      };
+    });
+
+    expect(dimensions.globePanelWidth).toBeLessThanOrEqual(dimensions.leftStackWidth + 1);
+    expect(dimensions.globePanelScrollWidth).toBeLessThanOrEqual(dimensions.globePanelWidth + 1);
   });
 });

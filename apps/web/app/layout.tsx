@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CrisisLens Tier 4",
+  title: "CrisisLens",
   description:
     "Interactive humanitarian crisis globe with country-level population, funding, and needs analytics."
 };

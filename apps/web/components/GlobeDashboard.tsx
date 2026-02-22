@@ -30,6 +30,7 @@ const Globe3D = dynamic(() => import("@/components/Globe3D"), {
 type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
+  initialPanel?: string;
 };
 
 type PinchSelection = {
@@ -252,6 +253,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     <GlobeCanvas
       overlays={
         <>
+          <h1 className="sr-only">Command Center</h1>
           <TopNav />
           <RightSidebar
             open={panelOpen}

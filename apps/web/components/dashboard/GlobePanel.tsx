@@ -1,12 +1,20 @@
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import type { SimulationImpactArc } from "@/lib/globe/simulation-arcs";
 import { LayerMode, CountryMetrics } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
 import { layerConfig } from "@/components/dashboard/layer-config";
+import { PanelLoading } from "@/components/dashboard/PanelLoading";
 
 const Globe3D = dynamic(() => import("@/components/Globe3D"), {
   ssr: false,
-  loading: () => <div className="globe-canvas globe-loading">Loading 3D globe...</div>
+  loading: () => (
+    <div className="globe-canvas globe-loading">
+      <div className="w-full max-w-[460px]">
+        <PanelLoading label="Loading 3D globe" rows={3} />
+      </div>
+    </div>
+  )
 });
 
 type GlobePanelProps = {
@@ -14,6 +22,7 @@ type GlobePanelProps = {
   layerMode: LayerMode;
   selectedIso3: string | null;
   highlightedIso3: string[];
+  simulationArcs: SimulationImpactArc[];
   query: string;
   countrySuggestions: string[];
   hoverText: string;
@@ -28,6 +37,7 @@ export function GlobePanel({
   layerMode,
   selectedIso3,
   highlightedIso3,
+  simulationArcs,
   query,
   countrySuggestions,
   hoverText,
@@ -38,18 +48,23 @@ export function GlobePanel({
 }: GlobePanelProps) {
   return (
     <motion.article
-      className="globe-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4 xl:row-span-2"
-      initial={{ opacity: 0, y: 20 }}
+      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)] xl:row-span-2"
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: 0.14 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <div className="card-header-row flex flex-col items-stretch gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="m-0 text-xl font-semibold">Interactive Globe</h2>
+      <div className="flex min-w-0 flex-col items-stretch gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="min-w-0 lg:flex-[1_1_220px]">
+          <p className="m-0 font-['IBM_Plex_Mono','SFMono-Regular',Menlo,monospace] text-xs uppercase tracking-[0.14em] text-[var(--dbx-accent-soft)]">
+            Realtime Geospatial Layer
+          </p>
+          <h2 className="m-0 text-xl font-semibold text-[var(--dbx-text)]">Live Global Pulse</h2>
+        </div>
         <input
-          className="min-w-0 rounded-[9px] border border-[#2f5168] bg-[#0a1824] px-3 py-2 text-[#eaf3f8] lg:min-w-[260px]"
+          className="w-full min-w-0 rounded-[10px] border border-[var(--dbx-input-border)] bg-[var(--dbx-input-bg)] px-3 py-2 text-sm text-[var(--dbx-text)] lg:w-auto lg:flex-[1_1_220px]"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Jump to country or ISO3 (example: Sudan, SDN)"
+          placeholder="Jump to country (example: Sudan)"
           aria-label="Search country"
           list="country-suggestions"
         />
@@ -60,7 +75,7 @@ export function GlobePanel({
         </datalist>
         <button
           type="button"
-          className="cursor-pointer rounded-[9px] border border-[#4a6e86] bg-[#1f4056] px-3 py-2 font-semibold text-[#f7fbff]"
+          className="inline-flex shrink-0 items-center justify-center rounded-[10px] border border-[var(--dbx-btn-secondary-border)] bg-[var(--dbx-btn-secondary-bg)] px-3 py-2 text-sm font-semibold text-[var(--dbx-btn-secondary-text)] transition-colors hover:border-[var(--dbx-cyan)] hover:text-[var(--dbx-text)]"
           onClick={onJump}
         >
           Jump
@@ -71,10 +86,11 @@ export function GlobePanel({
         layerMode={layerMode}
         selectedIso3={selectedIso3}
         highlightedIso3={highlightedIso3}
+        simulationArcs={simulationArcs}
         onSelect={onSelectIso3}
         onHover={onHoverIso3}
       />
-      <div className="mt-2 border-t border-dashed border-[#35566f] pt-2 text-sm text-[#b5c8d6]">
+      <div className="mt-2 border-t border-dashed border-[var(--dbx-border)] pt-2 text-sm text-[var(--dbx-text-muted)]">
         <p>{hoverText}</p>
       </div>
     </motion.article>
@@ -88,14 +104,14 @@ export function buildHoverText(params: {
 }): string {
   if (params.hoverCountryMetric) {
     const metric = params.hoverCountryMetric;
-    return `${metric.country} (${metric.iso3}) • ${layerConfig[params.layerMode].label}: ${getLayerValue(
+    return `${metric.country} • ${layerConfig[params.layerMode].label}: ${getLayerValue(
       metric,
       params.layerMode
     ).toFixed(1)}${layerConfig[params.layerMode].unit}`;
   }
 
   if (params.hoverCountryMeta) {
-    return `${params.hoverCountryMeta.name} (${params.hoverCountryMeta.iso3}) • no metrics in current snapshot`;
+    return `${params.hoverCountryMeta.name} • no metrics in current snapshot`;
   }
 
   return "Hover countries for details. Drag to rotate. Scroll to zoom. Pinch-control is available from the overlay.";

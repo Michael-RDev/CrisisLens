@@ -3,6 +3,11 @@
 ## Purpose
 This file gives Codex (and other coding agents) a source-of-truth guide for working in this repository quickly and safely.
 
+## LLM Documentation
+- Primary LLM workflow doc: `docs/LLM_GUIDE.md`.
+- Keep `AGENTS.md`, `README.md`, and `docs/CONTEXT_HANDOFF.md` aligned when commands, paths, or repository layout changes.
+- If a workflow detail is uncertain, verify from code/scripts first, then update docs to match implementation.
+
 ## Development Approach (TDD First)
 - We use TDD by default for feature work and bug fixes.
 - Workflow:
@@ -20,6 +25,12 @@ This file gives Codex (and other coding agents) a source-of-truth guide for work
 - Common types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `build`, `ci`.
 - Keep the subject concise and imperative (example: `feat(landing): add hero CTA and footer`).
 - If a change is breaking, include `!` after type/scope and note `BREAKING CHANGE:` in the body.
+
+## Branching and Commit Rhythm
+- Commit as you go for meaningful checkpoints instead of batching everything into one final commit.
+- Use a dedicated branch for applicable feature/fix work before merging.
+- Branch names must use `feature/...` or `fix/...`.
+- Do not use `codex/...` or `copilot/...` as branch prefixes.
 
 ## Repository Snapshot
 - Project: `CrisisLens`
@@ -47,10 +58,10 @@ App URL: `http://localhost:3000`
 
 ### Python/backend setup (only if touching backend)
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r apps/ml/requirements.txt
-python apps/ml/models/train_model.py
+cd apps/ml/models && python train_model.py
 ```
 
 ## Core Dev Commands
@@ -83,8 +94,11 @@ pnpm run test:e2e
 
 For ML/backend-only changes, there is no formal Python test/lint setup in-repo yet; at minimum run:
 ```bash
-python apps/ml/models/train_model.py
+cd apps/ml/models && python train_model.py
 ```
+
+ML training caveat:
+- `apps/ml/models/train_model.py` currently relies on relative paths and local data availability; validate input/output paths in your environment before using outputs.
 
 ## Testing and Linting Details
 - Unit tests live in:
@@ -104,8 +118,28 @@ python apps/ml/models/train_model.py
 
 ## Architecture Map (High-Value Files)
 - App shell + landing route (`/`): `apps/web/app/layout.tsx`, `apps/web/app/page.tsx`
+- Landing UI components:
+  - `apps/web/components/landing/LandingHero.tsx`
+  - `apps/web/components/landing/LandingGlobe.tsx`
+  - `apps/web/components/landing/LandingFeatures.tsx`
+  - `apps/web/components/landing/LandingWorkflow.tsx`
+  - `apps/web/components/landing/LandingFootprint.tsx`
+  - `apps/web/components/landing/LandingFooter.tsx`
 - Dashboard route (`/dashboard`): `apps/web/app/dashboard/page.tsx`
 - Main dashboard UI: `apps/web/components/GlobeDashboard.tsx`
+- Dashboard layout/theme controls:
+  - `apps/web/components/dashboard/HeroSection.tsx`
+  - `apps/web/components/dashboard/LayerSelector.tsx`
+  - `apps/web/components/dashboard/ThemeToggle.tsx`
+  - `apps/web/components/dashboard/DatabricksChatPopup.tsx`
+- Dashboard panel cards:
+  - `apps/web/components/dashboard/CountryPanel.tsx`
+  - `apps/web/components/dashboard/AgentStatePanel.tsx`
+  - `apps/web/components/dashboard/PriorityRankingPanel.tsx`
+  - `apps/web/components/dashboard/OciPanel.tsx`
+  - `apps/web/components/dashboard/ProjectOutliersPanel.tsx`
+  - `apps/web/components/dashboard/SimulationPanel.tsx`
+  - `apps/web/components/dashboard/CvPanel.tsx`
 - 3D globe + hand controls: `apps/web/components/Globe3D.tsx`
 - API route stubs:
   - `apps/web/app/api/globe/heatmap/route.ts`
@@ -139,8 +173,9 @@ python apps/ml/models/train_model.py
 - Keep globe-related browser APIs in client components (`"use client"`). `apps/web/components/Globe3D.tsx` is loaded dynamically with `ssr: false` for SSR safety.
 - Prefer extending provider interfaces (`DatabricksProvider`, `GenieClient`, `CVCountryDetector`) rather than wiring external services directly into UI components.
 - When touching metric formulas, update corresponding unit tests in `apps/web/tests/lib/metrics.test.ts`.
-- Styling policy: use Tailwind utility classes by default for component/page styling.
-- Use `apps/web/app/globals.css` only when necessary for true global/base styles or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
+- Styling policy (strict): use Tailwind utility classes for all component/page styling.
+- Do not introduce or expand semantic CSS utility wrappers (for example `dbx-*`, `landing-*`, `chip-*`) in `globals.css`.
+- Use `apps/web/app/globals.css` only for global/base styles, CSS variables, or hard-to-express third-party selectors (for example, canvas internals or browser-wide resets).
 
 ## Code Style
 - Keep components small and composable; extract logic/helpers instead of growing monolithic UI files.

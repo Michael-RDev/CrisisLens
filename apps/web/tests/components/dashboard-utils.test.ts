@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { allCountriesSorted } from "@/lib/countries";
 import {
+  getCountrySuggestions,
   getOutlierLabel,
   getRiskClass,
-  resolveJumpToCountryIso3
+  riskClassByBand,
+  resolveJumpToCountryIso3,
+  resolveVoiceCommandToCountryIso3
 } from "@/components/dashboard/dashboard-utils";
 
 describe("dashboard utils", () => {
   it("maps risk band to css class", () => {
-    expect(getRiskClass("critical")).toBe("chip-critical");
-    expect(getRiskClass("high")).toBe("chip-high");
-    expect(getRiskClass("moderate")).toBe("chip-moderate");
-    expect(getRiskClass("low")).toBe("chip-low");
+    expect(getRiskClass("critical")).toBe(riskClassByBand.critical);
+    expect(getRiskClass("high")).toBe(riskClassByBand.high);
+    expect(getRiskClass("moderate")).toBe(riskClassByBand.moderate);
+    expect(getRiskClass("low")).toBe(riskClassByBand.low);
   });
 
   it("maps outlier flag to user label", () => {
@@ -31,9 +33,21 @@ describe("dashboard utils", () => {
     expect(resolveJumpToCountryIso3("NOT-A-REAL-COUNTRY")).toBeNull();
   });
 
-  it("exposes country suggestions in Name (ISO3) format", () => {
-    const suggestions = allCountriesSorted.map((row) => `${row.name} (${row.iso3})`);
+  it("resolves voice command country selections", () => {
+    expect(resolveVoiceCommandToCountryIso3("go to canada")).toBe("CAN");
+    expect(resolveVoiceCommandToCountryIso3("select Ethiopia please")).toBe("ETH");
+    expect(resolveVoiceCommandToCountryIso3("CrisisLens, jump to Germany now")).toBe("DEU");
+  });
+
+  it("returns null for unmatched voice commands", () => {
+    expect(resolveVoiceCommandToCountryIso3("increase the globe size")).toBeNull();
+    expect(resolveVoiceCommandToCountryIso3("   ")).toBeNull();
+  });
+
+  it("exposes country suggestions in name-only format", () => {
+    const suggestions = getCountrySuggestions();
     expect(suggestions.length).toBeGreaterThan(100);
-    expect(suggestions.some((item) => item.endsWith("(DEU)"))).toBe(true);
+    expect(suggestions.includes("Germany")).toBe(true);
+    expect(suggestions.some((item) => /\([A-Z]{3}\)$/.test(item))).toBe(false);
   });
 });

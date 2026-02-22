@@ -20,39 +20,39 @@ export function CountryPanel({
 
   return (
     <motion.article
-      className="country-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4"
+      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, delay: 0.2 }}
+      transition={{ duration: 0.36, ease: "easeOut" }}
     >
-      <h2 className="m-0 text-xl font-semibold">
+      <h2 className="m-0 break-words text-xl font-semibold text-[var(--dbx-text)]">
         {selected
-          ? `${selected.country} (${selected.iso3})`
+          ? selected.country
           : selectedCountryMeta
-            ? `${selectedCountryMeta.name} (${selectedCountryMeta.iso3})`
+            ? selectedCountryMeta.name
             : "Select a country"}
       </h2>
       {selected && selectedDerived ? (
         <dl className="mt-2 grid gap-2">
-          <div className="flex justify-between border-b border-dashed border-[#2f5066] pb-1.5">
-            <dt className="text-[#adbfcb]">Overlooked Index (OCI)</dt>
-            <dd className="m-0 font-bold">{selectedOci?.totalScore?.toFixed(2) ?? "—"}</dd>
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Overlooked Index (OCI)</dt>
+            <dd className="m-0 shrink-0 font-bold">{selectedOci?.totalScore?.toFixed(2) ?? "—"}</dd>
           </div>
-          <div className="flex justify-between border-b border-dashed border-[#2f5066] pb-1.5">
-            <dt className="text-[#adbfcb]">Severity Score</dt>
-            <dd className="m-0 font-bold">{selected.severityScore.toFixed(1)}</dd>
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Severity Score</dt>
+            <dd className="m-0 shrink-0 font-bold">{selected.severityScore.toFixed(1)}</dd>
           </div>
-          <div className="flex justify-between border-b border-dashed border-[#2f5066] pb-1.5">
-            <dt className="text-[#adbfcb]">People In Need %</dt>
-            <dd className="m-0 font-bold">{selectedDerived.inNeedPct.toFixed(1)}%</dd>
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">People In Need %</dt>
+            <dd className="m-0 shrink-0 font-bold">{selectedDerived.inNeedPct.toFixed(1)}%</dd>
           </div>
-          <div className="flex justify-between border-b border-dashed border-[#2f5066] pb-1.5">
-            <dt className="text-[#adbfcb]">Coverage %</dt>
-            <dd className="m-0 font-bold">{selectedDerived.coveragePct.toFixed(1)}%</dd>
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Coverage %</dt>
+            <dd className="m-0 shrink-0 font-bold">{selectedDerived.coveragePct.toFixed(1)}%</dd>
           </div>
-          <div className="flex justify-between border-b border-dashed border-[#2f5066] pb-1.5">
-            <dt className="text-[#adbfcb]">Funding Gap %</dt>
-            <dd className="m-0 font-bold">{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
+          <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--dbx-border)] pb-1.5">
+            <dt className="min-w-0 break-words text-[var(--dbx-text-muted)]">Funding Gap %</dt>
+            <dd className="m-0 shrink-0 font-bold">{selectedDerived.fundingGapPct.toFixed(1)}%</dd>
           </div>
         </dl>
       ) : selectedCountryMeta ? (
@@ -64,39 +64,42 @@ export function CountryPanel({
         <p>Select a country from the globe or ranking list.</p>
       )}
 
-      <h3 className="mb-2 mt-4 text-sm text-[#b7ccda]">OCI Component Breakdown</h3>
+      <h3 className="mb-2 mt-4 text-sm text-[var(--dbx-text-muted)]">OCI Component Breakdown</h3>
       {selectedOci ? (
         <ul className="grid list-none gap-1.5 p-0">
-          <li className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2">
-            <span>Severity Component</span>
-            <strong>{selectedOci.severityComponent.toFixed(1)}</strong>
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
+            <span className="min-w-0 break-words">Severity Component</span>
+            <strong className="shrink-0">{selectedOci.severityComponent.toFixed(1)}</strong>
           </li>
-          <li className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2">
-            <span>In-Need Rate Component</span>
-            <strong>{selectedOci.inNeedRateComponent.toFixed(1)}</strong>
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
+            <span className="min-w-0 break-words">In-Need Rate Component</span>
+            <strong className="shrink-0">{selectedOci.inNeedRateComponent.toFixed(1)}</strong>
           </li>
-          <li className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2">
-            <span>Funding Gap Component</span>
-            <strong>{selectedOci.fundingGapComponent.toFixed(1)}</strong>
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
+            <span className="min-w-0 break-words">Funding Gap Component</span>
+            <strong className="shrink-0">{selectedOci.fundingGapComponent.toFixed(1)}</strong>
           </li>
-          <li className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2">
-            <span>Coverage Mismatch Component</span>
-            <strong>{selectedOci.coverageMismatchComponent.toFixed(1)}</strong>
+          <li className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm">
+            <span className="min-w-0 break-words">Coverage Mismatch Component</span>
+            <strong className="shrink-0">{selectedOci.coverageMismatchComponent.toFixed(1)}</strong>
           </li>
         </ul>
       ) : (
-        <p className="text-sm text-[#9db7c8]">No OCI breakdown available for this selection.</p>
+        <p className="text-sm text-[var(--dbx-text-muted)]">No OCI breakdown available for this selection.</p>
       )}
 
-      <h3 className="mb-2 mt-4 text-sm text-[#b7ccda]">Cluster Outlier Severity</h3>
+      <h3 className="mb-2 mt-4 text-sm text-[var(--dbx-text-muted)]">Cluster Outlier Severity</h3>
       <ul className="grid list-none gap-1.5 p-0">
         {clusterBreakdown.length === 0 ? (
-          <li className="text-sm text-[#9db7c8]">No cluster rows available for this country.</li>
+          <li className="text-sm text-[var(--dbx-text-muted)]">No cluster rows available for this country.</li>
         ) : (
           clusterBreakdown.slice(0, 6).map((cluster) => (
-            <li key={cluster.cluster_name} className="flex justify-between rounded-lg border border-[#2f5064] px-2.5 py-2">
-              <span>{cluster.cluster_name}</span>
-              <strong>{cluster.bbr_z_score.toFixed(2)} z</strong>
+            <li
+              key={cluster.cluster_name}
+              className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm"
+            >
+              <span className="min-w-0 break-words">{cluster.cluster_name}</span>
+              <strong className="shrink-0">{cluster.bbr_z_score.toFixed(2)} z</strong>
             </li>
           ))
         )}

@@ -11,22 +11,71 @@ type Hotspot = {
   lng: number;
   size: number;
   label: string;
+  note: string;
 };
 
 const hotspots: Hotspot[] = [
-  { lat: 15.3694, lng: 44.191, size: 0.42, label: "YEM signal" },
-  { lat: 9.145, lng: 40.4897, size: 0.34, label: "ETH signal" },
-  { lat: 6.877, lng: 31.307, size: 0.38, label: "SSD signal" },
-  { lat: 33.9391, lng: 67.71, size: 0.33, label: "AFG signal" },
-  { lat: 34.8021, lng: 38.9968, size: 0.29, label: "SYR signal" }
+  {
+    lat: 15.3694,
+    lng: 44.191,
+    size: 0.42,
+    label: "Yemen",
+    note: "High severity and persistent funding pressure."
+  },
+  {
+    lat: 9.145,
+    lng: 40.4897,
+    size: 0.34,
+    label: "Ethiopia",
+    note: "Rising in-need signal with uneven coverage."
+  },
+  {
+    lat: 6.877,
+    lng: 31.307,
+    size: 0.38,
+    label: "South Sudan",
+    note: "Underfunded context with elevated response risk."
+  },
+  {
+    lat: 33.9391,
+    lng: 67.71,
+    size: 0.33,
+    label: "Afghanistan",
+    note: "Coverage mismatch relative to modeled need."
+  },
+  {
+    lat: 34.8021,
+    lng: 38.9968,
+    size: 0.29,
+    label: "Syria",
+    note: "Sustained high-priority profile across indicators."
+  }
 ];
 
 export function LandingGlobe() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [size, setSize] = useState({ width: 960, height: 380 });
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const canvas = document.createElement("canvas");
+      const supportsContext = Boolean(
+        window.WebGLRenderingContext &&
+          (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+      );
+      setWebglSupported(supportsContext);
+    } catch {
+      setWebglSupported(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!webglSupported) return;
+
     const controls = globeRef.current?.controls();
     if (controls) {
       controls.autoRotate = true;
@@ -36,7 +85,7 @@ export function LandingGlobe() {
     }
 
     globeRef.current?.pointOfView({ lat: 14, lng: 18, altitude: 2.1 });
-  }, []);
+  }, [webglSupported]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -67,39 +116,71 @@ export function LandingGlobe() {
   );
 
   return (
-    <section className="rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="monitor">
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
-          <h2 className="m-0 text-2xl font-semibold">Live Global Pulse</h2>
-          <p className="mt-1 text-sm text-[#9db7c8]">
-            Decorative operations globe for quick situational context on landing.
+          <h2 className="m-0 text-2xl font-semibold sm:text-3xl">Live Global Pulse</h2>
+          <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
+            Interactive watchboard for locating high-risk and underfunded contexts before you open the
+            decision panels.
           </p>
         </div>
-        <span className="rounded-full border border-[#3c5f77] bg-[rgba(10,26,39,0.8)] px-3 py-1 text-xs text-[#c9dbea]">
-          Mock Signals
+        <span className="rounded-full border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] px-3 py-1 text-xs uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">
+          Signal Preview
         </span>
       </div>
 
-      <div ref={containerRef} className="h-[320px] w-full overflow-hidden rounded-xl border border-[#2b4e66] bg-[#08131d]">
-        <Globe
-          ref={globeRef}
-          width={size.width}
-          height={size.height}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundColor="rgba(0,0,0,0)"
-          pointsData={hotspots}
-          pointColor={() => "#f2a73d"}
-          pointAltitude={(d) => (d as Hotspot).size}
-          pointRadius={0.35}
-          pointResolution={12}
-          ringsData={rings}
-          ringColor={() => "#ffb86f"}
-          ringMaxRadius={(d) => (d as { maxR: number }).maxR}
-          ringPropagationSpeed={(d) => (d as { propagationSpeed: number }).propagationSpeed}
-          ringRepeatPeriod={(d) => (d as { repeatPeriod: number }).repeatPeriod}
-          enablePointerInteraction={false}
-        />
+      <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
+        <div
+          ref={containerRef}
+          className="h-[320px] w-full overflow-hidden rounded-xl border border-[var(--cl-border)] bg-[var(--cl-surface-elevated)] sm:h-[360px]"
+        >
+          {webglSupported ? (
+            <Globe
+              ref={globeRef}
+              width={size.width}
+              height={size.height}
+              globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+              bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+              backgroundColor="rgba(0,0,0,0)"
+              pointsData={hotspots}
+              pointColor={() => "#f0b25d"}
+              pointAltitude={(d) => (d as Hotspot).size}
+              pointRadius={0.35}
+              pointResolution={12}
+              ringsData={rings}
+              ringColor={() => "#ffd194"}
+              ringMaxRadius={(d) => (d as { maxR: number }).maxR}
+              ringPropagationSpeed={(d) => (d as { propagationSpeed: number }).propagationSpeed}
+              ringRepeatPeriod={(d) => (d as { repeatPeriod: number }).repeatPeriod}
+              enablePointerInteraction={false}
+            />
+          ) : (
+            <div className="grid h-full place-items-center p-5 text-center">
+              <div>
+                <p className="m-0 text-sm font-semibold text-[var(--cl-text)]">3D map unavailable</p>
+                <p className="mt-2 text-xs text-[var(--cl-text-muted)]">
+                  WebGL is not available in this runtime. Live signal summaries remain accessible.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        <aside className="rounded-2xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] p-4">
+          <h3 className="m-0 text-sm font-semibold uppercase tracking-[0.08em] text-[var(--cl-text-muted)]">
+            Sample priority reads
+          </h3>
+          <ul className="m-0 mt-3 grid list-none gap-2 p-0">
+            {hotspots.map((spot) => (
+              <li key={spot.label} className="rounded-lg border border-[var(--cl-border-soft)] bg-[var(--cl-surface)] p-3">
+                <p className="m-0 text-sm font-semibold">{spot.label}</p>
+                <p className="m-0 pt-1 text-xs text-[var(--cl-text-muted)]">
+                  {spot.note}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
     </section>
   );

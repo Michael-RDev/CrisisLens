@@ -2,27 +2,31 @@ import Link from "next/link";
 
 export function LandingHero() {
   return (
-    <section className="rounded-2xl border border-[#335066] bg-[radial-gradient(circle_at_20%_10%,#18384e_0%,#10202d_38%,#0b1620_100%)] p-5 sm:p-8">
-      <p className="m-0 text-xs uppercase tracking-[0.12em] text-[#9cc0d8]">
-        Humanitarian intelligence platform
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6">
+      <p className="m-0 text-xs uppercase tracking-[0.12em] text-[var(--cl-text-muted)]">
+        Humanitarian crisis prioritization
       </p>
       <h1 className="mb-2 mt-1 text-5xl font-bold leading-tight sm:text-6xl">CrisisLens</h1>
-      <p className="m-0 max-w-[60ch] text-[#bfd3e2]">
-        Monitor severity, funding gaps, and country-level response signals from a single command-center
-        experience.
+      <p className="m-0 max-w-[64ch] text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
+        CrisisLens combines four country signals in one place: severity, people in need, funding gap,
+        and coverage. It then ranks where response pressure is highest so teams know what to review first.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <p className="m-0 mt-2 max-w-[64ch] text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
+        Open a country to see why it ranked high, compare project outliers, and test funding scenarios
+        before changing allocation plans.
+      </p>
+      <div className="mt-5 flex flex-wrap gap-2">
         <Link
           href="/dashboard"
-          className="rounded-[10px] border border-[#f2a73d] bg-[#f2a73d] px-4 py-2 text-sm font-semibold text-[#0b1620]"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--cl-accent)] bg-[var(--cl-accent)] px-4 py-2 text-sm font-semibold text-[#10202d] transition-colors hover:border-[var(--cl-accent-strong)] hover:bg-[var(--cl-accent-strong)]"
         >
           Launch Dashboard
         </Link>
         <a
-          href="#features"
-          className="rounded-[10px] border border-[#476880] bg-transparent px-4 py-2 text-sm font-semibold text-[#d5e6f2]"
+          href="#workflow"
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--cl-border)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--cl-text)] transition-colors hover:border-[var(--cl-accent)] hover:text-[var(--cl-accent-strong)]"
         >
-          Explore Features
+          See Workflow
         </a>
       </div>
     </section>

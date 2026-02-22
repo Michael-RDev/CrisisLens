@@ -1,24 +1,56 @@
 export function LandingFeatures() {
+  const featureCards = [
+    {
+      title: "Global Signal Surface",
+      description:
+        "Visualize severity, in-need rate, funding gap, and coverage together in one consistent map and ranking layer."
+    },
+    {
+      title: "Country Triage",
+      description:
+        "Open any country to inspect core metrics, response posture, and OCI component breakdown before escalation."
+    },
+    {
+      title: "Explainable OCI Ranking",
+      description:
+        "Prioritize overlooked contexts with transparent weighting so teams can justify why a country moved up or down."
+    },
+    {
+      title: "Project Outlier Review",
+      description:
+        "Find beneficiary-to-budget outliers and compare similar projects to validate operational assumptions."
+    },
+    {
+      title: "What-if Allocation",
+      description:
+        "Run funding scenarios to estimate OCI and rank movement before committing changes to response plans."
+    },
+    {
+      title: "Ops Integrations",
+      description:
+        "Databricks Agent, Genie, CV detection, and event hooks connect analysis output to broader workflow tooling."
+    }
+  ];
+
   return (
-    <section id="features" className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-      <article className="rounded-xl border border-[#2e4f63] bg-[#10202d] p-4">
-        <h2 className="m-0 text-base font-semibold">Global Risk Visibility</h2>
-        <p className="mt-2 text-sm text-[#adc4d5]">
-          Interactive globe overlays for severity, in-need rates, coverage, and funding gaps.
+    <section className="rounded-2xl border border-[var(--cl-border)] bg-[var(--cl-surface)] p-5 sm:p-6" id="features">
+      <div className="mb-4">
+        <h2 className="m-0 text-2xl font-semibold text-[var(--cl-text)] sm:text-3xl">
+          What CrisisLens Gives You
+        </h2>
+        <p className="m-0 mt-1 text-sm leading-relaxed text-[var(--cl-text-muted)] sm:text-base">
+          The platform is designed to move teams from signal detection to action with explainable outputs,
+          not just static dashboards.
         </p>
-      </article>
-      <article className="rounded-xl border border-[#2e4f63] bg-[#10202d] p-4">
-        <h2 className="m-0 text-base font-semibold">Analyst Workflows</h2>
-        <p className="mt-2 text-sm text-[#adc4d5]">
-          Country drilldown, ranking views, and cluster context for rapid triage.
-        </p>
-      </article>
-      <article className="rounded-xl border border-[#2e4f63] bg-[#10202d] p-4">
-        <h2 className="m-0 text-base font-semibold">Integration Ready</h2>
-        <p className="mt-2 text-sm text-[#adc4d5]">
-          Databricks Agent, Genie, CV detection, and WebSocket seams are already wired.
-        </p>
-      </article>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {featureCards.map((card) => (
+          <article key={card.title} className="rounded-xl border border-[var(--cl-border-soft)] bg-[var(--cl-surface-elevated)] p-4">
+            <h3 className="m-0 text-base font-semibold">{card.title}</h3>
+            <p className="mt-2 text-sm text-[var(--cl-text-muted)]">{card.description}</p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

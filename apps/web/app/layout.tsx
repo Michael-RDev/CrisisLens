@@ -11,8 +11,8 @@ export default function RootLayout({
   children
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="app-body">{children}</body>
+    <html lang="en" data-theme="dark">
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

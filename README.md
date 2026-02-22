@@ -1,97 +1,85 @@
 # CrisisLens
 
-CrisisLens is a monorepo with a Next.js command-center UI and a Python ML workspace.
+CrisisLens is a monorepo with:
+- `apps/web`: Next.js 14 command-center frontend (landing + dashboard, globe, mock API seams)
+- `apps/ml`: Python ML training/artifact workspace
 
 ## Repository Layout
 
-- `apps/web`: Next.js 14 app (App Router), React 18, TypeScript, Three.js globe, API routes, and tests.
-- `apps/ml`: Python model training code and model artifacts.
+- `apps/web/app`: Next.js App Router pages and API routes
+- `apps/web/components`: UI components (landing, dashboard, globe)
+- `apps/web/lib`: domain logic, API client types, adapters
+- `apps/web/tests`: Vitest + Playwright tests
+- `apps/web/scripts`: data generation scripts
+- `apps/web/data`: CSV inputs for frontend data generation
+- `apps/ml/models`: model training code + generated artifacts
+- `docs`: handoff and supporting documentation
 
 ## Prerequisites
 
 - Node.js 20+
-- `pnpm` (workspace package manager)
-- Python 3.10+
+- pnpm 10+
+- Python 3.10+ (only for ML workspace tasks)
 
-## Web App (apps/web)
+## Web App Quickstart
 
-### Install
+From repo root:
 
 ```bash
 pnpm install
-```
-
-### Run locally
-
-```bash
 pnpm run generate:data
 pnpm run dev
 ```
 
-Open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Common commands
+Routes:
+- `/`: landing page
+- `/dashboard`: command-center UI
+
+## Web Commands
+
+All root commands delegate to `apps/web`:
 
 ```bash
+pnpm run dev
+pnpm run build
 pnpm run lint
 pnpm run typecheck
 pnpm run test
 pnpm run test:unit
 pnpm run test:e2e
+pnpm run test:e2e:ui
+pnpm run test:e2e:api
 pnpm run test:all
+pnpm run playwright:install
+pnpm run generate:data
 ```
 
-All root scripts delegate to `apps/web`.
+## ML Workspace Notes (`apps/ml`)
 
-## ML Workspace (apps/ml)
+- Python dependencies are listed in `apps/ml/requirements.txt`.
+- Model artifacts currently consumed by web data generation live under `apps/ml/models/artifacts`.
+- `apps/ml/models/train_model.py` uses relative paths and expects local ML data setup that is not included in this repository by default.
+- This repo currently does not include a fully wired production Python API service.
 
-### Setup
+## Data Flow
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r apps/ml/requirements.txt
-```
+- `pnpm run generate:data` reads CSVs from `apps/web/data`
+- It generates:
+  - `apps/web/public/data/country-metrics.json`
+  - `apps/web/public/data/project-profiles.json`
+  - `apps/web/public/data/snapshot.json`
+- It also merges ML enrichment from:
+  - `apps/ml/models/artifacts/gold_country_scores.json`
 
-### Train (current script entry)
+## Environment Variables
 
-```bash
-python apps/ml/models/train_model.py
-```
+- `NEXT_PUBLIC_GLOBE_WS_URL` (optional): enables websocket highlight/anomaly events in the dashboard globe.
 
-## Notes
+## Additional Docs
 
-- Frontend tests live in `apps/web/tests` (Vitest + Playwright).
-- Web data generation script lives at `apps/web/scripts/generate-country-metrics.mjs`.
-- Optional env var: `NEXT_PUBLIC_GLOBE_WS_URL` for real-time globe highlights.
-
-## Geo-Insight Agent Endpoints
-
-Set these env vars in `apps/web/.env.local`:
-
-- `DATABRICKS_HOST`
-- `DATABRICKS_TOKEN`
-- `DATABRICKS_WAREHOUSE_ID`
-- `CRISIS_TABLE_FQN`
-- `AI_MODEL`
-
-Optional compatibility overrides (if your workspace does not expose AI Gateway path):
-
-- `DATABRICKS_AI_CHAT_PATH` (example: `/api/2.0/ai-gateway/chat/completions`)
-- `DATABRICKS_AI_ENDPOINT` (serving endpoint name to call via `/serving-endpoints/{name}/invocations`)
-
-Quick checks:
-
-```bash
-curl -s "http://localhost:3000/api/geo/metrics?iso3=HTI"
-```
-
-```bash
-curl -s "http://localhost:3000/api/geo/insight?iso3=HTI"
-```
-
-```bash
-curl -s -X POST "http://localhost:3000/api/geo/query" \
-  -H "Content-Type: application/json" \
-  -d '{"question":"Which countries have lower funding coverage than Mali and where should funding increase?"}'
-```
+- `AGENTS.md`: repository operating rules for coding agents
+- `docs/LLM_GUIDE.md`: LLM-specific workflow and guardrails
+- `docs/CONTEXT_HANDOFF.md`: implementation and architecture context
+- `apps/web/FRONTEND_STATUS.md`: current frontend implementation status

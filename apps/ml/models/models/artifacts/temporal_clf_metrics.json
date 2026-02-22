@@ -1,0 +1,40 @@
+{
+  "1yr": {
+    "f1_score": 0.4264,
+    "confusion_matrix": [
+      [
+        339,
+        103
+      ],
+      [
+        10,
+        42
+      ]
+    ],
+    "tp": 42,
+    "fp": 103,
+    "fn": 10,
+    "tn": 339,
+    "decision_threshold": 0.0,
+    "oof": true
+  },
+  "2yr": {
+    "f1_score": 0.3034,
+    "confusion_matrix": [
+      [
+        303,
+        78
+      ],
+      [
+        23,
+        22
+      ]
+    ],
+    "tp": 22,
+    "fp": 78,
+    "fn": 23,
+    "tn": 303,
+    "decision_threshold": 0.0403,
+    "oof": true
+  }
+}

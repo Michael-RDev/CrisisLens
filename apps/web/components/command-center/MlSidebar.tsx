@@ -38,6 +38,8 @@ export function MlSidebar({
 }: MlSidebarProps) {
   const reducedMotion = useReducedMotion();
   const isRight = side === "right";
+  const desktopPanelWidth = 470;
+  const desktopHiddenOffset = desktopPanelWidth + 48;
 
   return (
     <>
@@ -45,8 +47,8 @@ export function MlSidebar({
         initial={reducedMotion ? false : { opacity: 0, x: 24 }}
         animate={{
           opacity: 1,
-          x: open ? 0 : isRight ? 540 : -540,
-          width: 680
+          x: open ? 0 : isRight ? desktopHiddenOffset : -desktopHiddenOffset,
+          width: desktopPanelWidth
         }}
         transition={{ duration: reducedMotion ? 0 : 0.23, ease: "easeOut" }}
         className={`pointer-events-auto fixed inset-y-16 z-30 hidden flex-col rounded-2xl border border-white/20 bg-[#d4e8fa1c] p-3 shadow-[0_18px_50px_-24px_rgba(13,36,58,0.55)] backdrop-blur-md md:flex ${
@@ -103,7 +105,7 @@ export function MlSidebar({
 
       <motion.aside
         initial={false}
-        animate={{ y: open ? 0 : 560 }}
+        animate={{ y: open ? "0%" : "110%" }}
         transition={{ duration: reducedMotion ? 0 : 0.22, ease: "easeOut" }}
         className="pointer-events-auto fixed inset-x-2 bottom-2 top-16 z-30 flex flex-col rounded-2xl border border-white/20 bg-[#d4e8fa1c] p-3 shadow-[0_18px_50px_-24px_rgba(13,36,58,0.55)] backdrop-blur-md md:hidden"
       >

@@ -124,7 +124,7 @@ export function MlOpsTab({
               ? selectedIso3
               : "No country selected"}
         </p>
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <div className="rounded-lg border border-[#2f526b] bg-[#0f2332] p-2">
             <p className="m-0 text-[11px] uppercase tracking-[0.07em] text-[#98b5c8]">Layer</p>
             <p className="m-0 mt-1 text-sm font-semibold text-[#eff7ff]">{layerConfig[layerMode].label}</p>
@@ -226,7 +226,7 @@ export function MlOpsTab({
             <section className="rounded-xl border border-[#2f526b] bg-[#10283a] p-3">
               <p className="m-0 text-xs uppercase tracking-[0.07em] text-[#9eb9cb]">Quarterly Outlook</p>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-[640px] text-left text-xs text-[#d6e5f1]">
+                <table className="min-w-[520px] text-left text-xs text-[#d6e5f1]">
                   <thead className="border-b border-[#2d526a] bg-[#112d42] text-[#b7ccdc]">
                     <tr>
                       <th className="px-2 py-1.5 font-semibold">Quarter</th>

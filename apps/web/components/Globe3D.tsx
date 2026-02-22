@@ -27,6 +27,7 @@ type Globe3DProps = {
   selectedIso3: string | null;
   highlightedIso3: string[];
   simulationArcs?: SimulationImpactArc[];
+  showSimulationLegend?: boolean;
   onSelect: (iso3: string) => void;
   onHover: (iso3: string | null) => void;
   className?: string;
@@ -210,6 +211,7 @@ export default function Globe3D({
   selectedIso3,
   highlightedIso3,
   simulationArcs = [],
+  showSimulationLegend = false,
   onSelect,
   onHover,
   className
@@ -233,17 +235,20 @@ export default function Globe3D({
   const voiceControlEnabledRef = useRef(false);
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
+  const handOverlayRef = useRef<HTMLDivElement | null>(null);
   const selectedIso3Ref = useRef<string | null>(selectedIso3);
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
   const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
   const [handOverlayMinimized, setHandOverlayMinimized] = useState(false);
+  const [instructionsMinimized, setInstructionsMinimized] = useState(false);
   const [handStatus, setHandStatus] = useState("Camera control is off.");
   const [voiceStatus, setVoiceStatus] = useState("Voice control is off.");
   const [handSensitivity, setHandSensitivity] = useState(0.95);
   const [webglSupported, setWebglSupported] = useState(true);
   const [globeRuntimeFailed, setGlobeRuntimeFailed] = useState(false);
+  const [handOverlayHeight, setHandOverlayHeight] = useState(280);
   const [handCursor, setHandCursor] = useState<HandCursorState>({
     x: 0,
     y: 0,
@@ -277,6 +282,23 @@ export default function Globe3D({
 
   const metricByIso = useMemo(() => new Map(metrics.map((row) => [row.iso3, row])), [metrics]);
   const visibleSimulationArcs = useMemo(() => simulationArcs.slice(0, 8), [simulationArcs]);
+  const simulationLegendBottomPx = handOverlayHeight + 18;
+
+  useEffect(() => {
+    const node = handOverlayRef.current;
+    if (!node) return;
+
+    const updateHeight = () => {
+      const next = Math.ceil(node.getBoundingClientRect().height);
+      if (next > 0) setHandOverlayHeight(next);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [handOverlayMinimized]);
 
   const countriesGeoJson = useMemo(() => {
     const topo = countriesTopo as unknown as {
@@ -851,7 +873,7 @@ export default function Globe3D({
   return (
     <div className={`globe-canvas ${className ?? ""}`} ref={containerRef}>
       {handOverlayMinimized ? (
-        <div className="globe-hands-overlay-collapsed">
+        <div className="globe-hands-overlay-collapsed" ref={handOverlayRef}>
           <button
             type="button"
             onClick={() => setHandOverlayMinimized((current) => !current)}
@@ -862,7 +884,7 @@ export default function Globe3D({
           </button>
         </div>
       ) : (
-        <div className="globe-hands-overlay">
+        <div className="globe-hands-overlay" ref={handOverlayRef}>
           <button
             type="button"
             onClick={() => setHandOverlayMinimized(true)}
@@ -871,18 +893,41 @@ export default function Globe3D({
           >
             −
           </button>
-          <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
-            {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
-          </button>
-          <button type="button" onClick={toggleVoiceControl} className="globe-hands-toggle">
-            {voiceControlEnabled ? "Stop Voice Control" : "Start Voice Control"}
-          </button>
-          <p>{handStatus}</p>
-          <p>{voiceStatus}</p>
-          <p>
-            Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
-            move hand to rotate globe. Voice command example: &quot;go to Canada&quot;.
-          </p>
+          <div className="globe-hands-controls-row">
+            <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
+              {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
+            </button>
+            <button type="button" onClick={toggleVoiceControl} className="globe-hands-toggle">
+              {voiceControlEnabled ? "Stop Voice Control" : "Start Voice Control"}
+            </button>
+          </div>
+          <div className="globe-hands-status-grid">
+            <div className="globe-hands-status-card">
+              <span className="globe-hands-status-label">Camera</span>
+              <p>{handStatus}</p>
+            </div>
+            <div className="globe-hands-status-card">
+              <span className="globe-hands-status-label">Voice</span>
+              <p>{voiceStatus}</p>
+            </div>
+          </div>
+          <div className="globe-hands-help-row">
+            <span>Instructions</span>
+            <button
+              type="button"
+              onClick={() => setInstructionsMinimized((current) => !current)}
+              className="globe-hands-help-toggle"
+              aria-label={instructionsMinimized ? "Show hand and voice instructions" : "Hide hand and voice instructions"}
+            >
+              {instructionsMinimized ? "Show" : "Hide"}
+            </button>
+          </div>
+          {!instructionsMinimized ? (
+            <p className="globe-hands-instructions">
+              Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
+              move hand to rotate globe. Voice command example: &quot;go to Canada&quot;.
+            </p>
+          ) : null}
           <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
             Sensitivity: {handSensitivity.toFixed(1)}x
           </label>
@@ -919,8 +964,14 @@ export default function Globe3D({
           <span>Cursor tracks your hand</span>
         </div>
       ) : null}
-      {visibleSimulationArcs.length > 0 ? (
-        <div className="pointer-events-none absolute right-2 top-2 z-[5] grid gap-1 rounded-md border border-[var(--dbx-globe-hint-border)] bg-[var(--dbx-globe-hint-bg)] px-2 py-1 text-[11px] text-[var(--dbx-globe-hint-text)]">
+      {showSimulationLegend && visibleSimulationArcs.length > 0 ? (
+        <div
+          className="pointer-events-none absolute z-[13] grid w-[min(88vw,17.5rem)] gap-1 rounded-md border border-[var(--dbx-globe-hint-border)] bg-[var(--dbx-globe-hint-bg)] px-2.5 py-2 text-[11px] text-[var(--dbx-globe-hint-text)]"
+          style={{
+            left: "max(1rem, env(safe-area-inset-left))",
+            bottom: `calc(max(1rem, env(safe-area-inset-bottom)) + ${simulationLegendBottomPx}px)`
+          }}
+        >
           <span className="font-semibold uppercase tracking-[0.08em]">Q+8 Impact Arrows</span>
           <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Competing priority</span>
           <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Relatively relieved</span>

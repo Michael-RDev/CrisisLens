@@ -38,7 +38,6 @@ import { CountryBriefTab } from "@/components/command-center/tabs/CountryBriefTa
 import { MlOpsTab, MlPanelId } from "@/components/command-center/tabs/MlOpsTab";
 import { VisualsTab } from "@/components/command-center/tabs/VisualsTab";
 import type { CommandTabId } from "@/components/command-center/Tabs";
-import { DatabricksChatPopup } from "@/components/dashboard/DatabricksChatPopup";
 import {
   buildMlGenieQueryTemplates,
   getCountrySuggestions,
@@ -107,8 +106,8 @@ export default function GlobeDashboard({
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<CommandTabId>("country-data");
-  const [geniePanelOpen, setGeniePanelOpen] = useState(false);
-  const [mlPanelOpen, setMlPanelOpen] = useState(false);
+  const [geniePanelOpen, setGeniePanelOpen] = useState(initialMode === "genie");
+  const [mlPanelOpen, setMlPanelOpen] = useState(initialMode === "ml");
 
   const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
   const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
@@ -609,21 +608,24 @@ export default function GlobeDashboard({
     }
   }
 
+  function handleWorkspaceModeChange(mode: WorkspaceMode) {
+    setWorkspaceMode(mode);
+    if (mode === "genie") {
+      setGeniePanelOpen(true);
+      setMlPanelOpen(false);
+      return;
+    }
+    setMlPanelOpen(true);
+    setGeniePanelOpen(false);
+  }
+
   return (
     <GlobeCanvas
       overlays={
         <>
           <TopNav
             mode={workspaceMode}
-            onModeChange={setWorkspaceMode}
-            menuOpen={workspaceMode === "genie" ? geniePanelOpen : mlPanelOpen}
-            onToggleMenu={() => {
-              if (workspaceMode === "genie") {
-                setGeniePanelOpen((current) => !current);
-                return;
-              }
-              setMlPanelOpen((current) => !current);
-            }}
+            onModeChange={handleWorkspaceModeChange}
           />
 
           {showGenieWorkspace ? (
@@ -775,6 +777,12 @@ export default function GlobeDashboard({
           selectedIso3={selectedIso3}
           highlightedIso3={highlightedIso3}
           simulationArcs={simulationArcs}
+          showSimulationLegend={Boolean(
+            workspaceMode === "ml" &&
+            activeMlPanel === "simulation" &&
+            showImpactArrows &&
+            simulation?.impact_arrows?.length
+          )}
           onSelect={(iso3) => {
             if (workspaceMode !== "ml") {
               onCountryPinch({
@@ -789,18 +797,6 @@ export default function GlobeDashboard({
           className="globe-canvas-full"
         />
       </div>
-      {workspaceMode === "ml" ? (
-        <DatabricksChatPopup
-          queryTemplates={queryTemplates}
-          question={mlGenieQuestion}
-          genieAnswer={mlGenieAnswer}
-          genieSource={mlGenieSource}
-          genieResults={mlGenieResults}
-          genieLoading={mlGenieLoading}
-          onSetQuestion={setMlGenieQuestion}
-          onSubmit={submitMlGenieQuestion}
-        />
-      ) : null}
     </GlobeCanvas>
   );
 }

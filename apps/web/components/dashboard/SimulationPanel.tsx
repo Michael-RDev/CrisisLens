@@ -24,13 +24,13 @@ const QUICK_ALLOCATION_STEPS = [
 ] as const;
 
 const TREND_CHART = {
-  width: 760,
+  width: 620,
   height: 260,
   padding: { top: 16, right: 18, bottom: 44, left: 50 }
 } as const;
 
 const DELTA_CHART = {
-  width: 760,
+  width: 620,
   height: 220,
   padding: { top: 16, right: 18, bottom: 44, left: 50 }
 } as const;
@@ -335,7 +335,7 @@ export function SimulationPanel({
             Allocation {formatUsd(Number(simulation.allocation_usd || 0))} for {selectedCountryName ?? simulation.iso3}. ML source: {simulation.ml_context.source_path} | projection points: {simulation.ml_context.projection_points} | neglect-flag gating: {simulation.ml_context.uses_neglect_flag ? "active" : "not available"}.
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-3">
               <p className="m-0 text-xs uppercase tracking-[0.12em] text-[var(--dbx-text-muted)]">Rank Change</p>
               <p className="m-0 mt-1 text-xl font-semibold">{simulation.rank_delta >= 0 ? "+" : ""}{simulation.rank_delta}</p>
@@ -368,7 +368,7 @@ export function SimulationPanel({
                 <h3 className="m-0 text-sm font-semibold text-[var(--dbx-text)]">Model Prediction Outlook</h3>
                 <p className="m-0 text-xs text-[var(--dbx-text-muted)]">Neglect threshold reference: 65</p>
               </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-2">
                   <p className="m-0 text-[11px] uppercase tracking-[0.1em] text-[var(--dbx-text-muted)]">Projected trend</p>
                   <p className="m-0 mt-1 text-base font-semibold capitalize text-[var(--dbx-text)]">{modelOutlook.trend}</p>
@@ -416,7 +416,7 @@ export function SimulationPanel({
                 </div>
                 <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
                   <svg
-                    className="block h-auto min-w-[680px] w-full"
+                    className="block h-auto min-w-[560px] w-full"
                     viewBox={`0 0 ${DELTA_CHART.width} ${DELTA_CHART.height}`}
                     role="img"
                     aria-label="Quarter-over-quarter neglect delta chart"
@@ -484,7 +484,7 @@ export function SimulationPanel({
                   </svg>
                 </div>
                 <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
-                  <div className="grid min-w-[760px] grid-cols-4 gap-2">
+                  <div className="grid min-w-[560px] grid-cols-2 gap-2 sm:grid-cols-4">
                     {neglectDeltaRows.map((row) => (
                       <div key={`${row.quarterLabel}-delta`} className="rounded border border-[var(--dbx-border-soft)] px-2 py-1 text-[11px] text-[var(--dbx-text-muted)]">
                         <p className="m-0 font-semibold text-[var(--dbx-text)]">{row.quarterLabel}</p>
@@ -506,7 +506,7 @@ export function SimulationPanel({
               </div>
               <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
                 <svg
-                  className="block h-auto min-w-[680px] w-full"
+                  className="block h-auto min-w-[560px] w-full"
                   viewBox={`0 0 ${TREND_CHART.width} ${TREND_CHART.height}`}
                   role="img"
                   aria-label="Quarterly OCI and neglect line chart"
@@ -584,7 +584,7 @@ export function SimulationPanel({
                 <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#38bdf8]" /> Neglect</span>
               </div>
               <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
-                <div className="grid min-w-[760px] grid-cols-4 gap-2">
+                <div className="grid min-w-[560px] grid-cols-2 gap-2 sm:grid-cols-4">
                   {quarters.slice(0, 8).map((quarter, index) => (
                     <div key={quarter.quarter_label} className="rounded border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-2">
                       <p className="m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--dbx-text-muted)]">{quarter.quarter_label}</p>
@@ -614,7 +614,7 @@ export function SimulationPanel({
                 <p className="m-0 text-xs text-[var(--dbx-text-muted)]">Color indicates movement from Q+1 baseline</p>
               </div>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-[760px] border-collapse text-xs">
+                <table className="min-w-[560px] border-collapse text-xs">
                   <thead>
                     <tr className="text-left text-[var(--dbx-text-muted)]">
                       <th className="border-b border-[var(--dbx-border-soft)] pb-2 pr-3">Metric</th>
@@ -683,7 +683,7 @@ export function SimulationPanel({
             <section className="rounded-xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-3">
               <h3 className="m-0 text-sm font-semibold text-[var(--dbx-text)]">Country Impact Matrix (OCI + Neglect)</h3>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-[760px] border-collapse text-xs">
+                <table className="min-w-[560px] border-collapse text-xs">
                   <thead>
                     <tr className="text-left text-[var(--dbx-text-muted)]">
                       <th className="border-b border-[var(--dbx-border-soft)] pb-2 pr-3">Country</th>

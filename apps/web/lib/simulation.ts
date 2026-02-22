@@ -745,9 +745,17 @@ export function buildQuarterlySimulation(
     baseRanked: baseRows,
     scenarioRanked: finalRows
   });
+
+  // Compare impact arrows at the *same* time horizon (no-funding baseline at Q+8 vs funded
+  // scenario at Q+8). Using baseRows (t=0) causes all peer scores to appear as "pressure"
+  // (red) because structural drift makes every country's OCI rise over 24 months regardless
+  // of the funding scenario.
+  const noFundingFinalRows = withRanks(
+    computeQuarterRows(metrics, selectedIso3, 0, 1, finalMonthsAhead)
+  );
   const { countryImpacts, impactArrows } = buildCountryImpacts({
     selectedIso3,
-    baseRanked: baseRows,
+    baseRanked: noFundingFinalRows,
     scenarioRanked: finalRows
   });
 

@@ -1,6 +1,7 @@
 .venv/
 
 .env
+data/
 
 apps/web/data/
 .DS_Store

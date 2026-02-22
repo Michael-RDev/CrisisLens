@@ -710,9 +710,10 @@ export default function Globe3D({
       ) : null}
       {visibleSimulationArcs.length > 0 ? (
         <div className="pointer-events-none absolute right-2 top-2 z-[5] grid gap-1 rounded-md border border-[var(--dbx-globe-hint-border)] bg-[var(--dbx-globe-hint-bg)] px-2 py-1 text-[11px] text-[var(--dbx-globe-hint-text)]">
-          <span className="font-semibold uppercase tracking-[0.08em]">Simulation Arrows</span>
-          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Pressure</span>
-          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Relief</span>
+          <span className="font-semibold uppercase tracking-[0.08em]">Q+8 Impact Arrows</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Competing priority</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Relatively relieved</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#cbd5e1]" /> Neutral shift</span>
         </div>
       ) : null}
       <Globe

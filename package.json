@@ -16,5 +16,8 @@
     "playwright:install": "pnpm --dir apps/web playwright:install",
     "test:all": "pnpm --dir apps/web test:all",
     "generate:data": "pnpm --dir apps/web generate:data"
+  },
+  "dependencies": {
+    "lucide-react": "^0.575.0"
   }
 }

@@ -217,7 +217,7 @@ export function InsightPanel({
 
               {tab === "sources" ? (
                 <div className="space-y-2 text-sm">
-                  <p className="m-0">Table: <code>workspace.hdx.api_crisis_priority_2026</code></p>
+                  <p className="m-0">Table: <code>workspace.new.crisislens_master</code></p>
                   <p className="m-0">Metrics cited: coverage %, funding gap, funding gap per person, people in need.</p>
                   <p className="m-0">Updated: {new Date().toLocaleTimeString()}</p>
                 </div>

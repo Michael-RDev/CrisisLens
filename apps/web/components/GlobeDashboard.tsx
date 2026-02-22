@@ -1,21 +1,24 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { countryByIso3, iso3ByIso2 } from "@/lib/countries";
-import { fetchGeoInsight, runGeoStrategicQuery, fetchGeoSummary, subscribeToGlobeEvents } from "@/lib/api/crisiswatch";
-import type { GeoInsight, GeoMetrics, GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
+import {
+  askGenieCountryInsight,
+  ensureGenieConversation,
+  runGeoStrategicQuery,
+  subscribeToGlobeEvents
+} from "@/lib/api/crisiswatch";
+import type { GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import {
   CountryComparisonChartPanel,
-  CountryKpis,
   DashboardHeader,
   DashboardFooter,
   GlobeCard,
-  InsightPanel,
   LayerSelector,
-  StrategicQueryPanel,
-  buildHoverText
+  StrategicQueryPanel
 } from "@/components/dashboard";
+import InsightPanel from "@/components/InsightPanel";
 import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 type GlobeDashboardProps = {
@@ -35,6 +38,19 @@ function normalizeCountryCode(countryCode: string): string | null {
   return null;
 }
 
+function chartPromptForLayer(layerMode: LayerMode): string {
+  if (layerMode === "coverage") {
+    return "Show top 10 countries by coverage percentage with funding gap, gap per person, and people in need.";
+  }
+  if (layerMode === "inNeedRate") {
+    return "Show top 10 countries by people in need with coverage, funding gap, and gap per person.";
+  }
+  if (layerMode === "severity") {
+    return "Show top 10 countries by funding gap per person with coverage, funding gap, and people in need.";
+  }
+  return "Show top 10 countries by funding gap in USD with coverage, gap per person, and people in need.";
+}
+
 export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
   const [hoverIso3, setHoverIso3] = useState<string | null>(null);
@@ -42,31 +58,37 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
 
-  const [insightOpen, setInsightOpen] = useState(false);
   const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
-  const [insightMetrics, setInsightMetrics] = useState<GeoMetrics | null>(null);
-  const [insightSummary, setInsightSummary] = useState<GeoInsight | null>(null);
-  const [insightMetricsLoading, setInsightMetricsLoading] = useState(false);
-  const [insightSummaryLoading, setInsightSummaryLoading] = useState(false);
-  const [insightMetricsError, setInsightMetricsError] = useState<string | null>(null);
-  const [insightSummaryError, setInsightSummaryError] = useState<string | null>(null);
-  const [insightProgressLabel, setInsightProgressLabel] = useState("Waiting for country selection.");
-  const [followUpQuestion, setFollowUpQuestion] = useState("");
-  const [lastAskedQuestion, setLastAskedQuestion] = useState<string | null>(null);
+  const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  const [insightSummaryText, setInsightSummaryText] = useState("");
+  const [insightQueryResult, setInsightQueryResult] = useState<{
+    columns: string[];
+    rows: unknown[][];
+    rowCount?: number;
+  } | null>(null);
+
   const [strategicQuestion, setStrategicQuestion] = useState("");
   const [strategicLoading, setStrategicLoading] = useState(false);
   const [strategicError, setStrategicError] = useState<string | null>(null);
   const [strategicResult, setStrategicResult] = useState<GeoStrategicQueryResult | null>(null);
 
+  const [chartRows, setChartRows] = useState<GeoStrategicQueryResult["rows"]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
+  const hasLoadedChartRef = useRef(false);
+
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
   const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
-
-  const selected = selectedIso3 ? byIso.get(selectedIso3) ?? null : null;
-  const selectedCountryMeta = selectedIso3 ? countryByIso3.get(selectedIso3) ?? null : null;
   const hoverCountryMetric = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
   const hoverCountryMeta = hoverIso3 ? countryByIso3.get(hoverIso3) ?? null : null;
 
-  const hoverText = buildHoverText({ hoverCountryMetric, hoverCountryMeta, layerMode });
+  const hoverText = hoverCountryMeta
+    ? `${hoverCountryMeta.name} (${hoverCountryMeta.iso3})`
+    : hoverCountryMetric
+      ? `${hoverCountryMetric.country} (${hoverCountryMetric.iso3})`
+      : "Hover countries for details. Drag to rotate. Scroll to zoom.";
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_GLOBE_WS_URL;
@@ -86,119 +108,93 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     return unsubscribe;
   }, []);
 
-  async function loadInsightForCountry(selection: PinchSelection, followUp?: string) {
+  async function refreshChartData(currentLayer: LayerMode) {
+    setChartLoading(true);
+    setChartError(null);
+    try {
+      const result = await runGeoStrategicQuery(chartPromptForLayer(currentLayer));
+      setChartRows(result.rows);
+    } catch (error) {
+      setChartRows([]);
+      setChartError(error instanceof Error ? error.message : "Unable to load Databricks chart data.");
+    } finally {
+      setChartLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!hasLoadedChartRef.current) {
+      hasLoadedChartRef.current = true;
+      return;
+    }
+    void refreshChartData(layerMode);
+  }, [layerMode]);
+
+  async function loadInsightForCountry(selection: PinchSelection) {
     const normalized = selection.countryCode ? normalizeCountryCode(selection.countryCode) : null;
     if (!normalized && !selection.countryName?.trim()) {
-      setInsightMetricsError("Country selection is missing ISO3 and country name.");
-      setInsightSummaryError("Cannot load geo insight without a valid country selection.");
+      setInsightError("Country selection is missing ISO3 and country name.");
       return;
     }
 
-    setInsightSelection({
-      countryCode: normalized ?? undefined,
-      countryName: selection.countryName
-    });
-    if (normalized) setSelectedIso3(normalized);
-    setInsightOpen(true);
-    setInsightMetrics(null);
-    setInsightSummary(null);
-    setLastAskedQuestion(followUp?.trim() ? followUp.trim() : null);
-    setInsightMetricsError(null);
-    setInsightSummaryError(null);
-    setInsightProgressLabel("Loading geo insight...");
-    setInsightMetricsLoading(true);
-    setInsightSummaryLoading(true);
+    if (!normalized) {
+      setInsightError("Pinch selection must resolve to ISO3 for Genie request.");
+      return;
+    }
+
+    setInsightSelection({ countryCode: normalized, countryName: selection.countryName });
+    setSelectedIso3(normalized);
+    setInsightLoading(true);
+    setInsightError(null);
+    setInsightSummaryText("");
+    setInsightQueryResult(null);
 
     try {
-      const payload = await fetchGeoInsight({
-        iso3: normalized ?? undefined,
-        country: normalized ? undefined : selection.countryName
-      });
-      setInsightMetrics(payload.metrics);
-      setInsightSummary(payload.insight);
-      setInsightSelection({
-        countryCode: payload.metrics.iso3,
-        countryName: payload.metrics.country
-      });
-      setSelectedIso3(payload.metrics.iso3);
-      if (followUp?.trim()) {
-        setInsightProgressLabel("Applying follow-up question...");
-        const refined = await fetchGeoSummary({
-          metrics: payload.metrics,
-          question: followUp.trim()
-        });
-        setInsightSummary(refined);
-        setLastAskedQuestion(followUp.trim());
+      const conversationId =
+        genieConversationId ??
+        (
+          await ensureGenieConversation()
+        ).conversationId;
+
+      if (!genieConversationId) {
+        setGenieConversationId(conversationId);
       }
-      setInsightProgressLabel("Summary ready.");
+
+      const payload = await askGenieCountryInsight({
+        conversationId,
+        iso3: normalized,
+        countryName: selection.countryName,
+        intent: "summary"
+      });
+      setInsightSummaryText(payload.summaryText);
+      setInsightQueryResult(payload.queryResult ?? null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load geo insight.";
-      setInsightMetricsError(message);
-      setInsightSummaryError(message);
-      setInsightMetrics(null);
-      setInsightSummary(null);
-      setInsightProgressLabel("Unable to load geo insight.");
+      setInsightError(message);
+      setInsightSummaryText("");
+      setInsightQueryResult(null);
     } finally {
-      setInsightMetricsLoading(false);
-      setInsightSummaryLoading(false);
+      setInsightLoading(false);
     }
   }
 
   function onCountryPinch(selection: PinchSelection) {
     // Plug your existing globe pinch callback into this handler.
     // Expected payload shape: onCountryPinch({ countryCode, countryName? }).
-    setFollowUpQuestion("");
-    setLastAskedQuestion(null);
     void loadInsightForCountry(selection);
-  }
-
-  async function refreshInsightSummary() {
-    if (!insightSelection) return;
-    setFollowUpQuestion("");
-    setLastAskedQuestion(null);
-    await loadInsightForCountry(insightSelection);
-  }
-
-  async function submitInsightFollowUp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!insightSelection || !followUpQuestion.trim()) return;
-    setLastAskedQuestion(followUpQuestion.trim());
-    await loadInsightForCountry(insightSelection, followUpQuestion.trim());
-    setFollowUpQuestion("");
-  }
-
-  async function askInsightFollowupChip(questionText: string) {
-    if (!insightMetrics || !questionText.trim()) return;
-    setInsightSummaryLoading(true);
-    setInsightSummaryError(null);
-    setInsightSummary(null);
-    setInsightProgressLabel("Applying follow-up question...");
-    try {
-      const refined = await fetchGeoSummary({
-        metrics: insightMetrics,
-        question: questionText
-      });
-      setInsightSummary(refined);
-      setFollowUpQuestion(questionText);
-      setLastAskedQuestion(questionText);
-      setInsightProgressLabel("Summary ready.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to apply follow-up.";
-      setInsightSummaryError(message);
-      setInsightProgressLabel("Unable to apply follow-up.");
-    } finally {
-      setInsightSummaryLoading(false);
-    }
   }
 
   async function submitStrategicQuery(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!strategicQuestion.trim()) return;
+
     setStrategicLoading(true);
     setStrategicError(null);
     try {
       const result = await runGeoStrategicQuery(strategicQuestion.trim());
       setStrategicResult(result);
+      setChartRows(result.rows);
+      setChartError(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to run strategic query.";
       setStrategicError(message);
@@ -216,6 +212,8 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       try {
         const result = await runGeoStrategicQuery(questionText);
         setStrategicResult(result);
+        setChartRows(result.rows);
+        setChartError(null);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to run strategic follow-up.";
         setStrategicError(message);
@@ -229,6 +227,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     const iso3 = resolveJumpToCountryIso3(query);
     if (iso3) {
       setSelectedIso3(iso3);
+      void loadInsightForCountry({ countryCode: iso3, countryName: countryByIso3.get(iso3)?.name });
     }
   }
 
@@ -238,7 +237,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       <LayerSelector layerMode={layerMode} onChange={setLayerMode} />
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 items-start gap-3 xl:grid-cols-12">
-        <div className="space-y-3 xl:col-span-8">
+        <div className="xl:col-span-8">
           <GlobeCard
             metrics={metrics}
             layerMode={layerMode}
@@ -257,49 +256,50 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             onQueryChange={setQuery}
             onJump={jumpToCountry}
           />
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <CountryKpis selected={selected} selectedCountryMeta={selectedCountryMeta} selectedOci={null} />
-            <CountryComparisonChartPanel
-              rows={metrics}
-              layerMode={layerMode}
-              selectedIso3={selectedIso3}
-              onSelectIso3={setSelectedIso3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            <StrategicQueryPanel
-              question={strategicQuestion}
-              loading={strategicLoading}
-              error={strategicError}
-              result={strategicResult}
-              onQuestionChange={setStrategicQuestion}
-              onSubmit={submitStrategicQuery}
-              onUseFollowup={useStrategicFollowup}
-            />
-          </div>
         </div>
 
-        <div className="xl:col-span-4 xl:self-start">
+        <div className="xl:col-span-4">
+          <StrategicQueryPanel
+            question={strategicQuestion}
+            loading={strategicLoading}
+            error={strategicError}
+            result={strategicResult}
+            className="h-full"
+            onQuestionChange={setStrategicQuestion}
+            onSubmit={submitStrategicQuery}
+            onUseFollowup={useStrategicFollowup}
+          />
+        </div>
+
+        <div className="xl:col-span-6">
           <InsightPanel
-            isOpen={insightOpen}
+            open={Boolean(insightSelection?.countryCode)}
             countryCode={insightSelection?.countryCode}
             countryName={insightSelection?.countryName}
-            metrics={insightMetrics}
-            insight={insightSummary}
-            metricsLoading={insightMetricsLoading}
-            summaryLoading={insightSummaryLoading}
-            metricsError={insightMetricsError}
-            summaryError={insightSummaryError}
-            progressLabel={insightProgressLabel}
-            followUpQuestion={followUpQuestion}
-            lastAskedQuestion={lastAskedQuestion}
-            onClose={() => setInsightOpen(false)}
-            onRefreshSummary={() => void refreshInsightSummary()}
-            onFollowUpChange={setFollowUpQuestion}
-            onSubmitFollowUp={submitInsightFollowUp}
-            onFollowupChip={askInsightFollowupChip}
+            loading={insightLoading}
+            error={insightError}
+            summaryText={insightSummaryText}
+            queryResult={insightQueryResult}
+            onRetry={() => {
+              if (insightSelection) {
+                void loadInsightForCountry(insightSelection);
+              }
+            }}
+          />
+        </div>
+
+        <div className="xl:col-span-6">
+          <CountryComparisonChartPanel
+            rows={chartRows}
+            layerMode={layerMode}
+            selectedIso3={insightSelection?.countryCode ?? selectedIso3}
+            loading={chartLoading}
+            error={chartError}
+            className="h-full"
+            onSelectIso3={(iso3) => {
+              setSelectedIso3(iso3);
+              void loadInsightForCountry({ countryCode: iso3, countryName: countryByIso3.get(iso3)?.name });
+            }}
           />
         </div>
       </section>

@@ -6,6 +6,7 @@ type StrategicQueryPanelProps = {
   loading: boolean;
   error: string | null;
   result: GeoStrategicQueryResult | null;
+  className?: string;
   onQuestionChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onUseFollowup: (question: string) => void;
@@ -23,12 +24,13 @@ export function StrategicQueryPanel({
   loading,
   error,
   result,
+  className,
   onQuestionChange,
   onSubmit,
   onUseFollowup
 }: StrategicQueryPanelProps) {
   return (
-    <article className="integration-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4">
+    <article className={`integration-card rounded-2xl border border-[#2e4f63] bg-[#10202d] p-4 ${className ?? ""}`}>
       <h2 className="m-0 text-xl font-semibold">General Query Assistant</h2>
       <p className="mt-1 text-sm text-[#9db7c8]">
         Ask any cross-country or strategy question: comparisons, where to increase funding, where to reduce, and
@@ -55,7 +57,7 @@ export function StrategicQueryPanel({
       {error ? <p className="mt-2 rounded-lg border border-[#8a3d47] bg-[#3b1a22] p-2 text-sm">{error}</p> : null}
 
       {result ? (
-        <div className="mt-2 border-t border-dashed border-[#35566f] pt-2">
+        <div className="mt-2 max-h-[21rem] overflow-y-auto border-t border-dashed border-[#35566f] pt-2">
           <p className="m-0 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Intent: {result.intent}</p>
           <p className="mt-1 font-semibold">{result.headline}</p>
           <p className="text-sm text-[#dbe8f2]">{result.answer}</p>

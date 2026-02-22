@@ -7,6 +7,10 @@
   body {
     @apply m-0 min-h-full bg-[#0b1620] font-['IBM_Plex_Sans','Avenir_Next','Segoe_UI',sans-serif] text-[#eaf3f8];
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GeoMetrics, generateGeoInsight, mapGeoError } from "@/lib/geo-insight";
+import { GeoMetrics, fetchGeoMetricsByIso3, generateGeoInsight, mapGeoError } from "@/lib/geo-insight";
 
 type Payload = {
   metrics?: GeoMetrics;
@@ -20,7 +20,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await generateGeoInsight(payload.metrics, payload.question);
+    // Always re-read the latest Databricks row for numeric grounding.
+    const groundedMetrics = await fetchGeoMetricsByIso3(payload.metrics.iso3);
+    const result = await generateGeoInsight(groundedMetrics, payload.question);
     return NextResponse.json({
       ok: true,
       data: {

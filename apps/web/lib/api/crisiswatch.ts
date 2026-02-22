@@ -216,6 +216,29 @@ export type GeoStrategicQueryResult = {
   askedQuestion: string;
 };
 
+export type GenieSessionResponse = {
+  conversationId: string;
+};
+
+export type GenieAskResponse =
+  | {
+      ok: true;
+      conversationId: string;
+      messageId: string;
+      summaryText: string;
+      sql?: string | null;
+      queryResult?: {
+        columns: string[];
+        rows: unknown[][];
+        rowCount?: number;
+      } | null;
+    }
+  | {
+      ok: false;
+      code: "GENIE_TIMEOUT" | "GENIE_FAILED" | "AUTH" | "BAD_REQUEST";
+      message: string;
+    };
+
 export type GlobeEvent =
   | {
       type: "anomaly";
@@ -233,8 +256,14 @@ async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let detail = "";
     try {
-      const payload = (await response.json()) as { error?: string; details?: string };
-      const parts = [payload.error, payload.details].filter((item): item is string => Boolean(item));
+      const payload = (await response.json()) as {
+        error?: string;
+        details?: string;
+        message?: string;
+        code?: string;
+      };
+      const parts = [payload.error, payload.message, payload.details, payload.code]
+        .filter((item): item is string => Boolean(item));
       detail = parts.join(" | ");
     } catch {
       detail = "";
@@ -293,6 +322,31 @@ export async function ensureGenieSession(): Promise<{ conversationId: string }> 
     method: "POST"
   });
   return parseJson<{ conversationId: string }>(response);
+}
+
+export async function ensureGenieConversation(): Promise<GenieSessionResponse> {
+  const response = await fetch("/api/genie/session", { method: "POST" });
+  return parseJson<GenieSessionResponse>(response);
+}
+
+export async function askGenieCountryInsight(payload: {
+  conversationId: string;
+  iso3: string;
+  countryName?: string;
+  intent?: "summary" | "overfunded" | "top10" | "comparison" | "general";
+  question?: string;
+}): Promise<Exclude<GenieAskResponse, { ok: false }>> {
+  const response = await fetch("/api/genie/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const parsed = await parseJson<GenieAskResponse>(response);
+  if (!parsed.ok) {
+    throw new Error(parsed.message);
+  }
+  return parsed;
 }
 
 export async function fetchCountryInsightMetrics(countryCode: string): Promise<InsightMetricsResponse> {

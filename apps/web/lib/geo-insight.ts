@@ -35,7 +35,7 @@ export class NotFoundError extends Error {
 let countryIsoMapCache: { data: Map<string, string>; expiresAt: number } | null = null;
 
 function getCrisisTableFqn(): string {
-  return process.env.CRISIS_TABLE_FQN?.trim() || "workspace.hdx.api_crisis_priority_2026";
+  return process.env.CRISIS_TABLE_FQN?.trim() || "workspace.new.crisislens_master";
 }
 
 function normalizeCountryName(name: string): string {
@@ -47,19 +47,29 @@ function toNumber(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isUnresolvedCountryColumnError(error: unknown): boolean {
+  if (error instanceof DatabricksApiError) {
+    const payload =
+      typeof error.payload === "string" ? error.payload.toLowerCase() : JSON.stringify(error.payload).toLowerCase();
+    return payload.includes("unresolved_column");
+  }
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return message.includes("unresolved_column");
+}
+
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
 export function mapRowToGeoMetrics(row: Record<string, unknown>): GeoMetrics {
   const iso3 = String(row.iso3 ?? "").trim().toUpperCase();
-  const country = String(row.country ?? row.country_name ?? iso3).trim();
+  const country = String(row.country ?? row.country_plan_name ?? row.country_name ?? iso3).trim();
   const year = Math.round(toNumber(row.year));
 
-  const peopleInNeed = toNumber(row.people_in_need);
-  const peopleTargeted = toNumber(row.people_targeted);
-  const fundingUsd = toNumber(row.funding_usd);
-  const requirementsUsd = toNumber(row.requirements_usd);
+  const peopleInNeed = toNumber(row.people_in_need ?? row.total_people_in_need);
+  const peopleTargeted = toNumber(row.people_targeted ?? row.total_people_targeted);
+  const fundingUsd = toNumber(row.funding_usd ?? row.total_funding_usd);
+  const requirementsUsd = toNumber(row.requirements_usd ?? row.total_requirements_usd);
 
   const fundingGapUsdRaw = row.funding_gap_usd;
   const fundingGapUsd =
@@ -110,9 +120,36 @@ export async function getCountryIsoMap(): Promise<Map<string, string>> {
   }
 
   const table = getCrisisTableFqn();
-  const rows = await runSqlStatement(
-    `SELECT DISTINCT country, iso3 FROM ${table} WHERE country IS NOT NULL AND iso3 IS NOT NULL`
-  );
+  const buildCountryMapSql = (countryExpr: string) => `WITH latest_country AS (
+       SELECT
+         iso3,
+         ${countryExpr} AS country,
+         ROW_NUMBER() OVER (PARTITION BY iso3 ORDER BY year DESC) AS rn
+       FROM ${table}
+       WHERE iso3 IS NOT NULL
+     )
+     SELECT
+       iso3,
+       country
+     FROM latest_country
+     WHERE rn = 1 AND country IS NOT NULL`;
+
+  const countryExprVariants = ["country_plan_name", "CAST(iso3 AS STRING)"] as const;
+  let rows: Array<Record<string, unknown>> | null = null;
+  let lastError: unknown = null;
+  for (const countryExpr of countryExprVariants) {
+    try {
+      rows = await runSqlStatement(buildCountryMapSql(countryExpr));
+      break;
+    } catch (error) {
+      lastError = error;
+      if (!isUnresolvedCountryColumnError(error)) throw error;
+    }
+  }
+
+  if (!rows) {
+    throw (lastError ?? new Error("Unable to build country/iso3 map for all schema variants."));
+  }
 
   const mapping = new Map<string, string>();
   rows.forEach((row) => {
@@ -165,10 +202,94 @@ export async function fetchGeoMetricsByIso3(iso3: string): Promise<GeoMetrics> {
   }
 
   const table = getCrisisTableFqn();
-  const rows = await runSqlStatement(
-    `SELECT * FROM ${table} WHERE iso3 = :iso3 ORDER BY year DESC LIMIT 1`,
-    { iso3: normalized }
-  );
+  const buildMetricsSql = (variant: {
+    countryExpr: string;
+    peopleInNeedColumn: "total_people_in_need";
+    peopleTargetedColumn: "total_people_targeted";
+    fundingColumn: "total_funding_usd";
+    requirementsColumn: "total_requirements_usd";
+    gapPerPersonColumn: "funding_gap_per_person_usd";
+    coverageRatioExpr: string;
+    coveragePctExpr: string;
+  }) => `SELECT
+       iso3,
+       ${variant.countryExpr} AS country,
+       year,
+       COALESCE(${variant.peopleInNeedColumn}, 0) AS people_in_need,
+       COALESCE(${variant.peopleTargetedColumn}, 0) AS people_targeted,
+       COALESCE(${variant.fundingColumn}, 0) AS funding_usd,
+       COALESCE(${variant.requirementsColumn}, 0) AS requirements_usd,
+       COALESCE(funding_gap_usd, GREATEST(COALESCE(${variant.requirementsColumn}, 0) - COALESCE(${variant.fundingColumn}, 0), 0)) AS funding_gap_usd,
+       COALESCE(
+         ${variant.coverageRatioExpr},
+         CASE
+           WHEN COALESCE(${variant.requirementsColumn}, 0) = 0 THEN 0
+           ELSE COALESCE(${variant.fundingColumn}, 0) / COALESCE(${variant.requirementsColumn}, 0)
+         END
+       ) AS funding_coverage_ratio,
+       COALESCE(
+         ${variant.gapPerPersonColumn},
+         CASE
+           WHEN COALESCE(${variant.peopleInNeedColumn}, 0) = 0 THEN 0
+           ELSE COALESCE(
+             funding_gap_usd,
+             GREATEST(COALESCE(${variant.requirementsColumn}, 0) - COALESCE(${variant.fundingColumn}, 0), 0)
+           ) / COALESCE(${variant.peopleInNeedColumn}, 0)
+         END
+       ) AS funding_gap_per_person,
+       COALESCE(
+         ${variant.coveragePctExpr},
+         COALESCE(
+           ${variant.coverageRatioExpr},
+           CASE
+             WHEN COALESCE(${variant.requirementsColumn}, 0) = 0 THEN 0
+             ELSE COALESCE(${variant.fundingColumn}, 0) / COALESCE(${variant.requirementsColumn}, 0)
+           END
+         ) * 100
+       ) AS coverage_pct
+     FROM ${table}
+     WHERE iso3 = :iso3
+     ORDER BY year DESC
+     LIMIT 1`;
+
+  const variants = [
+    {
+      countryExpr: "country_plan_name",
+      peopleInNeedColumn: "total_people_in_need",
+      peopleTargetedColumn: "total_people_targeted",
+      fundingColumn: "total_funding_usd",
+      requirementsColumn: "total_requirements_usd",
+      gapPerPersonColumn: "funding_gap_per_person_usd",
+      coverageRatioExpr: "funding_coverage_pct / 100.0",
+      coveragePctExpr: "funding_coverage_pct"
+    },
+    {
+      countryExpr: "CAST(iso3 AS STRING)",
+      peopleInNeedColumn: "total_people_in_need",
+      peopleTargetedColumn: "total_people_targeted",
+      fundingColumn: "total_funding_usd",
+      requirementsColumn: "total_requirements_usd",
+      gapPerPersonColumn: "funding_gap_per_person_usd",
+      coverageRatioExpr: "funding_coverage_pct / 100.0",
+      coveragePctExpr: "funding_coverage_pct"
+    }
+  ] as const;
+
+  let rows: Array<Record<string, unknown>> | null = null;
+  let lastError: unknown = null;
+  for (const variant of variants) {
+    try {
+      rows = await runSqlStatement(buildMetricsSql(variant), { iso3: normalized });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (!isUnresolvedCountryColumnError(error)) throw error;
+    }
+  }
+
+  if (!rows) {
+    throw (lastError ?? new Error("Unable to fetch geo metrics for all schema variants."));
+  }
 
   if (!rows[0]) {
     throw new NotFoundError(`No crisis metrics found for ${normalized}.`);
@@ -190,7 +311,10 @@ export function buildGeoInsightPrompt(metrics: GeoMetrics, question?: string): D
     "flags: array of exactly 3 short bullets.",
     "followups: array of exactly 3 relevant follow-up questions.",
     "Always mention coverage percentage and funding gap per person.",
-    "Focus on underfunding, mismatch signals, and people-in-need implications."
+    "Focus on underfunding, mismatch signals, and people-in-need implications.",
+    "Use ONLY the provided metric values for any numbers.",
+    "Do not invent numeric values, trends, or external facts.",
+    "If a requested number is unavailable, state that it is not available in provided metrics."
   ].join(" ");
 
   const user = [

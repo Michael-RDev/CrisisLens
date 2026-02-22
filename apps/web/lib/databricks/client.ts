@@ -49,24 +49,29 @@ function toPct(value: number): string {
 }
 
 function getTableFqn(): string {
-  return process.env.CRISIS_TABLE_FQN?.trim() || "workspace.hdx.api_crisis_priority_2026";
+  return process.env.CRISIS_TABLE_FQN?.trim() || "workspace.new.crisislens_master";
+}
+
+function isUnresolvedCountryColumnError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return message.includes("unresolved_column");
 }
 
 function mapRow(row: Record<string, unknown>): CountryStateRow {
   const coverageRatio = toNum(row.funding_coverage_ratio);
-  const peopleInNeed = toNum(row.people_in_need);
+  const peopleInNeed = toNum(row.people_in_need ?? row.total_people_in_need);
   const gapUsd = toNum(row.funding_gap_usd);
-  const gapPerPersonRaw = toNum(row.funding_gap_per_person);
+  const gapPerPersonRaw = toNum(row.funding_gap_per_person ?? row.funding_gap_per_person_usd);
   const gapPerPerson = gapPerPersonRaw || (peopleInNeed > 0 ? gapUsd / peopleInNeed : 0);
 
   return {
-    country: String(row.country ?? "Unknown"),
+    country: String(row.country ?? row.country_plan_name ?? "Unknown"),
     iso3: String(row.iso3 ?? "").toUpperCase(),
     year: Math.round(toNum(row.year)),
     people_in_need: peopleInNeed,
-    people_targeted: toNum(row.people_targeted),
-    funding_usd: toNum(row.funding_usd),
-    requirements_usd: toNum(row.requirements_usd),
+    people_targeted: toNum(row.people_targeted ?? row.total_people_targeted),
+    funding_usd: toNum(row.funding_usd ?? row.total_funding_usd),
+    requirements_usd: toNum(row.requirements_usd ?? row.total_requirements_usd),
     funding_gap_usd: gapUsd,
     funding_gap_per_person: gapPerPerson,
     coverage_pct: Number(((coverageRatio || 0) * 100).toFixed(1))
@@ -125,9 +130,41 @@ class SqlDatabricksProvider implements DatabricksProvider {
     if (!host || !token || !warehouse) return null;
 
     const table = getTableFqn();
-    const statement = `
-      SELECT country, iso3, year, people_in_need, people_targeted, funding_usd,
-             requirements_usd, funding_gap_usd, funding_gap_per_person, funding_coverage_ratio
+    const buildStatement = (variant: {
+      countryExpr: string;
+      peopleInNeedColumn: "total_people_in_need";
+      peopleTargetedColumn: "total_people_targeted";
+      fundingColumn: "total_funding_usd";
+      requirementsColumn: "total_requirements_usd";
+      gapPerPersonColumn: "funding_gap_per_person_usd";
+      coverageRatioExpr: string;
+    }) => `
+      SELECT
+             ${variant.countryExpr} AS country,
+             iso3,
+             year,
+             COALESCE(${variant.peopleInNeedColumn}, 0) AS people_in_need,
+             COALESCE(${variant.peopleTargetedColumn}, 0) AS people_targeted,
+             COALESCE(${variant.fundingColumn}, 0) AS funding_usd,
+             COALESCE(${variant.requirementsColumn}, 0) AS requirements_usd,
+             COALESCE(funding_gap_usd, GREATEST(COALESCE(${variant.requirementsColumn}, 0) - COALESCE(${variant.fundingColumn}, 0), 0)) AS funding_gap_usd,
+             COALESCE(
+               ${variant.gapPerPersonColumn},
+               CASE
+                 WHEN COALESCE(${variant.peopleInNeedColumn}, 0) = 0 THEN 0
+                 ELSE COALESCE(
+                   funding_gap_usd,
+                   GREATEST(COALESCE(${variant.requirementsColumn}, 0) - COALESCE(${variant.fundingColumn}, 0), 0)
+                 ) / COALESCE(${variant.peopleInNeedColumn}, 0)
+               END
+             ) AS funding_gap_per_person,
+             COALESCE(
+               ${variant.coverageRatioExpr},
+               CASE
+                 WHEN COALESCE(${variant.requirementsColumn}, 0) = 0 THEN 0
+                 ELSE COALESCE(${variant.fundingColumn}, 0) / COALESCE(${variant.requirementsColumn}, 0)
+               END
+             ) AS funding_coverage_ratio
       FROM ${table}
       WHERE iso3 = :iso3
       ORDER BY year DESC
@@ -135,7 +172,43 @@ class SqlDatabricksProvider implements DatabricksProvider {
     `;
 
     try {
-      const rows = await runSqlStatement(statement, { iso3 });
+      const variants = [
+        {
+          countryExpr: "country_plan_name",
+          peopleInNeedColumn: "total_people_in_need",
+          peopleTargetedColumn: "total_people_targeted",
+          fundingColumn: "total_funding_usd",
+          requirementsColumn: "total_requirements_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        },
+        {
+          countryExpr: "CAST(iso3 AS STRING)",
+          peopleInNeedColumn: "total_people_in_need",
+          peopleTargetedColumn: "total_people_targeted",
+          fundingColumn: "total_funding_usd",
+          requirementsColumn: "total_requirements_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        }
+      ] as const;
+
+      let lastError: unknown = null;
+      let resolvedRows: Array<Record<string, unknown>> | null = null;
+      for (const variant of variants) {
+        try {
+          resolvedRows = await runSqlStatement(buildStatement(variant), { iso3 });
+          break;
+        } catch (error) {
+          lastError = error;
+          if (!isUnresolvedCountryColumnError(error)) throw error;
+        }
+      }
+
+      if (!resolvedRows) {
+        throw (lastError ?? new Error("Unable to fetch country state for all schema variants."));
+      }
+      const rows = resolvedRows;
       if (!rows.length) return null;
       const row = mapRow(rows[0]);
       const score = computeRiskScore(row);

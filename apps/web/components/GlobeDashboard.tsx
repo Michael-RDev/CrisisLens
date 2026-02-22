@@ -108,6 +108,7 @@ export default function GlobeDashboard({
   const [activeTab, setActiveTab] = useState<CommandTabId>("country-data");
   const [geniePanelOpen, setGeniePanelOpen] = useState(initialMode === "genie");
   const [mlPanelOpen, setMlPanelOpen] = useState(initialMode === "ml");
+  const [panelWidth, setPanelWidth] = useState(470);
 
   const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
   const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
@@ -640,9 +641,11 @@ export default function GlobeDashboard({
               }
               statusLabel={countryStatus(activeMetric)}
               generatedAt={generatedAt}
+              width={panelWidth}
               layerMode={layerMode}
               query={query}
               countrySuggestions={countrySuggestions}
+              onWidthChange={setPanelWidth}
               onLayerChange={setLayerMode}
               onQueryChange={setQuery}
               onJump={jumpToCountry}
@@ -714,9 +717,11 @@ export default function GlobeDashboard({
               }
               statusLabel={countryStatus(selectedIso3 ? byIso.get(selectedIso3) ?? null : null)}
               generatedAt={generatedAt}
+              width={panelWidth}
               layerMode={layerMode}
               query={query}
               countrySuggestions={countrySuggestions}
+              onWidthChange={setPanelWidth}
               onLayerChange={setLayerMode}
               onQueryChange={setQuery}
               onJump={jumpToCountry}

@@ -3,9 +3,11 @@ import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
 
 type HeroSectionProps = {
   generatedAt: string;
+  selectedCountryLabel: string;
+  onOpenSimulation: () => void;
 };
 
-export function HeroSection({ generatedAt }: HeroSectionProps) {
+export function HeroSection({ generatedAt, selectedCountryLabel, onOpenSimulation }: HeroSectionProps) {
   return (
     <motion.section
       className="flex flex-col justify-between gap-4 rounded-2xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-4 text-[var(--dbx-text)] shadow-[0_10px_30px_rgba(3,8,14,0.35)] lg:flex-row lg:items-end"
@@ -26,7 +28,17 @@ export function HeroSection({ generatedAt }: HeroSectionProps) {
           Snapshot: {new Date(generatedAt).toLocaleString()}
         </p>
       </div>
-      <div className="grid content-start gap-2 sm:grid-cols-3 lg:grid-cols-1">
+      <div className="grid content-start gap-2 sm:grid-cols-2 lg:grid-cols-1">
+        <button
+          type="button"
+          onClick={onOpenSimulation}
+          className="inline-flex items-center justify-center rounded-[10px] border border-[var(--dbx-accent)] bg-[var(--dbx-accent)] px-3 py-2 text-sm font-semibold text-[#160d08] transition-colors hover:border-[var(--dbx-accent-soft)] hover:bg-[var(--dbx-accent-soft)]"
+        >
+          Scenario Modeling
+        </button>
+        <p className="m-0 text-xs text-[var(--dbx-text-muted)]">
+          Funding What-if Simulator for <span className="font-semibold">{selectedCountryLabel}</span>
+        </p>
         <ThemeToggle />
       </div>
     </motion.section>

@@ -74,6 +74,21 @@ test.describe("API route contracts", () => {
     const cv = await cvResponse.json();
     expect(cv.status).toBe("detected");
     expect(cv.detection.iso3).toBe("SDN");
+
+    const simulationResponse = await request.post("/api/analytics/simulate", {
+      data: {
+        iso3,
+        allocation_usd: 5_000_000
+      }
+    });
+    expect(simulationResponse.ok()).toBeTruthy();
+    const simulation = await simulationResponse.json();
+    expect(simulation.iso3).toBe(iso3);
+    expect(typeof simulation.ml_context?.source_path).toBe("string");
+    expect(typeof simulation.ml_context?.projection_points).toBe("number");
+    expect(Array.isArray(simulation.quarters)).toBeTruthy();
+    expect(simulation.quarters.length).toBe(8);
+    expect(Array.isArray(simulation.impact_arrows)).toBeTruthy();
   });
 
   test("validation errors return 400 for bad payloads", async ({ request }) => {

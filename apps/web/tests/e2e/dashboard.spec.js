@@ -9,11 +9,20 @@ test.describe("CrisisLens dashboard", () => {
   test("loads core command-center panels", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Live Global Pulse" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Operations Panels" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Scenario Modeling" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Country Ops" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Priority View" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Simulation" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open Databricks Chat" })).toBeVisible();
     await expect(page.getByRole("contentinfo")).toContainText("CrisisLens Command Center");
+  });
+
+  test("opens simulation from the top button and exposes quick allocation controls", async ({ page }) => {
+    await page.getByRole("button", { name: "Scenario Modeling" }).click();
+    await expect(page.getByRole("heading", { name: "Funding What-if Simulator" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+1m" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+10m" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "+100m" })).toBeVisible();
   });
 
   test("switches layer mode and updates ranking title", async ({ page }) => {

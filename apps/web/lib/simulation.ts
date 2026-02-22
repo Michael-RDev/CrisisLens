@@ -125,6 +125,7 @@ export type SimulationCountryImpact = {
   rank_after: number;
   rank_delta: number;
   overall_score_delta: number;
+  projected_neglect_delta: number;
   direction: "up" | "down" | "flat";
   relation: "still_ahead" | "new_ahead" | "overtaken" | "behind_buffer" | "shifted";
 };
@@ -137,6 +138,7 @@ export type SimulationImpactArrow = {
   relation: SimulationCountryImpact["relation"];
   rank_delta: number;
   overall_score_delta: number;
+  projected_neglect_delta: number;
   magnitude: number;
 };
 
@@ -539,6 +541,7 @@ function buildCountryImpacts(args: {
       if (!base || !scenario) return null;
       const rankDelta = base.rank - scenario.rank;
       const overallScoreDelta = Number((scenario.overlookedScore - base.overlookedScore).toFixed(2));
+      const projectedNeglectDelta = Number((scenario.projectedNeglect - base.projectedNeglect).toFixed(2));
       const direction: SimulationCountryImpact["direction"] =
         rankDelta > 0 ? "up" : rankDelta < 0 ? "down" : "flat";
 
@@ -549,6 +552,7 @@ function buildCountryImpacts(args: {
         rank_after: scenario.rank,
         rank_delta: rankDelta,
         overall_score_delta: overallScoreDelta,
+        projected_neglect_delta: projectedNeglectDelta,
         direction,
         relation: classifyRelation({
           selectedBaseRank: selectedBase.rank,
@@ -590,6 +594,8 @@ function buildCountryImpacts(args: {
       else if (relativeRankGapDelta < 0) direction = "relief";
       else if (relativeScoreGapDelta > 0.2) direction = "pressure";
       else if (relativeScoreGapDelta < -0.2) direction = "relief";
+      else if (impact.projected_neglect_delta > 0.2) direction = "pressure";
+      else if (impact.projected_neglect_delta < -0.2) direction = "relief";
     }
 
     // Fall back to relationship-only semantics if relative movement is flat.
@@ -607,8 +613,13 @@ function buildCountryImpacts(args: {
       relation: impact.relation,
       rank_delta: impact.rank_delta,
       overall_score_delta: impact.overall_score_delta,
+      projected_neglect_delta: impact.projected_neglect_delta,
       magnitude: Number(
-        (Math.abs(impact.rank_delta) + Math.max(Math.abs(impact.overall_score_delta), 0.5) * 0.25).toFixed(2)
+        (
+          Math.abs(impact.rank_delta) +
+          Math.max(Math.abs(impact.overall_score_delta), 0.5) * 0.25 +
+          Math.max(Math.abs(impact.projected_neglect_delta), 0.5) * 0.18
+        ).toFixed(2)
       )
     };
   });

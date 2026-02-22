@@ -16,6 +16,7 @@ import {
 } from "three";
 import countriesTopo from "world-atlas/countries-110m.json";
 import { countryByIso3, iso3ByCcn3 } from "@/lib/countries";
+import type { SimulationImpactArc } from "@/lib/globe/simulation-arcs";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
 
@@ -24,6 +25,7 @@ type Globe3DProps = {
   layerMode: LayerMode;
   selectedIso3: string | null;
   highlightedIso3: string[];
+  simulationArcs: SimulationImpactArc[];
   onSelect: (iso3: string) => void;
   onHover: (iso3: string | null) => void;
 };
@@ -130,6 +132,7 @@ export default function Globe3D({
   layerMode,
   selectedIso3,
   highlightedIso3,
+  simulationArcs,
   onSelect,
   onHover
 }: Globe3DProps) {
@@ -184,6 +187,7 @@ export default function Globe3D({
   }, []);
 
   const metricByIso = useMemo(() => new Map(metrics.map((row) => [row.iso3, row])), [metrics]);
+  const visibleSimulationArcs = useMemo(() => simulationArcs.slice(0, 8), [simulationArcs]);
 
   const countriesGeoJson = useMemo(() => {
     const topo = countriesTopo as unknown as {
@@ -704,6 +708,13 @@ export default function Globe3D({
           <span>Cursor tracks your hand</span>
         </div>
       ) : null}
+      {visibleSimulationArcs.length > 0 ? (
+        <div className="pointer-events-none absolute right-2 top-2 z-[5] grid gap-1 rounded-md border border-[var(--dbx-globe-hint-border)] bg-[var(--dbx-globe-hint-bg)] px-2 py-1 text-[11px] text-[var(--dbx-globe-hint-text)]">
+          <span className="font-semibold uppercase tracking-[0.08em]">Simulation Arrows</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Pressure</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Relief</span>
+        </div>
+      ) : null}
       <Globe
         ref={globeRef}
         width={size.width}
@@ -736,6 +747,20 @@ export default function Globe3D({
         polygonSideColor={() => "rgba(14, 36, 52, 0.88)"}
         polygonStrokeColor={() => "#0d2436"}
         polygonsTransitionDuration={350}
+        arcsData={visibleSimulationArcs}
+        arcLabel={(arcObj: unknown) => (arcObj as SimulationImpactArc).label}
+        arcStartLat={(arcObj: unknown) => (arcObj as SimulationImpactArc).start_lat}
+        arcStartLng={(arcObj: unknown) => (arcObj as SimulationImpactArc).start_lng}
+        arcEndLat={(arcObj: unknown) => (arcObj as SimulationImpactArc).end_lat}
+        arcEndLng={(arcObj: unknown) => (arcObj as SimulationImpactArc).end_lng}
+        arcColor={(arcObj: unknown) => (arcObj as SimulationImpactArc).color}
+        arcStroke={(arcObj: unknown) => (arcObj as SimulationImpactArc).stroke_width}
+        arcAltitudeAutoScale={(arcObj: unknown) => (arcObj as SimulationImpactArc).altitude_auto_scale}
+        arcDashLength={0.3}
+        arcDashGap={0.8}
+        arcDashInitialGap={(arcObj: unknown) => (arcObj as SimulationImpactArc).dash_initial_gap}
+        arcDashAnimateTime={(arcObj: unknown) => (arcObj as SimulationImpactArc).animation_ms}
+        arcsTransitionDuration={450}
         onPolygonClick={(featureObj) => {
           const feature = featureObj as CountryFeature;
           const iso3 = feature.properties.iso3;

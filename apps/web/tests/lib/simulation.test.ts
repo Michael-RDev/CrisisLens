@@ -81,10 +81,12 @@ describe("quarterly simulation", () => {
 
     expect(simulation.country_impacts.length).toBeGreaterThan(0);
     expect(simulation.country_impacts[0]?.rank_before).toBeGreaterThanOrEqual(1);
+    expect(typeof simulation.country_impacts[0]?.projected_neglect_delta).toBe("number");
 
     expect(simulation.impact_arrows.length).toBeGreaterThan(0);
     expect(simulation.impact_arrows[0]?.from_iso3).toBe("AAA");
     expect(simulation.impact_arrows[0]?.to_iso3).toBe("BBB");
+    expect(typeof simulation.impact_arrows[0]?.projected_neglect_delta).toBe("number");
   });
 
   it("applies EDA dataset adjustment signals (donor diversity, internal, cluster gap)", () => {
@@ -234,5 +236,6 @@ describe("quarterly simulation", () => {
     expect(bbbArrow).toBeDefined();
     expect(bbbArrow?.overall_score_delta).toBeLessThan(0);
     expect(bbbArrow?.direction).toBe("relief");
+    expect(typeof bbbArrow?.projected_neglect_delta).toBe("number");
   });
 });

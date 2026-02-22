@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { computeOciComponents, rankOverlooked, simulateFundingAllocation } from "@/lib/analytics";
 import { loadCountryMetrics } from "@/lib/loadMetrics";
-import { clampToPercent } from "@/lib/metrics";
+import { buildQuarterlySimulation } from "@/lib/simulation";
 
 type Body = {
   iso3?: string;
@@ -22,55 +21,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid allocation_usd." }, { status: 400 });
   }
 
-  const baseMetrics = await loadCountryMetrics();
-  const baseRanked = rankOverlooked(baseMetrics);
-  const simulatedMetrics = simulateFundingAllocation(baseMetrics, iso3, allocationUsd);
-  const simulatedRanked = rankOverlooked(simulatedMetrics);
+  const metrics = await loadCountryMetrics();
+  try {
+    const simulation = buildQuarterlySimulation(metrics, iso3, allocationUsd);
+    const selectedMetrics = metrics.find((row) => row.iso3 === iso3);
+    const projectionPoints = Array.isArray(selectedMetrics?.futureProjections)
+      ? selectedMetrics.futureProjections.length
+      : 0;
+    const usesNeglectFlag = Boolean(
+      selectedMetrics?.futureProjections?.some((projection) => typeof projection.neglectFlagPred === "boolean")
+    );
 
-  const baseIndex = baseRanked.findIndex((row) => row.iso3 === iso3);
-  const simulatedIndex = simulatedRanked.findIndex((row) => row.iso3 === iso3);
-  const baseCountry = baseRanked[baseIndex];
-  const simulatedCountry = simulatedRanked[simulatedIndex];
-
-  if (!baseCountry || !simulatedCountry) {
-    return NextResponse.json({ error: "Country not found in metrics." }, { status: 404 });
+    return NextResponse.json({
+      ...simulation,
+      ml_context: {
+        source_path: "apps/ml/models/artifacts/gold_country_scores.json",
+        projection_points: projectionPoints,
+        uses_neglect_flag: usesNeglectFlag
+      }
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message.trim().length > 0
+        ? error.message
+        : "Failed to run simulation.";
+    const status = /not found/i.test(message) ? 404 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const baseRequired =
-    baseCountry.fundingRequired > 0 ? baseCountry.fundingRequired : baseCountry.revisedPlanRequirements;
-  const simRequired =
-    simulatedCountry.fundingRequired > 0 ? simulatedCountry.fundingRequired : simulatedCountry.revisedPlanRequirements;
-  const basePercentFunded =
-    baseRequired > 0 ? clampToPercent((baseCountry.fundingReceived / baseRequired) * 100) : baseCountry.percentFunded;
-  const simPercentFunded =
-    simRequired > 0
-      ? clampToPercent((simulatedCountry.fundingReceived / simRequired) * 100)
-      : simulatedCountry.percentFunded;
-
-  return NextResponse.json({
-    iso3,
-    allocation_usd: allocationUsd,
-    base: {
-      rank: baseIndex + 1,
-      oci: computeOciComponents(baseCountry).totalScore,
-      funding_received: baseCountry.fundingReceived,
-      percent_funded: basePercentFunded
-    },
-    scenario: {
-      rank: simulatedIndex + 1,
-      oci: computeOciComponents(simulatedCountry).totalScore,
-      funding_received: simulatedCountry.fundingReceived,
-      percent_funded: simPercentFunded
-    },
-    rank_delta: baseIndex - simulatedIndex,
-    oci_delta: Number(
-      (computeOciComponents(baseCountry).totalScore - computeOciComponents(simulatedCountry).totalScore).toFixed(2)
-    ),
-    top_overlooked_after: simulatedRanked.slice(0, 12).map((row, index) => ({
-      rank: index + 1,
-      iso3: row.iso3,
-      country: row.country,
-      oci_score: computeOciComponents(row).totalScore
-    }))
-  });
 }

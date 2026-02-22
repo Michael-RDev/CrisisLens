@@ -1,26 +1,36 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { countryByIso3, iso3ByIso2 } from "@/lib/countries";
-import {
-  askGenieCountryInsight,
-  ensureGenieConversation,
-  runGeoStrategicQuery,
-  subscribeToGlobeEvents
-} from "@/lib/api/crisiswatch";
-import type { GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
-import { CountryMetrics, LayerMode } from "@/lib/types";
-import {
-  GlobeCanvas
-} from "@/components/command-center/GlobeCanvas";
+import { subscribeToGlobeEvents } from "@/lib/api/crisiswatch";
+import { CountryMetrics } from "@/lib/types";
+import { GlobeCanvas } from "@/components/command-center/GlobeCanvas";
 import { TopNav } from "@/components/command-center/TopNav";
 import { RightSidebar } from "@/components/command-center/RightSidebar";
 import { AssistantTab } from "@/components/command-center/tabs/AssistantTab";
+import {
+  buildAssistantMessage,
+  buildUserMessage,
+  type AssistantMessage
+} from "@/components/command-center/tabs/insights-chat-utils";
 import { CountryBriefTab } from "@/components/command-center/tabs/CountryBriefTab";
 import { VisualsTab } from "@/components/command-center/tabs/VisualsTab";
 import type { CommandTabId } from "@/components/command-center/Tabs";
-import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
+import {
+  fetchCountryInsights,
+  fetchCountrySummary,
+  fetchGeneralInsights,
+  fetchLayerData,
+  fetchVisuals,
+  layerKeyToMode,
+  type CountrySummary,
+  type InsightsResult,
+  type LayerDatum,
+  type MapLayerKey,
+  type VisualMetricKey,
+  type VisualSeries
+} from "@/lib/services/databricks";
 
 const Globe3D = dynamic(() => import("@/components/Globe3D"), {
   ssr: false,
@@ -44,72 +54,198 @@ function normalizeCountryCode(countryCode: string): string | null {
   return null;
 }
 
-function chartPromptForLayer(layerMode: LayerMode): string {
-  if (layerMode === "coverage") {
-    return "Show top 10 countries by coverage percentage with funding gap, gap per person, and people in need.";
-  }
-  if (layerMode === "severity") {
-    return "Show top 10 countries by funding gap per person with coverage, funding gap, and people in need.";
-  }
-  if (layerMode === "inNeedRate") {
-    return "Show top 10 countries by people in need with coverage, funding gap, and gap per person.";
-  }
-  if (layerMode === "overlooked") {
-    return "Show top 10 most overlooked countries with coverage, funding gap, people in need, and gap per person.";
-  }
-  return "Show top 10 countries by funding gap in USD with coverage, gap per person, and people in need.";
-}
-
-function countryStatus(metric: CountryMetrics | null): string {
-  if (!metric) return "Awaiting country selection";
-  const oci = metric.overlookedScore ?? 0;
-  if (oci >= 80) return "CRITICAL - Overlooked";
-  if (oci >= 60) return "HIGH - Overlooked";
-  if (oci >= 40) return "MODERATE - Watch";
-  return metric.percentFunded < 20 ? "HIGH - Underfunded" : "LOW - Monitored";
-}
-
 export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
-  const [query, setQuery] = useState("");
-  const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<CommandTabId>("country-data");
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
-  const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
-  const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
-  const [insightLoading, setInsightLoading] = useState(false);
-  const [insightError, setInsightError] = useState<string | null>(null);
-  const [insightFormatted, setInsightFormatted] = useState<{
-    headline: string;
-    summary: string;
-    keyPoints: string[];
-    actions: string[];
-    followups: string[];
-    metricHighlights?: Array<{ label: string; value: string }>;
+  const [layerKey, setLayerKey] = useState<MapLayerKey>("oci");
+  const [layerData, setLayerData] = useState<LayerDatum[]>([]);
+  const [layerError, setLayerError] = useState<string | null>(null);
+
+  const [countrySummary, setCountrySummary] = useState<CountrySummary | null>(null);
+  const [countryLoading, setCountryLoading] = useState(false);
+  const [countryError, setCountryError] = useState<string | null>(null);
+
+  const [insightQuestion, setInsightQuestion] = useState("");
+  const [countryInsightLoading, setCountryInsightLoading] = useState(false);
+  const [countryInsightError, setCountryInsightError] = useState<string | null>(null);
+  const [countryInsightResult, setCountryInsightResult] = useState<InsightsResult | null>(null);
+  const [countryInsightIso3, setCountryInsightIso3] = useState<string | null>(null);
+  const [assistantInsightLoading, setAssistantInsightLoading] = useState(false);
+  const [assistantInsightError, setAssistantInsightError] = useState<string | null>(null);
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessage[]>([]);
+
+  const [visualMetric, setVisualMetric] = useState<VisualMetricKey>("coverage_trend");
+  const [visualSeries, setVisualSeries] = useState<VisualSeries | null>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
+  const [visualError, setVisualError] = useState<string | null>(null);
+
+  const countryRequestRef = useRef(0);
+  const countryInsightRequestRef = useRef(0);
+  const assistantInsightRequestRef = useRef(0);
+  const visualsRequestRef = useRef(0);
+  const autoInsightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoInsightBusyRef = useRef(false);
+  const autoInsightPendingRef = useRef<{
+    iso3: string;
+    question: string;
+    context?: { countryName?: string; year?: number };
   } | null>(null);
-
-  const [strategicQuestion, setStrategicQuestion] = useState("");
-  const [strategicLoading, setStrategicLoading] = useState(false);
-  const [strategicError, setStrategicError] = useState<string | null>(null);
-  const [strategicResult, setStrategicResult] = useState<GeoStrategicQueryResult | null>(null);
-  const [useSelectedCountry, setUseSelectedCountry] = useState(false);
-
-  const [chartRows, setChartRows] = useState<GeoStrategicQueryResult["rows"]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
-  const [chartError, setChartError] = useState<string | null>(null);
+  const countryInsightByIsoRef = useRef<Map<string, InsightsResult>>(new Map());
 
   const byIso = useMemo(() => new Map(metrics.map((item) => [item.iso3, item])), [metrics]);
-  const countrySuggestions = useMemo(() => getCountrySuggestions(), []);
 
-  const activeCountryIso = insightSelection?.countryCode ?? selectedIso3 ?? undefined;
-  const activeMetric = activeCountryIso ? byIso.get(activeCountryIso) ?? null : null;
-  const activeCountryName =
-    insightSelection?.countryName ??
-    activeMetric?.country ??
-    (activeCountryIso ? countryByIso3.get(activeCountryIso)?.name : undefined);
+  const selectedMetricFallback = selectedIso3 ? byIso.get(selectedIso3) : null;
+  const waitingForCountryPipeline = Boolean(
+    selectedIso3 &&
+    countryInsightIso3 !== selectedIso3 &&
+    !countryInsightError
+  );
+  const selectedCountryLabel = countrySummary
+    ? `${countrySummary.country} • ${countrySummary.iso3}`
+    : selectedIso3
+      ? `${selectedMetricFallback?.country ?? countryByIso3.get(selectedIso3)?.name ?? "Country"} • ${selectedIso3}`
+      : "No country selected";
+
+  const statusLabel = countrySummary?.riskLabel ?? "Select a country on the globe";
+  const lastAssistantUserQuery = useMemo(() => {
+    for (let index = assistantMessages.length - 1; index >= 0; index -= 1) {
+      if (assistantMessages[index].role === "user") return assistantMessages[index].text;
+    }
+    return "";
+  }, [assistantMessages]);
+  const insightsQueryIsComparative = /(\btop\s*\d+\b|\bcompare\b|\bvs\b|\bversus\b|\bcountries\b|\brank|\bhighest\b|\blowest\b)/i.test(
+    lastAssistantUserQuery
+  );
+
+  async function loadLayer(mode: MapLayerKey, force = false) {
+    try {
+      setLayerError(null);
+      const data = await fetchLayerData(mode, force);
+      setLayerData(data);
+    } catch (error) {
+      setLayerData([]);
+      setLayerError(error instanceof Error ? error.message : "Unable to load layer data.");
+    }
+  }
+
+  async function loadCountry(iso3: string, force = false, requestId?: number): Promise<CountrySummary | null> {
+    setCountryLoading(true);
+    setCountryError(null);
+    try {
+      const data = await fetchCountrySummary(iso3, force);
+      if (requestId !== undefined && requestId !== countryRequestRef.current) return null;
+      setCountrySummary(data);
+      return data;
+    } catch (error) {
+      if (requestId !== undefined && requestId !== countryRequestRef.current) return null;
+      setCountrySummary(null);
+      setCountryError(error instanceof Error ? error.message : "Unable to load country summary.");
+      return null;
+    } finally {
+      if (requestId === undefined || requestId === countryRequestRef.current) {
+        setCountryLoading(false);
+      }
+    }
+  }
+
+  async function loadVisualData(iso3: string, metric: VisualMetricKey, force = false, requestId?: number) {
+    setVisualLoading(true);
+    setVisualError(null);
+    try {
+      const data = await fetchVisuals(iso3, metric, undefined, force);
+      if (requestId !== undefined && requestId !== visualsRequestRef.current) return;
+      setVisualSeries(data);
+    } catch (error) {
+      if (requestId !== undefined && requestId !== visualsRequestRef.current) return;
+      setVisualSeries(null);
+      setVisualError(error instanceof Error ? error.message : "Unable to load visuals.");
+    } finally {
+      if (requestId === undefined || requestId === visualsRequestRef.current) {
+        setVisualLoading(false);
+      }
+    }
+  }
+
+  async function loadCountryInsight(
+    iso3: string,
+    question: string,
+    context?: { countryName?: string; year?: number },
+    requestId?: number,
+    options?: { preserveExistingOnError?: boolean }
+  ) {
+    setCountryInsightLoading(true);
+    setCountryInsightError(null);
+    try {
+      const data = await fetchCountryInsights(iso3, question, context);
+      if (requestId !== undefined && requestId !== countryInsightRequestRef.current) return;
+      setCountryInsightResult(data);
+      setCountryInsightIso3(iso3);
+      countryInsightByIsoRef.current.set(iso3, data);
+    } catch (error) {
+      if (requestId !== undefined && requestId !== countryInsightRequestRef.current) return;
+      if (!options?.preserveExistingOnError) {
+        setCountryInsightResult(null);
+        setCountryInsightIso3(null);
+      }
+      setCountryInsightError(error instanceof Error ? error.message : "Unable to load country insight.");
+    } finally {
+      if (requestId === undefined || requestId === countryInsightRequestRef.current) {
+        setCountryInsightLoading(false);
+      }
+    }
+  }
+
+  async function loadAssistantInsight(question: string, requestId?: number): Promise<InsightsResult | null> {
+    setAssistantInsightLoading(true);
+    setAssistantInsightError(null);
+    try {
+      const data = await fetchGeneralInsights(question);
+      if (requestId !== undefined && requestId !== assistantInsightRequestRef.current) return null;
+      return data;
+    } catch (error) {
+      if (requestId !== undefined && requestId !== assistantInsightRequestRef.current) return null;
+      setAssistantInsightError(error instanceof Error ? error.message : "Unable to load general insight.");
+      return null;
+    } finally {
+      if (requestId === undefined || requestId === assistantInsightRequestRef.current) {
+        setAssistantInsightLoading(false);
+      }
+    }
+  }
+
+  const runQueuedAutoInsight = useCallback(() => {
+    if (autoInsightBusyRef.current) return;
+    const next = autoInsightPendingRef.current;
+    if (!next) return;
+
+    autoInsightPendingRef.current = null;
+    autoInsightBusyRef.current = true;
+    const requestId = ++countryInsightRequestRef.current;
+
+    void loadCountryInsight(
+      next.iso3,
+      next.question,
+      next.context,
+      requestId,
+      { preserveExistingOnError: true }
+    ).finally(() => {
+      autoInsightBusyRef.current = false;
+      if (autoInsightPendingRef.current) {
+        runQueuedAutoInsight();
+      }
+    });
+  }, []);
+
+  const enqueueAutoInsight = useCallback(
+    (iso3: string, question: string, context?: { countryName?: string; year?: number }) => {
+      autoInsightPendingRef.current = { iso3, question, context };
+      runQueuedAutoInsight();
+    },
+    [runQueuedAutoInsight]
+  );
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_GLOBE_WS_URL;
@@ -129,207 +265,168 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     return unsubscribe;
   }, []);
 
-  async function refreshChartData(currentLayer: LayerMode) {
-    setChartLoading(true);
-    setChartError(null);
-    try {
-      const result = await runGeoStrategicQuery(chartPromptForLayer(currentLayer));
-      setChartRows(result.rows);
-    } catch (error) {
-      setChartRows([]);
-      setChartError(error instanceof Error ? error.message : "Unable to load chart data.");
-    } finally {
-      setChartLoading(false);
-    }
-  }
+  useEffect(() => {
+    void loadLayer(layerKey);
+  }, [layerKey]);
 
   useEffect(() => {
-    void refreshChartData(layerMode);
-  }, [layerMode]);
-
-  async function loadInsightForCountry(selection: PinchSelection) {
-    const normalized = selection.countryCode ? normalizeCountryCode(selection.countryCode) : null;
-    if (!normalized) {
-      setInsightError("Country selection must resolve to ISO3 for Genie request.");
+    if (!selectedIso3) {
+      setCountrySummary(null);
+      setCountryInsightResult(null);
+      setCountryInsightIso3(null);
+      setCountryInsightError(null);
+      setCountryInsightLoading(false);
+      setVisualSeries(null);
       return;
     }
 
-    setInsightSelection({ countryCode: normalized, countryName: selection.countryName });
-    setSelectedIso3(normalized);
-    setInsightLoading(true);
-    setInsightError(null);
-    setInsightFormatted(null);
-    setPanelOpen(true);
-    setPanelCollapsed(false);
-      setActiveTab("country-data");
-
-    try {
-      const conversationId =
-        genieConversationId ?? (await ensureGenieConversation()).conversationId;
-
-      if (!genieConversationId) setGenieConversationId(conversationId);
-
-      const payload = await askGenieCountryInsight({
-        conversationId,
-        iso3: normalized,
-        countryName: selection.countryName,
-        intent: "summary"
-      });
-      setInsightFormatted(payload.formatted ?? null);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to load geo insight.";
-      setInsightError(message);
-      setInsightFormatted(null);
-    } finally {
-      setInsightLoading(false);
+    if (autoInsightTimerRef.current) {
+      clearTimeout(autoInsightTimerRef.current);
+      autoInsightTimerRef.current = null;
     }
-  }
+    autoInsightPendingRef.current = null;
+
+    const countryReqId = ++countryRequestRef.current;
+    const cachedInsight = countryInsightByIsoRef.current.get(selectedIso3);
+    setCountrySummary(null);
+    setCountryInsightResult(cachedInsight ?? null);
+    setCountryInsightIso3(cachedInsight ? selectedIso3 : null);
+    setCountryInsightError(null);
+    setCountryInsightLoading(true);
+    setVisualSeries(null);
+    setVisualError(null);
+
+    const countrySummaryPromise = loadCountry(selectedIso3, false, countryReqId);
+    autoInsightTimerRef.current = setTimeout(() => {
+      void (async () => {
+        const summary = await countrySummaryPromise;
+        const defaultQuestion = summary
+          ? `Summarize ${summary.country} (${summary.iso3}) in ${summary.year}. If any metric is unavailable, say it explicitly.`
+          : `Summarize the current humanitarian situation and funding gap for ${selectedIso3}.`;
+        enqueueAutoInsight(selectedIso3, defaultQuestion, {
+          countryName: summary?.country,
+          year: summary?.year
+        });
+      })();
+    }, 500);
+
+    return () => {
+      if (autoInsightTimerRef.current) {
+        clearTimeout(autoInsightTimerRef.current);
+        autoInsightTimerRef.current = null;
+      }
+    };
+  }, [enqueueAutoInsight, selectedIso3]);
+
+  useEffect(() => {
+    if (!selectedIso3) return;
+    const visualReqId = ++visualsRequestRef.current;
+    void loadVisualData(selectedIso3, visualMetric, false, visualReqId);
+  }, [visualMetric, selectedIso3]);
 
   function onCountryPinch(selection: PinchSelection) {
-    void loadInsightForCountry(selection);
+    const normalized = selection.countryCode ? normalizeCountryCode(selection.countryCode) : null;
+    if (!normalized) return;
+    setSelectedIso3(normalized);
+    setPanelOpen(true);
+    setActiveTab("country-data");
   }
 
-  async function submitStrategicQuery(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!strategicQuestion.trim()) return;
-
-    setStrategicLoading(true);
-    setStrategicError(null);
-    try {
-      const contextQuestion =
-        useSelectedCountry && activeCountryIso
-          ? `${strategicQuestion.trim()} Context country: ${activeCountryName ?? activeCountryIso} (${activeCountryIso}).`
-          : strategicQuestion.trim();
-
-      const result = await runGeoStrategicQuery(contextQuestion);
-      setStrategicResult(result);
-      setChartRows(result.rows);
-      setChartError(null);
-      setActiveTab("insights");
-      setPanelOpen(true);
-      setPanelCollapsed(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to run strategic query.";
-      setStrategicError(message);
-      setStrategicResult(null);
-    } finally {
-      setStrategicLoading(false);
-    }
-  }
-
-  function useStrategicFollowup(questionText: string) {
-    setStrategicQuestion(questionText);
+  function submitAssistantQuestion(question: string) {
+    const trimmed = question.trim();
+    if (!trimmed) return;
+    const requestId = ++assistantInsightRequestRef.current;
+    setAssistantMessages((current) => [...current, buildUserMessage(trimmed)]);
+    setInsightQuestion("");
     void (async () => {
-      setStrategicLoading(true);
-      setStrategicError(null);
-      try {
-        const contextQuestion =
-          useSelectedCountry && activeCountryIso
-            ? `${questionText} Context country: ${activeCountryName ?? activeCountryIso} (${activeCountryIso}).`
-            : questionText;
-        const result = await runGeoStrategicQuery(contextQuestion);
-        setStrategicResult(result);
-        setChartRows(result.rows);
-        setChartError(null);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to run strategic follow-up.";
-        setStrategicError(message);
-      } finally {
-        setStrategicLoading(false);
-      }
+      const data = await loadAssistantInsight(trimmed, requestId);
+      if (!data || requestId !== assistantInsightRequestRef.current) return;
+      setAssistantMessages((current) => [...current, buildAssistantMessage(data)]);
     })();
-  }
-
-  function jumpToCountry() {
-    const iso3 = resolveJumpToCountryIso3(query);
-    if (iso3) {
-      setSelectedIso3(iso3);
-      onCountryPinch({ countryCode: iso3, countryName: countryByIso3.get(iso3)?.name });
-    }
   }
 
   return (
     <GlobeCanvas
       overlays={
         <>
-          <TopNav />
+          <TopNav
+            sidebarOpen={panelOpen}
+            layer={layerKey}
+            onToggleSidebar={() => setPanelOpen((current) => !current)}
+            onLayerChange={setLayerKey}
+          />
+
           <RightSidebar
             open={panelOpen}
-            collapsed={panelCollapsed}
             activeTab={activeTab}
-            selectedCountryLabel={
-              activeCountryIso
-                ? `${activeCountryName ?? "Country"} • ${activeCountryIso}`
-                : "No country selected"
-            }
-            statusLabel={countryStatus(activeMetric)}
+            title="Country Data & Insights"
+            selectedCountryLabel={selectedCountryLabel}
+            statusLabel={statusLabel}
             generatedAt={generatedAt}
-            layerMode={layerMode}
-            query={query}
-            countrySuggestions={countrySuggestions}
-            onLayerChange={setLayerMode}
-            onQueryChange={setQuery}
-            onJump={jumpToCountry}
-            onToggleOpen={() => setPanelOpen((current) => !current)}
-            onToggleCollapsed={() => setPanelCollapsed((current) => !current)}
+            onClose={() => setPanelOpen(false)}
             onTabChange={setActiveTab}
           >
-            {activeTab === "insights" ? (
-              <AssistantTab
-                question={strategicQuestion}
-                loading={strategicLoading}
-                error={strategicError}
-                result={strategicResult}
-                useSelectedCountry={useSelectedCountry}
-                selectedCountryLabel={activeCountryIso ? `${activeCountryName ?? "Country"} (${activeCountryIso})` : "none"}
-                onQuestionChange={setStrategicQuestion}
-                onPromptFill={setStrategicQuestion}
-                onToggleUseCountry={setUseSelectedCountry}
-                onSubmit={submitStrategicQuery}
-                onClear={() => {
-                  setStrategicQuestion("");
-                  setStrategicResult(null);
-                  setStrategicError(null);
-                }}
-                onUseFollowup={useStrategicFollowup}
+            {activeTab === "country-data" ? (
+              <CountryBriefTab
+                summary={countrySummary}
+                loading={countryLoading}
+                error={countryError}
+                generatedAt={generatedAt}
+                insightError={countryInsightError}
+                insight={countryInsightIso3 === selectedIso3 ? countryInsightResult : null}
+                insightLoading={countryInsightLoading}
+                pipelineLoading={waitingForCountryPipeline}
+                onOpenVisuals={() => setActiveTab("visuals")}
+                onOpenInsights={() => setActiveTab("insights")}
               />
             ) : null}
 
-            {activeTab === "country-data" ? (
-              <CountryBriefTab
-                countryCode={activeCountryIso}
-                countryName={activeCountryName}
-                metric={activeMetric}
-                loading={insightLoading}
-                error={insightError}
-                formatted={insightFormatted}
+            {activeTab === "insights" ? (
+              <AssistantTab
+                question={insightQuestion}
+                loading={assistantInsightLoading}
+                error={assistantInsightError}
+                messages={assistantMessages}
+                onQuestionChange={setInsightQuestion}
+                onSend={submitAssistantQuestion}
+                onClear={() => {
+                  setInsightQuestion("");
+                  setAssistantMessages([]);
+                  setAssistantInsightError(null);
+                }}
               />
             ) : null}
 
             {activeTab === "visuals" ? (
               <VisualsTab
-                rows={chartRows}
-                layerMode={layerMode}
-                selectedIso3={activeCountryIso ?? null}
-                loading={chartLoading}
-                error={chartError}
-                onLayerChange={setLayerMode}
-                onSelectIso3={(iso3) =>
-                  onCountryPinch({
-                    countryCode: iso3,
-                    countryName: countryByIso3.get(iso3)?.name
-                  })
-                }
+                metric={visualMetric}
+                series={visualSeries}
+                loading={visualLoading}
+                error={visualError}
+                allowComparativeFromQuery={insightsQueryIsComparative}
+                onMetricChange={setVisualMetric}
+                onRetry={() => {
+                  if (selectedIso3) {
+                    void loadVisualData(selectedIso3, visualMetric, true);
+                  }
+                }}
               />
             ) : null}
           </RightSidebar>
+
+          {layerError ? (
+            <div className="pointer-events-none fixed left-1/2 top-16 z-20 w-[min(90vw,520px)] -translate-x-1/2 rounded-lg border border-[#8a3d47] bg-[#3b1a22]/95 px-3 py-2 text-sm text-[#ffd9df]">
+              {layerError}
+            </div>
+          ) : null}
         </>
       }
     >
       <div className="h-full w-full">
         <Globe3D
           metrics={metrics}
-          layerMode={layerMode}
+          layerMode={layerKeyToMode(layerKey)}
+          layerData={layerData}
           selectedIso3={selectedIso3}
           highlightedIso3={highlightedIso3}
           onSelect={(iso3) =>

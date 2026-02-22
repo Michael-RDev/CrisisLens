@@ -93,6 +93,13 @@ function splitSentences(text: string): string[] {
   );
 }
 
+function normalizeSummaryText(text: string, maxSentences = 6): string {
+  const cleaned = stripMarkdownNoise(text);
+  const sentences = splitSentences(cleaned);
+  if (!sentences.length) return cleaned;
+  return uniqueCompact(sentences, maxSentences).join(" ");
+}
+
 export type FormattedGenieResponse = {
   headline: string;
   summary: string;
@@ -108,7 +115,7 @@ export function formatGenieNarrative(rawText: string): FormattedGenieResponse {
 
   if (parsed) {
     const headline = typeof parsed.headline === "string" ? normalizeWhitespace(parsed.headline) : "";
-    const summary = typeof parsed.summary === "string" ? normalizeWhitespace(parsed.summary) : "";
+    const summary = typeof parsed.summary === "string" ? normalizeSummaryText(parsed.summary) : "";
     const keyPoints = uniqueCompact(
       toStringArray(parsed.keyPoints ?? parsed.key_points),
       5
@@ -124,7 +131,7 @@ export function formatGenieNarrative(rawText: string): FormattedGenieResponse {
 
     if (headline || summary || keyPoints.length || actions.length || followups.length) {
       const fallbackHeadline = headline || splitSentences(summary)[0] || "Country insight";
-      const fallbackSummary = summary || splitSentences(cleaned).slice(0, 3).join(" ");
+      const fallbackSummary = summary || normalizeSummaryText(splitSentences(cleaned).slice(0, 4).join(" "));
       return {
         headline: fallbackHeadline,
         summary: fallbackSummary,
@@ -153,7 +160,7 @@ export function formatGenieNarrative(rawText: string): FormattedGenieResponse {
 
   const sentences = splitSentences(bodyText || cleaned);
   const headline = sentences[0] || "Insight generated";
-  const summary = sentences.slice(1, 4).join(" ") || sentences[0] || "";
+  const summary = normalizeSummaryText(sentences.slice(0, 4).join(" "));
   const keyPoints = uniqueCompact(sentences.slice(1, 6), 4);
 
   return {
@@ -164,4 +171,3 @@ export function formatGenieNarrative(rawText: string): FormattedGenieResponse {
     followups: uniqueCompact(followups, 4)
   };
 }
-

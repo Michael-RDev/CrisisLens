@@ -227,6 +227,8 @@ export type GenieAskResponse =
       conversationId: string;
       messageId: string;
       summaryText: string;
+      summarySource?: "genie_text" | "none";
+      usedNarrativeFollowup?: boolean;
       formatted?: {
         headline: string;
         summary: string;

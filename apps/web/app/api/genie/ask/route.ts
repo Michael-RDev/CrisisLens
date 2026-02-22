@@ -7,7 +7,7 @@ import {
   pollMessage,
   startConversation
 } from "@/lib/genieClient";
-import { formatGenieNarrative } from "@/lib/genie/response-format";
+import { formatGenieNarrative, stripMarkdownNoise } from "@/lib/genie/response-format";
 
 type AskIntent = "summary" | "overfunded" | "top10" | "comparison" | "general";
 
@@ -20,12 +20,18 @@ type AskPayload = {
 };
 
 function buildDeterministicPrompt(input: {
-  iso3: string;
+  iso3?: string;
   countryName?: string;
   intent: AskIntent;
   question?: string;
 }) {
-  const countryLabel = input.countryName?.trim() ? `${input.countryName.trim()} (${input.iso3})` : input.iso3;
+  const iso3 = input.iso3?.trim().toUpperCase();
+  const isCountryScoped = Boolean(iso3);
+  const countryLabel = isCountryScoped
+    ? input.countryName?.trim()
+      ? `${input.countryName.trim()} (${iso3})`
+      : iso3
+    : "Cross-country scope";
   const intentGuidance: Record<AskIntent, string> = {
     summary:
       "Provide a concise country geo-insight summary with current humanitarian funding context.",
@@ -39,8 +45,21 @@ function buildDeterministicPrompt(input: {
       "Answer the question directly and include a small supporting table when useful."
   };
 
+  if (!isCountryScoped) {
+    return [
+      "Use the curated Genie space data (crisislens_master).",
+      "Scope: Cross-country and unrestricted unless user explicitly asks for one country.",
+      intentGuidance[input.intent],
+      "For ranking/comparison requests, include up to 10 rows in ranked order.",
+      "Return ONLY valid JSON (no markdown) with schema:",
+      '{"headline":"string","summary":"2-4 concise sentences","keyPoints":["exactly 3 concise bullets"],"actions":["2-3 practical actions"],"followups":["2-3 useful follow-up questions"]}.',
+      "If a metric is unavailable, say it explicitly instead of guessing.",
+      input.question?.trim() ? `User question: ${input.question.trim()}` : "User question: general summary."
+    ].join(" ");
+  }
+
   return [
-    `Use the curated Genie space data (crisislens_master) and latest available year for ISO3=${input.iso3}.`,
+    `Use the curated Genie space data (crisislens_master) and latest available year for ISO3=${iso3}.`,
     `Country focus: ${countryLabel}.`,
     intentGuidance[input.intent],
     "Return ONLY valid JSON (no markdown) with schema:",
@@ -156,6 +175,49 @@ function synthesizeCountrySummary(
   return lines.join(" ");
 }
 
+function synthesizeGeneralSummary(
+  queryResult: { columns: string[]; rows: unknown[][]; rowCount?: number } | null
+): string {
+  if (!queryResult || !queryResult.columns.length || !queryResult.rows.length) return "";
+  const columns = queryResult.columns;
+  const first = queryResult.rows[0];
+  if (!Array.isArray(first)) return "";
+
+  const idxCountry = findIndex(columns, "country_plan_name", "country");
+  const idxIso3 = findIndex(columns, "iso3");
+  const idxCoverage = findIndex(columns, "funding_coverage_pct", "coverage_pct");
+  const idxGapPer = findIndex(columns, "funding_gap_per_person_usd", "funding_gap_per_person");
+  const idxPin = findIndex(columns, "total_people_in_need", "people_in_need");
+  const idxYear = findIndex(columns, "year");
+
+  const country = idxCountry >= 0 ? String(first[idxCountry] ?? "").trim() : "";
+  const iso3 = idxIso3 >= 0 ? String(first[idxIso3] ?? "").trim() : "";
+  const year = idxYear >= 0 ? Math.round(toNum(first[idxYear])) : 0;
+  const coverage = idxCoverage >= 0 ? toNum(first[idxCoverage]) : 0;
+  const gapPer = idxGapPer >= 0 ? toNum(first[idxGapPer]) : 0;
+  const pin = idxPin >= 0 ? toNum(first[idxPin]) : 0;
+
+  const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1
+  });
+
+  const label = [country, iso3 ? `(${iso3})` : ""].join(" ").trim() || "Top returned record";
+  const lines = [
+    `${label}${year ? ` in ${year}` : ""} appears at the top of the returned result set.`,
+    coverage > 0 ? `Coverage is ${coverage.toFixed(1)}% for this top result.` : "",
+    gapPer > 0 ? `Gap per person is ${money.format(gapPer)}.` : "",
+    pin > 0 ? `People in need are ${compact.format(pin)} for this entry.` : "",
+    typeof queryResult.rowCount === "number"
+      ? `This response is backed by ${queryResult.rowCount} row(s) from Genie query results.`
+      : "This response is backed by Genie query results."
+  ].filter(Boolean);
+  return lines.join(" ");
+}
+
 function formatMetricValue(label: string, value: number): string {
   if (!Number.isFinite(value)) return "N/A";
   if (label.includes("Coverage")) return `${value.toFixed(1)}%`;
@@ -194,13 +256,15 @@ function buildMetricHighlights(queryResult: { columns: string[]; rows: unknown[]
 function mapGenieError(error: unknown) {
   if (error instanceof GenieClientError) {
     const status =
-      error.code === "BAD_REQUEST"
-        ? 400
-        : error.code === "AUTH"
-          ? 401
-          : error.code === "GENIE_TIMEOUT"
-            ? 504
-            : 502;
+      error.status >= 400 && error.status < 600
+        ? error.status
+        : error.code === "BAD_REQUEST"
+          ? 400
+          : error.code === "AUTH"
+            ? 401
+            : error.code === "GENIE_TIMEOUT"
+              ? 504
+              : 502;
     return {
       status,
       body: {
@@ -237,13 +301,34 @@ export async function POST(request: Request) {
 
   const conversationId = payload.conversationId?.trim();
   const iso3 = payload.iso3?.trim().toUpperCase();
-  const intent = payload.intent ?? "summary";
-  if (!conversationId || !iso3 || !/^[A-Z]{3}$/.test(iso3)) {
+  const hasIso3 = Boolean(iso3);
+  const intent = payload.intent ?? (hasIso3 ? "summary" : "general");
+  if (!conversationId) {
     return NextResponse.json(
       {
         ok: false,
         code: "BAD_REQUEST",
-        message: "conversationId and iso3 (ISO3) are required."
+        message: "conversationId is required."
+      },
+      { status: 400 }
+    );
+  }
+  if (hasIso3 && !/^[A-Z]{3}$/.test(iso3 ?? "")) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "BAD_REQUEST",
+        message: "iso3 must be a valid ISO3 code when provided."
+      },
+      { status: 400 }
+    );
+  }
+  if (!hasIso3 && !payload.question?.trim()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "BAD_REQUEST",
+        message: "question is required for general Genie asks."
       },
       { status: 400 }
     );
@@ -326,13 +411,17 @@ export async function POST(request: Request) {
         : rawSummary && rawSummary !== prompt.trim()
           ? rawSummary
           : "";
-    const summaryText = candidateSummary
+    const summarySource: "genie_text" | "none" = candidateSummary ? "genie_text" : "none";
+    const rawSummaryText = candidateSummary
       ? candidateSummary
-      : synthesizeCountrySummary(queryResult, payload.countryName, iso3) ||
+      : (hasIso3
+          ? synthesizeCountrySummary(queryResult, payload.countryName, iso3 ?? "")
+          : synthesizeGeneralSummary(queryResult)) ||
         (queryResult
           ? "Genie returned a structured query result table for this request."
           : "Genie completed the request but returned no readable narrative text.");
-    const formatted = formatGenieNarrative(summaryText);
+    const formatted = formatGenieNarrative(rawSummaryText);
+    const summaryText = formatted.summary?.trim() || stripMarkdownNoise(rawSummaryText);
     const metricHighlights = buildMetricHighlights(queryResult);
 
     return NextResponse.json({
@@ -340,6 +429,7 @@ export async function POST(request: Request) {
       conversationId: activeConversationId,
       messageId: finalMessage.id,
       summaryText,
+      summarySource,
       formatted: {
         ...formatted,
         metricHighlights

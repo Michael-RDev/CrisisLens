@@ -18,10 +18,12 @@ import countriesTopo from "world-atlas/countries-110m.json";
 import { countryByIso3, iso3ByCcn3 } from "@/lib/countries";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
+import type { LayerDatum } from "@/lib/services/databricks";
 
 type Globe3DProps = {
   metrics: CountryMetrics[];
   layerMode: LayerMode;
+  layerData?: LayerDatum[];
   selectedIso3: string | null;
   highlightedIso3: string[];
   onSelect: (iso3: string) => void;
@@ -68,6 +70,7 @@ const PINCH_HOLD_MS = 220;
 const PINCH_CLICK_MAX_MOVE = 0.03;
 const BASE_ROTATE_GAIN_X = 170;
 const BASE_ROTATE_GAIN_Y = 130;
+const ENABLE_HAND_CONTROL_UI = true;
 
 const palette = {
   neutral: "#32516a",
@@ -129,6 +132,7 @@ function sensitivityGain(value: number): number {
 export default function Globe3D({
   metrics,
   layerMode,
+  layerData = [],
   selectedIso3,
   highlightedIso3,
   onSelect,
@@ -181,6 +185,10 @@ export default function Globe3D({
   }, []);
 
   const metricByIso = useMemo(() => new Map(metrics.map((row) => [row.iso3, row])), [metrics]);
+  const layerByIso = useMemo(
+    () => new Map(layerData.map((row) => [row.iso3, row])),
+    [layerData]
+  );
 
   const countriesGeoJson = useMemo(() => {
     const topo = countriesTopo as unknown as {
@@ -631,7 +639,7 @@ export default function Globe3D({
 
   return (
     <div className={`globe-canvas ${className ?? ""}`} ref={containerRef}>
-      {handOverlayMinimized ? (
+      {ENABLE_HAND_CONTROL_UI && handOverlayMinimized ? (
         <div className="globe-hands-overlay-collapsed">
           <button
             type="button"
@@ -642,7 +650,8 @@ export default function Globe3D({
             +
           </button>
         </div>
-      ) : (
+      ) : null}
+      {ENABLE_HAND_CONTROL_UI && !handOverlayMinimized ? (
         <div className="globe-hands-overlay">
           <button
             type="button"
@@ -673,8 +682,8 @@ export default function Globe3D({
             onChange={(event) => setHandSensitivity(Number(event.target.value))}
           />
         </div>
-      )}
-      {handControlEnabled && handCursor.active ? (
+      ) : null}
+      {ENABLE_HAND_CONTROL_UI && handControlEnabled && handCursor.active ? (
         <div
           className="globe-hand-cursor"
           style={{ transform: `translate(${handCursor.x}px, ${handCursor.y}px)` }}
@@ -690,7 +699,7 @@ export default function Globe3D({
           )}
         </div>
       ) : null}
-      {handControlEnabled ? (
+      {ENABLE_HAND_CONTROL_UI && handControlEnabled ? (
         <div className="globe-hand-hint" aria-hidden>
           <span>Hand Active</span>
           <span>Cursor tracks your hand</span>
@@ -719,8 +728,9 @@ export default function Globe3D({
         polygonCapColor={(featureObj) => {
           const feature = featureObj as CountryFeature;
           const iso3 = feature.properties.iso3;
+          const liveLayer = layerByIso.get(iso3);
           const metric = metricByIso.get(iso3);
-          const value = metric ? getLayerValue(metric, layerMode) : 0;
+          const value = liveLayer?.intensity !== undefined ? liveLayer.intensity * 100 : metric ? getLayerValue(metric, layerMode) : 0;
           if (selectedIso3 === iso3) return palette.selected;
           if (highlightedIso3.includes(iso3)) return palette.highlight;
           return colorByValue(layerMode, value);

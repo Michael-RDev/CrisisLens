@@ -17,8 +17,8 @@ type RightPanelProps = {
 };
 
 const TAB_ITEMS = [
-  { id: "assistant" as const, label: "Assistant", icon: MessageSquare },
-  { id: "country-brief" as const, label: "Country Brief", icon: Globe },
+  { id: "insights" as const, label: "Insights", icon: MessageSquare },
+  { id: "country-data" as const, label: "Country Data", icon: Globe },
   { id: "visuals" as const, label: "Visuals", icon: BarChart3 }
 ];
 
@@ -133,4 +133,3 @@ export function RightPanel({
     </>
   );
 }
-

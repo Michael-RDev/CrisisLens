@@ -163,6 +163,30 @@ export function CountryBriefTab({
               <li>Risk level: {statusFromOci(metric?.overlookedScore)}</li>
             </ul>
           </section>
+
+          <section className="rounded-lg border border-[#2f526b] bg-[#10283a] p-3">
+            <p className="m-0 text-xs uppercase tracking-[0.07em] text-[#9eb8ca]">Quick Visuals</p>
+            <div className="mt-2 grid gap-2">
+              {[
+                { label: "Coverage", value: derived.coverage, max: 100 },
+                { label: "Severity", value: derived.severity, max: 10 },
+                { label: "OCI", value: derived.oci, max: 100 }
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="mb-1 flex items-center justify-between text-[11px] text-[#cfe2ef]">
+                    <span>{item.label}</span>
+                    <span>{item.value.toFixed(1)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[#0d1e2b]">
+                    <div
+                      className="h-full rounded-full bg-[#7fd5ff]"
+                      style={{ width: `${Math.max(4, Math.min(100, (item.value / item.max) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </>
       ) : null}
 
@@ -183,4 +207,3 @@ export function CountryBriefTab({
     </div>
   );
 }
-

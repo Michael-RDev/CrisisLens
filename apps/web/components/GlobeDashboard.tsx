@@ -12,14 +12,14 @@ import {
 import type { GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import {
-  CommandCenterLayout
-} from "@/components/command-center/CommandCenterLayout";
-import { RightPanel } from "@/components/command-center/RightPanel";
+  GlobeCanvas
+} from "@/components/command-center/GlobeCanvas";
+import { TopNav } from "@/components/command-center/TopNav";
+import { RightSidebar } from "@/components/command-center/RightSidebar";
 import { AssistantTab } from "@/components/command-center/tabs/AssistantTab";
 import { CountryBriefTab } from "@/components/command-center/tabs/CountryBriefTab";
 import { VisualsTab } from "@/components/command-center/tabs/VisualsTab";
 import type { CommandTabId } from "@/components/command-center/Tabs";
-import { HandControlsWidget } from "@/components/command-center/HandControlsWidget";
 import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 const Globe3D = dynamic(() => import("@/components/Globe3D"), {
@@ -71,11 +71,10 @@ function countryStatus(metric: CountryMetrics | null): string {
 
 export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
-  const [hoverIso3, setHoverIso3] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<CommandTabId>("assistant");
+  const [activeTab, setActiveTab] = useState<CommandTabId>("country-data");
   const [panelOpen, setPanelOpen] = useState(true);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
 
@@ -111,14 +110,6 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     insightSelection?.countryName ??
     activeMetric?.country ??
     (activeCountryIso ? countryByIso3.get(activeCountryIso)?.name : undefined);
-
-  const hoverCountryMetric = hoverIso3 ? byIso.get(hoverIso3) ?? null : null;
-  const hoverCountryMeta = hoverIso3 ? countryByIso3.get(hoverIso3) ?? null : null;
-  const hoverText = hoverCountryMeta
-    ? `${hoverCountryMeta.name} (${hoverCountryMeta.iso3})`
-    : hoverCountryMetric
-      ? `${hoverCountryMetric.country} (${hoverCountryMetric.iso3})`
-      : "Hover countries for details. Drag to rotate. Scroll to zoom. Pinch selects a country.";
 
   useEffect(() => {
     const wsUrl = process.env.NEXT_PUBLIC_GLOBE_WS_URL;
@@ -170,7 +161,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
     setInsightFormatted(null);
     setPanelOpen(true);
     setPanelCollapsed(false);
-    setActiveTab("country-brief");
+      setActiveTab("country-data");
 
     try {
       const conversationId =
@@ -214,7 +205,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
       setStrategicResult(result);
       setChartRows(result.rows);
       setChartError(null);
-      setActiveTab("assistant");
+      setActiveTab("insights");
       setPanelOpen(true);
       setPanelCollapsed(false);
     } catch (error) {
@@ -258,16 +249,84 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }
 
   return (
-    <CommandCenterLayout
-      generatedAt={generatedAt}
-      layerMode={layerMode}
-      query={query}
-      countrySuggestions={countrySuggestions}
-      hoverText={hoverText}
-      onLayerChange={setLayerMode}
-      onQueryChange={setQuery}
-      onJump={jumpToCountry}
-      globe={
+    <GlobeCanvas
+      overlays={
+        <>
+          <TopNav />
+          <RightSidebar
+            open={panelOpen}
+            collapsed={panelCollapsed}
+            activeTab={activeTab}
+            selectedCountryLabel={
+              activeCountryIso
+                ? `${activeCountryName ?? "Country"} • ${activeCountryIso}`
+                : "No country selected"
+            }
+            statusLabel={countryStatus(activeMetric)}
+            generatedAt={generatedAt}
+            layerMode={layerMode}
+            query={query}
+            countrySuggestions={countrySuggestions}
+            onLayerChange={setLayerMode}
+            onQueryChange={setQuery}
+            onJump={jumpToCountry}
+            onToggleOpen={() => setPanelOpen((current) => !current)}
+            onToggleCollapsed={() => setPanelCollapsed((current) => !current)}
+            onTabChange={setActiveTab}
+          >
+            {activeTab === "insights" ? (
+              <AssistantTab
+                question={strategicQuestion}
+                loading={strategicLoading}
+                error={strategicError}
+                result={strategicResult}
+                useSelectedCountry={useSelectedCountry}
+                selectedCountryLabel={activeCountryIso ? `${activeCountryName ?? "Country"} (${activeCountryIso})` : "none"}
+                onQuestionChange={setStrategicQuestion}
+                onPromptFill={setStrategicQuestion}
+                onToggleUseCountry={setUseSelectedCountry}
+                onSubmit={submitStrategicQuery}
+                onClear={() => {
+                  setStrategicQuestion("");
+                  setStrategicResult(null);
+                  setStrategicError(null);
+                }}
+                onUseFollowup={useStrategicFollowup}
+              />
+            ) : null}
+
+            {activeTab === "country-data" ? (
+              <CountryBriefTab
+                countryCode={activeCountryIso}
+                countryName={activeCountryName}
+                metric={activeMetric}
+                loading={insightLoading}
+                error={insightError}
+                formatted={insightFormatted}
+              />
+            ) : null}
+
+            {activeTab === "visuals" ? (
+              <VisualsTab
+                rows={chartRows}
+                layerMode={layerMode}
+                selectedIso3={activeCountryIso ?? null}
+                loading={chartLoading}
+                error={chartError}
+                onLayerChange={setLayerMode}
+                onSelectIso3={(iso3) =>
+                  onCountryPinch({
+                    countryCode: iso3,
+                    countryName: countryByIso3.get(iso3)?.name
+                  })
+                }
+              />
+            ) : null}
+          </RightSidebar>
+        </>
+      }
+    >
+      <div className="h-full w-full">
         <Globe3D
           metrics={metrics}
           layerMode={layerMode}
@@ -279,76 +338,10 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
               countryName: countryByIso3.get(iso3)?.name
             })
           }
-          onHover={setHoverIso3}
+          onHover={() => undefined}
           className="globe-canvas-full"
         />
-      }
-      handControls={<HandControlsWidget />}
-      rightPanel={
-        <RightPanel
-          open={panelOpen}
-          collapsed={panelCollapsed}
-          selectedCountryLabel={
-            activeCountryIso
-              ? `${activeCountryName ?? "Country"} • ${activeCountryIso}`
-              : "No country selected"
-          }
-          statusLabel={countryStatus(activeMetric)}
-          activeTab={activeTab}
-          onToggleOpen={() => setPanelOpen((current) => !current)}
-          onToggleCollapsed={() => setPanelCollapsed((current) => !current)}
-          onTabChange={setActiveTab}
-        >
-          {activeTab === "assistant" ? (
-            <AssistantTab
-              question={strategicQuestion}
-              loading={strategicLoading}
-              error={strategicError}
-              result={strategicResult}
-              useSelectedCountry={useSelectedCountry}
-              selectedCountryLabel={activeCountryIso ? `${activeCountryName ?? "Country"} (${activeCountryIso})` : "none"}
-              onQuestionChange={setStrategicQuestion}
-              onPromptFill={setStrategicQuestion}
-              onToggleUseCountry={setUseSelectedCountry}
-              onSubmit={submitStrategicQuery}
-              onClear={() => {
-                setStrategicQuestion("");
-                setStrategicResult(null);
-                setStrategicError(null);
-              }}
-              onUseFollowup={useStrategicFollowup}
-            />
-          ) : null}
-
-          {activeTab === "country-brief" ? (
-            <CountryBriefTab
-              countryCode={activeCountryIso}
-              countryName={activeCountryName}
-              metric={activeMetric}
-              loading={insightLoading}
-              error={insightError}
-              formatted={insightFormatted}
-            />
-          ) : null}
-
-          {activeTab === "visuals" ? (
-            <VisualsTab
-              rows={chartRows}
-              layerMode={layerMode}
-              selectedIso3={activeCountryIso ?? null}
-              loading={chartLoading}
-              error={chartError}
-              onLayerChange={setLayerMode}
-              onSelectIso3={(iso3) =>
-                onCountryPinch({
-                  countryCode: iso3,
-                  countryName: countryByIso3.get(iso3)?.name
-                })
-              }
-            />
-          ) : null}
-        </RightPanel>
-      }
-    />
+      </div>
+    </GlobeCanvas>
   );
 }

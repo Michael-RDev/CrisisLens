@@ -3,7 +3,7 @@
 import { KeyboardEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 
-export type CommandTabId = "assistant" | "country-brief" | "visuals";
+export type CommandTabId = "country-data" | "insights" | "visuals";
 
 type TabItem = {
   id: CommandTabId;
@@ -79,4 +79,3 @@ export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
     </div>
   );
 }
-

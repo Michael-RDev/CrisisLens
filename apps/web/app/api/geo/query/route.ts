@@ -8,6 +8,7 @@ import {
   pollMessage,
   startConversation
 } from "@/lib/genieClient";
+import { formatGenieNarrative } from "@/lib/genie/response-format";
 import { getConversationForSession, setConversationForSession } from "@/lib/genie/session-store";
 
 type Payload = {
@@ -30,9 +31,14 @@ function detectIntent(question: string): Intent {
 }
 
 function buildPrompt(question: string): string {
-  // General query mode intentionally keeps prompt flexible so user phrasing drives output.
-  // Keep only minimal grounding context.
-  return `${question}\n\nUse the curated Genie space data (crisislens_master).`;
+  return [
+    `User question: ${question}`,
+    "Use the curated Genie space data (crisislens_master).",
+    "Keep the user's request scope. Use latest available year per country unless user asks otherwise.",
+    "Return ONLY valid JSON (no markdown) with schema:",
+    '{"headline":"string","summary":"2-4 concise sentences","keyPoints":["2-4 concise bullets"],"recommendations":["0-4 practical actions"],"followups":["0-4 useful follow-up questions"]}.',
+    "If evidence is limited, state the limitation clearly."
+  ].join(" ");
 }
 
 function normalizeText(value: string | null): string {
@@ -85,6 +91,14 @@ function synthesizeFromQueryResult(queryResult: { columns: string[]; rows: unkno
   const label = [country, iso3 ? `(${iso3})` : ""].join(" ").trim();
   if (!label) return "Genie returned ranked table results.";
   return `${label} appears at the top of the returned table${coverage ? ` with coverage ${coverage}` : ""}${gap ? ` and gap/person ${gap}` : ""}.`;
+}
+
+function buildHeadlineFallback(rows: Array<{ country: string; iso3: string }>, intent: Intent): string {
+  if (!rows.length) return "Genie returned no ranked rows for this request.";
+  if (intent === "funding_cut") return `Potential reallocation screen generated from ${rows.length} ranked rows.`;
+  if (intent === "funding_up") return `Priority funding candidates generated from ${rows.length} ranked rows.`;
+  if (intent === "compare") return `Cross-country comparison generated from ${rows.length} ranked rows.`;
+  return `Query results generated from ${rows.length} ranked rows.`;
 }
 
 function toNum(value: unknown): number {
@@ -197,12 +211,16 @@ export async function POST(request: NextRequest) {
     }
     const isPromptEcho = contentText === prompt.trim() || contentText.startsWith("Use the curated Genie space data");
     const summaryText = attachmentText ?? (!isPromptEcho ? contentText : "");
+    const narrative = formatGenieNarrative(
+      summaryText || synthesizeFromQueryResult(queryResult) || "Genie returned a structured query result table for this request."
+    );
     const data = {
       intent,
-      headline: summaryText ? summaryText.split(".")[0].trim() + "." : "Genie response",
-      answer: summaryText || synthesizeFromQueryResult(queryResult) || "Genie returned a structured query result table for this request.",
-      recommendations: [] as string[],
-      followups: [] as string[],
+      headline: narrative.headline || buildHeadlineFallback(rows, intent),
+      answer: narrative.summary || summaryText || synthesizeFromQueryResult(queryResult) || "Genie returned a structured query result table for this request.",
+      keyPoints: narrative.keyPoints,
+      recommendations: narrative.actions,
+      followups: narrative.followups,
       rows,
       askedQuestion: question
     };

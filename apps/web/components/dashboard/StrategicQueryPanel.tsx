@@ -62,6 +62,17 @@ export function StrategicQueryPanel({
           <p className="mt-1 font-semibold">{result.headline}</p>
           <p className="text-sm text-[#dbe8f2]">{result.answer}</p>
 
+          {result.keyPoints.length ? (
+            <div className="mt-2">
+              <p className="m-0 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Key Points</p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-[#dbe8f2]">
+                {result.keyPoints.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {result.recommendations.length ? (
             <div className="mt-2">
               <p className="m-0 text-xs uppercase tracking-[0.05em] text-[#9eb8ca]">Recommendations</p>

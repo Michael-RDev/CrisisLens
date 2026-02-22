@@ -201,6 +201,7 @@ export type GeoStrategicQueryResult = {
   intent: "compare" | "funding_up" | "funding_cut" | "solutions" | "general";
   headline: string;
   answer: string;
+  keyPoints: string[];
   recommendations: string[];
   followups: string[];
   rows: Array<{
@@ -226,6 +227,14 @@ export type GenieAskResponse =
       conversationId: string;
       messageId: string;
       summaryText: string;
+      formatted?: {
+        headline: string;
+        summary: string;
+        keyPoints: string[];
+        actions: string[];
+        followups: string[];
+        metricHighlights?: Array<{ label: string; value: string }>;
+      };
       sql?: string | null;
       queryResult?: {
         columns: string[];

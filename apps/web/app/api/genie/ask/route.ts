@@ -7,6 +7,7 @@ import {
   pollMessage,
   startConversation
 } from "@/lib/genieClient";
+import { formatGenieNarrative } from "@/lib/genie/response-format";
 
 type AskIntent = "summary" | "overfunded" | "top10" | "comparison" | "general";
 
@@ -42,7 +43,8 @@ function buildDeterministicPrompt(input: {
     `Use the curated Genie space data (crisislens_master) and latest available year for ISO3=${input.iso3}.`,
     `Country focus: ${countryLabel}.`,
     intentGuidance[input.intent],
-    "Return a rich country brief: 6-10 concise factual sentences, then exactly 3 bullet points.",
+    "Return ONLY valid JSON (no markdown) with schema:",
+    '{"headline":"string","summary":"2-4 concise sentences","keyPoints":["exactly 3 concise bullets"],"actions":["2-3 practical actions"],"followups":["2-3 useful follow-up questions"]}.',
     "Cover humanitarian context, funding adequacy, risk signals, and why this matters operationally.",
     "Include these metrics when available: overlooked_crisis_index, severity_score, funding_gap_score, total_people_in_need, crisis_status, funding_coverage_pct, funding_gap_per_person_usd.",
     "If a metric is unavailable, say so explicitly instead of guessing.",
@@ -152,6 +154,41 @@ function synthesizeCountrySummary(
   ].filter(Boolean);
 
   return lines.join(" ");
+}
+
+function formatMetricValue(label: string, value: number): string {
+  if (!Number.isFinite(value)) return "N/A";
+  if (label.includes("Coverage")) return `${value.toFixed(1)}%`;
+  if (label.includes("People")) {
+    return new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 1
+    }).format(Math.max(0, value));
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(Math.max(0, value));
+}
+
+function buildMetricHighlights(queryResult: { columns: string[]; rows: unknown[][] } | null) {
+  if (!queryResult?.rows.length || !queryResult.columns.length) return [] as Array<{ label: string; value: string }>;
+  const first = queryResult.rows[0];
+  if (!Array.isArray(first)) return [] as Array<{ label: string; value: string }>;
+  const cols = queryResult.columns;
+  const idxCoverage = findIndex(cols, "funding_coverage_pct", "coverage_pct");
+  const idxPin = findIndex(cols, "total_people_in_need", "people_in_need");
+  const idxGapPer = findIndex(cols, "funding_gap_per_person_usd", "funding_gap_per_person");
+  const idxGap = findIndex(cols, "funding_gap_usd");
+
+  const highlights: Array<{ label: string; value: string }> = [];
+  if (idxCoverage >= 0) highlights.push({ label: "Coverage", value: formatMetricValue("Coverage", toNum(first[idxCoverage])) });
+  if (idxPin >= 0) highlights.push({ label: "People In Need", value: formatMetricValue("People", toNum(first[idxPin])) });
+  if (idxGapPer >= 0) highlights.push({ label: "Gap / Person", value: formatMetricValue("USD", toNum(first[idxGapPer])) });
+  if (idxGap >= 0) highlights.push({ label: "Funding Gap", value: formatMetricValue("USD", toNum(first[idxGap])) });
+  return highlights.slice(0, 4);
 }
 
 function mapGenieError(error: unknown) {
@@ -295,12 +332,18 @@ export async function POST(request: Request) {
         (queryResult
           ? "Genie returned a structured query result table for this request."
           : "Genie completed the request but returned no readable narrative text.");
+    const formatted = formatGenieNarrative(summaryText);
+    const metricHighlights = buildMetricHighlights(queryResult);
 
     return NextResponse.json({
       ok: true,
       conversationId: activeConversationId,
       messageId: finalMessage.id,
       summaryText,
+      formatted: {
+        ...formatted,
+        metricHighlights
+      },
       sql,
       queryResult
     });

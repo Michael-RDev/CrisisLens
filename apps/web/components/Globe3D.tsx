@@ -26,6 +26,7 @@ type Globe3DProps = {
   highlightedIso3: string[];
   onSelect: (iso3: string) => void;
   onHover: (iso3: string | null) => void;
+  className?: string;
 };
 
 type CountryFeatureProps = {
@@ -131,7 +132,8 @@ export default function Globe3D({
   selectedIso3,
   highlightedIso3,
   onSelect,
-  onHover
+  onHover,
+  className
 }: Globe3DProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -628,7 +630,7 @@ export default function Globe3D({
   }, [stopHandControl]);
 
   return (
-    <div className="globe-canvas" ref={containerRef}>
+    <div className={`globe-canvas ${className ?? ""}`} ref={containerRef}>
       {handOverlayMinimized ? (
         <div className="globe-hands-overlay-collapsed">
           <button

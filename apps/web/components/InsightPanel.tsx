@@ -13,6 +13,14 @@ type InsightPanelProps = {
   loading: boolean;
   error: string | null;
   summaryText: string;
+  formatted: {
+    headline: string;
+    summary: string;
+    keyPoints: string[];
+    actions: string[];
+    followups: string[];
+    metricHighlights?: Array<{ label: string; value: string }>;
+  } | null;
   queryResult: GenieQueryResult | null;
   onRetry: () => void;
 };
@@ -24,6 +32,7 @@ export default function InsightPanel({
   loading,
   error,
   summaryText,
+  formatted,
   queryResult,
   onRetry
 }: InsightPanelProps) {
@@ -67,9 +76,42 @@ export default function InsightPanel({
       {!loading && !error ? (
         <>
           <div className="rounded-lg border border-[#2d526a] bg-[#102433] p-3">
-            <p className="m-0 whitespace-pre-wrap text-sm leading-6 text-[#d8e7f2]">
-              {summaryText || "No summary text returned from Genie."}
+            <p className="m-0 text-base font-semibold text-[#eff7ff]">
+              {formatted?.headline || "Country insight"}
             </p>
+            {formatted?.metricHighlights?.length ? (
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {formatted.metricHighlights.map((item) => (
+                  <div
+                    key={`${item.label}-${item.value}`}
+                    className="rounded-md border border-[#355d78] bg-[#0d1f2c] px-2 py-1"
+                  >
+                    <p className="m-0 text-[11px] uppercase tracking-[0.05em] text-[#98b6ca]">{item.label}</p>
+                    <p className="m-0 text-sm font-semibold text-[#e9f4fc]">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <p className="m-0 mt-2 text-sm leading-6 text-[#d8e7f2]">
+              {formatted?.summary || summaryText || "No summary text returned from Genie."}
+            </p>
+            {formatted?.keyPoints?.length ? (
+              <ul className="m-0 mt-2 list-disc space-y-1 pl-5 text-sm text-[#d8e7f2]">
+                {formatted.keyPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            ) : null}
+            {formatted?.actions?.length ? (
+              <div className="mt-2">
+                <p className="m-0 text-xs uppercase tracking-[0.05em] text-[#9db8cb]">Recommended Actions</p>
+                <ul className="m-0 mt-1 list-disc space-y-1 pl-5 text-sm text-[#d8e7f2]">
+                  {formatted.actions.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
           {queryResult && queryResult.columns.length > 0 ? (
@@ -108,4 +150,3 @@ export default function InsightPanel({
     </section>
   );
 }
-

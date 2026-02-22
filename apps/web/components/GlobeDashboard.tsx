@@ -43,6 +43,7 @@ import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/da
 type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
+  initialPanel?: DashboardPanelKey;
 };
 
 type DashboardPanelKey = "country" | "priority" | "simulation";
@@ -52,13 +53,17 @@ const queryTemplates = [
   "Rank the top 10 most overlooked crises by OCI and explain why."
 ];
 
-export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
+export default function GlobeDashboard({
+  metrics,
+  generatedAt,
+  initialPanel = "country"
+}: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
   const [hoverIso3, setHoverIso3] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
-  const [activePanel, setActivePanel] = useState<DashboardPanelKey>("country");
+  const [activePanel, setActivePanel] = useState<DashboardPanelKey>(initialPanel);
 
   const [overview, setOverview] = useState<AnalyticsOverviewResponse | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(false);

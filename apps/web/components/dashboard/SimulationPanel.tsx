@@ -233,7 +233,7 @@ export function SimulationPanel({
 
   return (
     <motion.article
-      className="min-w-0 overflow-hidden rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
+      className="min-w-0 overflow-x-auto overflow-y-visible rounded-2xl border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-4 text-[var(--dbx-text)]"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.36, ease: "easeOut" }}
@@ -331,7 +331,7 @@ export function SimulationPanel({
         />
       ) : simulation ? (
         <div className="mt-3 grid gap-3 border-t border-dashed border-[var(--dbx-border)] pt-3">
-          <div className="rounded-xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-3 text-sm text-[var(--dbx-text-muted)]">
+          <div className="break-words rounded-xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-3 text-sm text-[var(--dbx-text-muted)]">
             Allocation {formatUsd(Number(simulation.allocation_usd || 0))} for {selectedCountryName ?? simulation.iso3}. ML source: {simulation.ml_context.source_path} | projection points: {simulation.ml_context.projection_points} | neglect-flag gating: {simulation.ml_context.uses_neglect_flag ? "active" : "not available"}.
           </div>
 
@@ -414,12 +414,13 @@ export function SimulationPanel({
                   </h4>
                   <p className="m-0 text-[11px] text-[var(--dbx-text-muted)]">Negative bars indicate predicted relief</p>
                 </div>
-                <svg
-                  className="mt-2 w-full"
-                  viewBox={`0 0 ${DELTA_CHART.width} ${DELTA_CHART.height}`}
-                  role="img"
-                  aria-label="Quarter-over-quarter neglect delta chart"
-                >
+                <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
+                  <svg
+                    className="block h-auto min-w-[680px] w-full"
+                    viewBox={`0 0 ${DELTA_CHART.width} ${DELTA_CHART.height}`}
+                    role="img"
+                    aria-label="Quarter-over-quarter neglect delta chart"
+                  >
                   {deltaTicks.map((tick) => {
                     const y = scaleY(tick, -neglectDeltaMax, neglectDeltaMax, DELTA_CHART);
                     return (
@@ -480,15 +481,18 @@ export function SimulationPanel({
                       </g>
                     );
                   })}
-                </svg>
-                <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                  {neglectDeltaRows.map((row) => (
-                    <div key={`${row.quarterLabel}-delta`} className="rounded border border-[var(--dbx-border-soft)] px-2 py-1 text-[11px] text-[var(--dbx-text-muted)]">
-                      <p className="m-0 font-semibold text-[var(--dbx-text)]">{row.quarterLabel}</p>
-                      <p className="m-0">delta {formatSigned(row.delta)}</p>
-                      <p className="m-0">score {row.projectedNeglect.toFixed(2)}</p>
-                    </div>
-                  ))}
+                  </svg>
+                </div>
+                <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
+                  <div className="grid min-w-[760px] grid-cols-4 gap-2">
+                    {neglectDeltaRows.map((row) => (
+                      <div key={`${row.quarterLabel}-delta`} className="rounded border border-[var(--dbx-border-soft)] px-2 py-1 text-[11px] text-[var(--dbx-text-muted)]">
+                        <p className="m-0 font-semibold text-[var(--dbx-text)]">{row.quarterLabel}</p>
+                        <p className="m-0">delta {formatSigned(row.delta)}</p>
+                        <p className="m-0">score {row.projectedNeglect.toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -500,12 +504,13 @@ export function SimulationPanel({
                 <h3 className="m-0 text-sm font-semibold text-[var(--dbx-text)]">Quarterly OCI and Neglect Trajectory</h3>
                 <p className="m-0 text-xs text-[var(--dbx-text-muted)]">{quarterLabels.join(" / ")}</p>
               </div>
-              <svg
-                className="mt-2 w-full"
-                viewBox={`0 0 ${TREND_CHART.width} ${TREND_CHART.height}`}
-                role="img"
-                aria-label="Quarterly OCI and neglect line chart"
-              >
+              <div className="mt-2 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
+                <svg
+                  className="block h-auto min-w-[680px] w-full"
+                  viewBox={`0 0 ${TREND_CHART.width} ${TREND_CHART.height}`}
+                  role="img"
+                  aria-label="Quarterly OCI and neglect line chart"
+                >
                 <defs>
                   <linearGradient id="ociFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="rgba(249,115,22,0.35)" />
@@ -572,29 +577,32 @@ export function SimulationPanel({
                 {neglectPoints.map((point, index) => (
                   <circle key={`neg-${index}`} cx={point.x} cy={point.y} r="3.1" fill="#38bdf8" stroke="#f8fafc" strokeWidth="1.1" />
                 ))}
-              </svg>
+                </svg>
+              </div>
               <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--dbx-text-muted)]">
                 <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#f97316]" /> OCI</span>
                 <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#38bdf8]" /> Neglect</span>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                {quarters.slice(0, 8).map((quarter, index) => (
-                  <div key={quarter.quarter_label} className="rounded border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-2">
-                    <p className="m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--dbx-text-muted)]">{quarter.quarter_label}</p>
-                    <p className="m-0 mt-1 text-sm font-semibold">{formatUsdCompact(quarter.selected_country.funding_received)}</p>
-                    <div className="mt-1 h-1.5 rounded-full bg-[var(--dbx-border-soft)]">
-                      <div
-                        className="h-1.5 rounded-full bg-[var(--dbx-accent)]"
-                        style={{
-                          width: `${Math.max(
-                            6,
-                            Math.round((fundingSeries[index] / fundingMax) * 100)
-                          )}%`
-                        }}
-                      />
+              <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface)] p-1">
+                <div className="grid min-w-[760px] grid-cols-4 gap-2">
+                  {quarters.slice(0, 8).map((quarter, index) => (
+                    <div key={quarter.quarter_label} className="rounded border border-[var(--dbx-border-soft)] bg-[var(--dbx-surface-raised)] p-2">
+                      <p className="m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--dbx-text-muted)]">{quarter.quarter_label}</p>
+                      <p className="m-0 mt-1 text-sm font-semibold">{formatUsdCompact(quarter.selected_country.funding_received)}</p>
+                      <div className="mt-1 h-1.5 rounded-full bg-[var(--dbx-border-soft)]">
+                        <div
+                          className="h-1.5 rounded-full bg-[var(--dbx-accent)]"
+                          style={{
+                            width: `${Math.max(
+                              6,
+                              Math.round((fundingSeries[index] / fundingMax) * 100)
+                            )}%`
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </section>
           ) : null}
@@ -606,7 +614,7 @@ export function SimulationPanel({
                 <p className="m-0 text-xs text-[var(--dbx-text-muted)]">Color indicates movement from Q+1 baseline</p>
               </div>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-full border-collapse text-xs">
+                <table className="min-w-[760px] border-collapse text-xs">
                   <thead>
                     <tr className="text-left text-[var(--dbx-text-muted)]">
                       <th className="border-b border-[var(--dbx-border-soft)] pb-2 pr-3">Metric</th>
@@ -675,7 +683,7 @@ export function SimulationPanel({
             <section className="rounded-xl border border-[var(--dbx-border)] bg-[var(--dbx-surface)] p-3">
               <h3 className="m-0 text-sm font-semibold text-[var(--dbx-text)]">Country Impact Matrix (OCI + Neglect)</h3>
               <div className="mt-2 overflow-x-auto">
-                <table className="min-w-full border-collapse text-xs">
+                <table className="min-w-[760px] border-collapse text-xs">
                   <thead>
                     <tr className="text-left text-[var(--dbx-text-muted)]">
                       <th className="border-b border-[var(--dbx-border-soft)] pb-2 pr-3">Country</th>

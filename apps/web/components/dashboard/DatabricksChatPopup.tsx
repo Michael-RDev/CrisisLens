@@ -102,23 +102,31 @@ export function DatabricksChatPopup({
               <div className="mt-2 border-t border-dashed border-[var(--dbx-border)] pt-2">
                 <p>{genieAnswer}</p>
                 <p className="m-0 mt-2 text-sm leading-relaxed text-[var(--dbx-text-muted)]">
-                  Source: {genieSource ?? "mock"} • Globe highlights sync from query results.
+                  Source: {genieSource ?? "genie"} • Globe highlights sync from query results.
                 </p>
                 {genieResults.length > 0 ? (
-                  <ul className="mt-2 grid list-none gap-1.5 p-0">
-                    {genieResults.slice(0, 3).map((row) => (
-                      <li
-                        key={`${row.iso3}-${row.metric}`}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-[var(--dbx-list-border)] bg-[var(--dbx-list-bg)] px-2.5 py-2 text-sm"
-                      >
-                        <span className="min-w-0 break-words">
-                          {displayCountry(row.iso3)} • {row.metric}
-                          {row.rationale ? ` — ${row.rationale}` : ""}
-                        </span>
-                        <strong className="shrink-0">{row.score.toFixed(1)}</strong>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-[var(--dbx-list-border)]">
+                    <table className="min-w-full border-collapse text-left text-xs text-[var(--dbx-text)]">
+                      <thead className="sticky top-0 bg-[var(--dbx-list-bg)] text-[var(--dbx-text-muted)]">
+                        <tr>
+                          <th className="px-2 py-1.5">Country</th>
+                          <th className="px-2 py-1.5">Metric</th>
+                          <th className="px-2 py-1.5 text-right">Score</th>
+                          <th className="px-2 py-1.5">Rationale</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {genieResults.slice(0, 40).map((row, index) => (
+                          <tr key={`${row.iso3}-${row.metric}-${index}`} className="border-t border-[var(--dbx-list-border)]">
+                            <td className="px-2 py-1.5">{displayCountry(row.iso3)}</td>
+                            <td className="px-2 py-1.5">{row.metric}</td>
+                            <td className="px-2 py-1.5 text-right">{row.score.toFixed(2)}</td>
+                            <td className="px-2 py-1.5 text-[var(--dbx-text-muted)]">{row.rationale ?? ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : null}
               </div>
             ) : null}

@@ -1,13 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { comparableProjectsFor } from "@/lib/analytics";
 import { loadProjectProfiles } from "@/lib/loadMetrics";
 
-type Params = {
-  params: { project_id: string };
-};
-
-export async function GET(_: Request, { params }: Params) {
-  const projectId = params.project_id.trim();
+export async function GET(request: NextRequest) {
+  const projectId = request.nextUrl.searchParams.get("projectId")?.trim() ?? "";
   if (!projectId) {
     return NextResponse.json({ error: "Invalid project ID." }, { status: 400 });
   }
@@ -34,4 +30,3 @@ export async function GET(_: Request, { params }: Params) {
     comparable_projects: comparableProjectsFor(target, projects, 6)
   });
 }
-

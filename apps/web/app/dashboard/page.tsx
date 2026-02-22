@@ -3,20 +3,15 @@ import { loadCountryMetrics, loadSnapshot } from "@/lib/loadMetrics";
 
 type DashboardPageProps = {
   searchParams?: {
-    panel?: string;
+    mode?: string;
   };
 };
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const [metrics, snapshot] = await Promise.all([loadCountryMetrics(), loadSnapshot()]);
-  const panelParam = searchParams?.panel;
-  const initialPanel =
-    panelParam === "priority" || panelParam === "simulation" ? panelParam : "country";
+  const modeParam = String(searchParams?.mode ?? "").toLowerCase();
+  const initialMode = modeParam === "ml" ? "ml" : modeParam === "split" ? "split" : "genie";
   return (
-    <GlobeDashboard
-      metrics={metrics}
-      generatedAt={snapshot.generatedAt}
-      initialPanel={initialPanel}
-    />
+    <GlobeDashboard metrics={metrics} generatedAt={snapshot.generatedAt} initialMode={initialMode} />
   );
 }

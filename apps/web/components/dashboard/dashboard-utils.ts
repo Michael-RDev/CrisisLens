@@ -1,18 +1,11 @@
 import { allCountriesSorted, countryByIso3 } from "@/lib/countries";
-import { RiskBand } from "@/lib/types";
-
-export const riskClassByBand: Record<RiskBand, string> = {
-  low: "inline-block w-fit rounded-full border border-[var(--chip-low-border)] bg-[var(--chip-low-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-low-text)]",
-  moderate:
-    "inline-block w-fit rounded-full border border-[var(--chip-moderate-border)] bg-[var(--chip-moderate-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-moderate-text)]",
-  high: "inline-block w-fit rounded-full border border-[var(--chip-high-border)] bg-[var(--chip-high-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-high-text)]",
-  critical:
-    "inline-block w-fit rounded-full border border-[var(--chip-critical-border)] bg-[var(--chip-critical-bg)] px-2.5 py-1 text-xs uppercase tracking-[0.03em] text-[var(--chip-critical-text)]"
-};
+import { CountryMetrics, LayerMode, RiskBand } from "@/lib/types";
 
 export function getRiskClass(riskBand?: RiskBand): string {
-  if (!riskBand) return riskClassByBand.low;
-  return riskClassByBand[riskBand];
+  if (riskBand === "critical") return "chip-critical";
+  if (riskBand === "high") return "chip-high";
+  if (riskBand === "moderate") return "chip-moderate";
+  return "chip-low";
 }
 
 export function getOutlierLabel(flag: "low" | "high" | "none"): string {
@@ -22,7 +15,7 @@ export function getOutlierLabel(flag: "low" | "high" | "none"): string {
 }
 
 export function getCountrySuggestions(): string[] {
-  return allCountriesSorted.map((row) => row.name);
+  return allCountriesSorted.map((row) => `${row.name} (${row.iso3})`);
 }
 
 export function resolveJumpToCountryIso3(rawQuery: string): string | null {
@@ -90,4 +83,59 @@ export function resolveVoiceCommandToCountryIso3(rawTranscript: string): string 
   }
 
   return null;
+}
+
+function formatUsdCompact(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(Math.max(0, value));
+}
+
+function toMetricLabel(mode: LayerMode): string {
+  if (mode === "severity") return "severity score";
+  if (mode === "inNeedRate") return "in-need rate";
+  if (mode === "fundingGap") return "funding gap";
+  if (mode === "coverage") return "funding coverage";
+  return "overlooked index";
+}
+
+export function buildMlGenieQueryTemplates(args: {
+  metrics: CountryMetrics[];
+  layerMode: LayerMode;
+  selectedIso3: string | null;
+}): string[] {
+  const topByOci = [...args.metrics]
+    .sort((a, b) => (b.overlookedScore ?? 0) - (a.overlookedScore ?? 0))
+    .slice(0, 3);
+  const topByFundingGap = [...args.metrics]
+    .sort((a, b) => {
+      const bValue = Math.max(0, b.fundingRequired - b.fundingReceived);
+      const aValue = Math.max(0, a.fundingRequired - a.fundingReceived);
+      return bValue - aValue;
+    })
+    .slice(0, 3);
+
+  const selected = args.selectedIso3
+    ? args.metrics.find((row) => row.iso3 === args.selectedIso3) ?? null
+    : null;
+  const selectedLabel = selected ? `${selected.country} (${selected.iso3})` : null;
+  const selectedGap = selected ? Math.max(0, selected.fundingRequired - selected.fundingReceived) : 0;
+
+  const templates = [
+    topByOci.length
+      ? `Re-rank the top overlooked crises and compare ${topByOci.map((row) => `${row.country} (${row.iso3})`).join(", ")} using latest OCI, coverage, and total funding gap values.`
+      : "Rank the top overlooked crises by OCI with coverage and total funding gap.",
+    topByFundingGap.length
+      ? `For ${topByFundingGap.map((row) => `${row.country} (${row.iso3})`).join(", ")}, explain where incremental funding has the highest projected impact and quantify trade-offs.`
+      : "Show where incremental funding has the highest projected impact and quantify trade-offs.",
+    selectedLabel
+      ? `For ${selectedLabel}, simulate how an extra ${formatUsdCompact(Math.max(5_000_000, selectedGap * 0.1))} changes rank, projected neglect, and priority versus peer countries.`
+      : "Pick one high-priority country and simulate how extra funding changes rank and projected neglect.",
+    `Show top 10 countries by ${toMetricLabel(args.layerMode)} and include people in need, funding gap USD, and coverage percent in one table.`
+  ];
+
+  return templates;
 }

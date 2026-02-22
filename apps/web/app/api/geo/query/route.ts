@@ -82,8 +82,8 @@ function synthesizeFromQueryResult(queryResult: { columns: string[]; rows: unkno
   const cols = queryResult.columns.map((col) => col.toLowerCase());
   const idxCountry = cols.findIndex((c) => c.includes("country"));
   const idxIso3 = cols.findIndex((c) => c === "iso3" || c.includes("iso3"));
-  const idxCoverage = cols.findIndex((c) => c.includes("coverage"));
-  const idxGap = cols.findIndex((c) => c.includes("gap_per_person") || c.includes("gap per person"));
+  const idxCoverage = cols.findIndex((c) => c.includes("coverage") || c.includes("funding_gap_pct"));
+  const idxGap = cols.findIndex((c) => c.includes("funding_gap_usd") || c.includes("gap_millions_usd"));
   const country = idxCountry >= 0 ? String(top[idxCountry] ?? "") : "";
   const iso3 = idxIso3 >= 0 ? String(top[idxIso3] ?? "") : "";
   const coverage = idxCoverage >= 0 ? String(top[idxCoverage] ?? "") : "";
@@ -122,27 +122,54 @@ function findIndex(columns: string[], ...aliases: string[]): number {
 function mapRowsForUi(queryResult: { columns: string[]; rows: unknown[][] } | null) {
   if (!queryResult || !queryResult.columns.length || !queryResult.rows.length) return [];
   const columns = queryResult.columns;
-  const idxIso3 = findIndex(columns, "iso3", "country_code");
-  const idxCountry = findIndex(columns, "country_plan_name", "country");
+  const idxIso3 = findIndex(columns, "iso3", "country_iso3", "country_code");
+  const idxCountry = findIndex(columns, "country_plan_name", "country_name", "country");
   const idxYear = findIndex(columns, "year");
-  const idxCoverage = findIndex(columns, "funding_coverage_pct", "coverage_pct", "coverage");
+  const idxCoverage = findIndex(columns, "funding_coverage_pct", "coverage_pct", "coverage", "funding_coverage_ratio");
+  const idxFundingGapPct = findIndex(columns, "funding_gap_pct", "gap_pct");
   const idxGapPerPerson = findIndex(columns, "funding_gap_per_person_usd", "funding_gap_per_person", "gap_per_person");
   const idxGapUsd = findIndex(columns, "funding_gap_usd", "gap_usd");
+  const idxGapMillions = findIndex(columns, "gap_millions_usd", "funding_gap_millions_usd", "gap_millions");
   const idxPin = findIndex(columns, "total_people_in_need", "people_in_need", "pin");
+  const idxOci = findIndex(columns, "overlooked_crisis_index", "oci_score", "oci");
+  const idxSeverity = findIndex(columns, "severity_score");
+  const idxStatus = findIndex(columns, "crisis_status");
+  const idxOciVariant = findIndex(columns, "oci_variant");
+  const idxCompleteness = findIndex(columns, "data_completeness_label", "data_completeness");
 
   return queryResult.rows
     .map((row) => {
       const values = Array.isArray(row) ? row : [];
-      const coveragePct = idxCoverage >= 0 ? toNum(values[idxCoverage]) : 0;
+      const rawCoverage = idxCoverage >= 0 ? toNum(values[idxCoverage]) : null;
+      const rawFundingGapPct = idxFundingGapPct >= 0 ? toNum(values[idxFundingGapPct]) : null;
+      const coveragePct =
+        rawCoverage !== null && rawCoverage > 0
+          ? rawCoverage <= 1
+            ? rawCoverage * 100
+            : rawCoverage
+          : rawFundingGapPct !== null && rawFundingGapPct > 0
+            ? Math.max(0, 100 - rawFundingGapPct)
+            : 0;
+      const gapUsdRaw =
+        idxGapUsd >= 0
+          ? toNum(values[idxGapUsd])
+          : idxGapMillions >= 0
+            ? toNum(values[idxGapMillions]) * 1_000_000
+            : 0;
       return {
         iso3: idxIso3 >= 0 ? String(values[idxIso3] ?? "") : "",
         country: idxCountry >= 0 ? String(values[idxCountry] ?? "") : "Unknown",
         year: idxYear >= 0 ? Math.round(toNum(values[idxYear])) : 0,
-        funding_coverage_ratio: coveragePct > 1 ? coveragePct / 100 : coveragePct,
-        coverage_pct: coveragePct > 1 ? coveragePct : coveragePct * 100,
-        funding_gap_usd: idxGapUsd >= 0 ? toNum(values[idxGapUsd]) : 0,
+        funding_coverage_ratio: Math.max(0, Math.min(1, coveragePct / 100)),
+        coverage_pct: coveragePct,
+        funding_gap_usd: gapUsdRaw,
         funding_gap_per_person: idxGapPerPerson >= 0 ? toNum(values[idxGapPerPerson]) : 0,
-        people_in_need: idxPin >= 0 ? toNum(values[idxPin]) : 0
+        people_in_need: idxPin >= 0 ? toNum(values[idxPin]) : 0,
+        oci_score: idxOci >= 0 ? toNum(values[idxOci]) : undefined,
+        severity_score: idxSeverity >= 0 ? toNum(values[idxSeverity]) : undefined,
+        crisis_status: idxStatus >= 0 ? String(values[idxStatus] ?? "") : undefined,
+        oci_variant: idxOciVariant >= 0 ? String(values[idxOciVariant] ?? "") : undefined,
+        data_completeness_label: idxCompleteness >= 0 ? String(values[idxCompleteness] ?? "") : undefined
       };
     })
     .filter((row) => row.iso3 || row.country)

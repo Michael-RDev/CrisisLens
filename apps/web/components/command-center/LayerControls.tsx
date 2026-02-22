@@ -8,7 +8,7 @@ type LayerControlsProps = {
   onChange: (mode: LayerMode) => void;
 };
 
-const LAYER_MODES: LayerMode[] = ["severity", "fundingGap", "coverage", "overlooked"];
+const LAYER_MODES: LayerMode[] = ["severity", "inNeedRate", "fundingGap", "coverage", "overlooked"];
 
 export function LayerControls({ layerMode, onChange }: LayerControlsProps) {
   return (
@@ -34,4 +34,3 @@ export function LayerControls({ layerMode, onChange }: LayerControlsProps) {
     </section>
   );
 }
-

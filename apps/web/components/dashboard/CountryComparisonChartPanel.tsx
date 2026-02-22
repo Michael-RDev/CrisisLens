@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
 import { LayerMode } from "@/lib/types";
 import { ActionChip, SectionCard } from "@/components/dashboard/ui-kit";
@@ -16,11 +17,18 @@ type CountryComparisonChartPanelProps = {
 
 function formatValue(value: number, layerMode: LayerMode): string {
   if (!Number.isFinite(value)) return "0";
-  if (layerMode === "coverage" || layerMode === "inNeedRate") return `${(value * 100).toFixed(1)}%`;
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toFixed(0);
+  if (layerMode === "coverage") return `${value.toFixed(1)}%`;
+  if (layerMode === "inNeedRate") {
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    return value.toFixed(0);
+  }
+  if (layerMode === "severity") return value.toFixed(2);
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return `$${value.toFixed(0)}`;
 }
 
 function metricValue(
@@ -29,7 +37,8 @@ function metricValue(
 ): number {
   if (layerMode === "coverage") return row.coverage_pct;
   if (layerMode === "inNeedRate") return row.people_in_need;
-  if (layerMode === "severity") return row.funding_gap_per_person;
+  if (layerMode === "severity") return row.severity_score ?? 0;
+  if (layerMode === "overlooked") return row.oci_score ?? row.funding_gap_usd;
   return row.funding_gap_usd;
 }
 
@@ -42,7 +51,25 @@ export function CountryComparisonChartPanel({
   className,
   onSelectIso3
 }: CountryComparisonChartPanelProps) {
+  const [hoveredIso3, setHoveredIso3] = useState<string | null>(null);
   const ranked = rows.slice(0, 10);
+  if (loading) {
+    return (
+      <SectionCard className={className} title="Visualization" subtitle={`Top 10 countries by ${layerMode}`}>
+        <div className="h-[220px] animate-pulse rounded-xl border border-[#2f5064] bg-[#0c1d2b]" />
+      </SectionCard>
+    );
+  }
+
+  if (!ranked.length) {
+    return (
+      <SectionCard className={className} title="Visualization" subtitle={`Top 10 countries by ${layerMode}`}>
+        <p className="m-0 rounded-lg border border-[#35576e] bg-[#102433] p-2 text-xs text-[#c6d9e7]">
+          No rows available for the current filters.
+        </p>
+      </SectionCard>
+    );
+  }
 
   const width = 640;
   const height = 220;
@@ -56,6 +83,7 @@ export function CountryComparisonChartPanel({
     const y = padding.top + (1 - metricValue(row, layerMode) / maxValue) * plotHeight;
     return { x, y, row };
   });
+  const hoveredPoint = points.find((point) => point.row.iso3 === hoveredIso3) ?? null;
 
   const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   const areaPath = points.length
@@ -95,16 +123,51 @@ export function CountryComparisonChartPanel({
 
           {!loading &&
             points.map((point) => {
-            const isSelected = point.row.iso3 === selectedIso3;
-            return (
-              <g key={`${point.row.iso3}-${point.row.country}`}>
-                <circle cx={point.x} cy={point.y} r={isSelected ? 4 : 2.8} fill={isSelected ? "#ffd98c" : "#8bd8ff"} />
-                <text x={point.x} y={height - 14} textAnchor="middle" className="fill-[#b7cddd] text-[10px]">
-                  {point.row.iso3}
-                </text>
-              </g>
-            );
+              const isSelected = point.row.iso3 === selectedIso3;
+              const isHovered = point.row.iso3 === hoveredIso3;
+              return (
+                <g
+                  key={`${point.row.iso3}-${point.row.country}`}
+                  onMouseEnter={() => setHoveredIso3(point.row.iso3)}
+                  onMouseLeave={() => setHoveredIso3((current) => (current === point.row.iso3 ? null : current))}
+                  onClick={() => onSelectIso3(point.row.iso3)}
+                  className="cursor-pointer"
+                >
+                  <circle cx={point.x} cy={point.y} r={isSelected || isHovered ? 4.8 : 3.2} fill={isSelected ? "#ffd98c" : "#8bd8ff"} />
+                  <circle cx={point.x} cy={point.y} r={11} fill="transparent" />
+                  <text x={point.x} y={height - 14} textAnchor="middle" className="fill-[#b7cddd] text-[10px]">
+                    {point.row.iso3}
+                  </text>
+                </g>
+              );
             })}
+          {hoveredPoint ? (
+            <g pointerEvents="none">
+              <rect
+                x={Math.max(8, Math.min(width - 172, hoveredPoint.x - 86))}
+                y={10}
+                width={164}
+                height={34}
+                rx={6}
+                fill="rgba(8, 23, 35, 0.92)"
+                stroke="rgba(111, 196, 241, 0.55)"
+              />
+              <text
+                x={Math.max(16, Math.min(width - 164, hoveredPoint.x - 78))}
+                y={23}
+                className="fill-[#e8f6ff] text-[11px] font-semibold"
+              >
+                {hoveredPoint.row.country} ({hoveredPoint.row.iso3})
+              </text>
+              <text
+                x={Math.max(16, Math.min(width - 164, hoveredPoint.x - 78))}
+                y={35}
+                className="fill-[#9ec5dd] text-[10px]"
+              >
+                {formatValue(metricValue(hoveredPoint.row, layerMode), layerMode)}
+              </text>
+            </g>
+          ) : null}
         </svg>
       </div>
 

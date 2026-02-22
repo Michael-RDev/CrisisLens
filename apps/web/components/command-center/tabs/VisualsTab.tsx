@@ -1,11 +1,11 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { CountryComparisonChartPanel } from "@/components/dashboard/CountryComparisonChartPanel";
 import { GeoStrategicQueryResult } from "@/lib/api/crisiswatch";
 import { LayerMode } from "@/lib/types";
 
-type VisualMetric = "top-overlooked" | "coverage-vs-pin" | "gap-per-person";
+type VisualMetric = "top-overlooked" | "coverage-vs-pin" | "total-funding-gap";
 
 type VisualsTabProps = {
   rows: GeoStrategicQueryResult["rows"];
@@ -20,12 +20,12 @@ type VisualsTabProps = {
 const VISUAL_OPTIONS: Array<{ id: VisualMetric; label: string; mode: LayerMode }> = [
   { id: "top-overlooked", label: "Top Overlooked", mode: "overlooked" },
   { id: "coverage-vs-pin", label: "Coverage vs PIN", mode: "coverage" },
-  { id: "gap-per-person", label: "Funding Gap per Person", mode: "severity" }
+  { id: "total-funding-gap", label: "Total Funding Gap", mode: "fundingGap" }
 ];
 
 function activeVisual(layerMode: LayerMode): VisualMetric {
   if (layerMode === "coverage") return "coverage-vs-pin";
-  if (layerMode === "severity") return "gap-per-person";
+  if (layerMode === "fundingGap") return "total-funding-gap";
   return "top-overlooked";
 }
 
@@ -39,6 +39,21 @@ export function VisualsTab({
   onSelectIso3
 }: VisualsTabProps) {
   const active = activeVisual(layerMode);
+  const years = useMemo(() => {
+    const allYears = [...new Set(rows.map((row) => row.year).filter((year) => Number.isFinite(year) && year > 0))];
+    return allYears.sort((a, b) => b - a);
+  }, [rows]);
+  const [selectedYear, setSelectedYear] = useState<"all" | number>("all");
+  useEffect(() => {
+    if (selectedYear === "all") return;
+    if (!years.includes(selectedYear)) {
+      setSelectedYear("all");
+    }
+  }, [selectedYear, years]);
+  const filteredRows = useMemo(() => {
+    if (selectedYear === "all") return rows;
+    return rows.filter((row) => row.year === selectedYear);
+  }, [rows, selectedYear]);
 
   return (
     <div id="tabpanel-visuals" role="tabpanel" aria-labelledby="tab-visuals" className="space-y-3">
@@ -59,38 +74,33 @@ export function VisualsTab({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         <label className="grid gap-1 text-xs text-[#9eb9cb]">
           Year
-          <select className="rounded-lg border border-[#355b75] bg-[#102738] px-2 py-1.5 text-xs text-[#e6f2fb]">
-            <option>Latest</option>
-            <option>2026</option>
-            <option>2025</option>
-            <option>2024</option>
-          </select>
-        </label>
-        <label className="grid gap-1 text-xs text-[#9eb9cb]">
-          Region
-          <select className="rounded-lg border border-[#355b75] bg-[#102738] px-2 py-1.5 text-xs text-[#e6f2fb]">
-            <option>All regions</option>
-            <option>Africa</option>
-            <option>Middle East</option>
-            <option>Asia</option>
-            <option>Americas</option>
+          <select
+            className="rounded-lg border border-[#355b75] bg-[#102738] px-2 py-1.5 text-xs text-[#e6f2fb]"
+            value={selectedYear === "all" ? "all" : String(selectedYear)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedYear(value === "all" ? "all" : Number(value));
+            }}
+          >
+            <option value="all">All available years</option>
+            {years.map((year) => (
+              <option key={year} value={String(year)}>
+                {year}
+              </option>
+            ))}
           </select>
         </label>
       </div>
 
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 rounded-lg border border-[#4c738d] bg-[#11354c] px-3 py-1.5 text-xs text-[#dcebf7]"
-      >
-        <Download className="h-3.5 w-3.5" />
-        Export PNG
-      </button>
+      <p className="m-0 text-xs text-[#a9c0d2]">
+        Showing {filteredRows.length} real rows from current metric layer.
+      </p>
 
       <CountryComparisonChartPanel
-        rows={rows}
+        rows={filteredRows}
         layerMode={layerMode}
         selectedIso3={selectedIso3}
         loading={loading}
@@ -100,4 +110,3 @@ export function VisualsTab({
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Share2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { layerConfig } from "@/components/dashboard/layer-config";
 import { LayerMode } from "@/lib/types";
 
@@ -91,16 +91,7 @@ export function CommandCenterLayout({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 md:justify-self-end">
-            <button className="inline-flex items-center gap-1 rounded-lg border border-[#3a637c] bg-[#12344a] px-2.5 py-1.5 text-xs text-[#e1eef7]">
-              <Download className="h-3.5 w-3.5" />
-              Export
-            </button>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-[#3a637c] bg-[#12344a] px-2.5 py-1.5 text-xs text-[#e1eef7]">
-              <Share2 className="h-3.5 w-3.5" />
-              Share
-            </button>
-          </div>
+          <div />
         </div>
       </header>
 
@@ -113,4 +104,3 @@ export function CommandCenterLayout({
     </main>
   );
 }
-

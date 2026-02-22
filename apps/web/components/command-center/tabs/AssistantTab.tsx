@@ -142,22 +142,35 @@ export function AssistantTab({
 
           {result.rows.length ? (
             <section className="overflow-x-auto rounded-lg border border-[#2d526a] bg-[#0f2332]">
-              <table className="min-w-full text-left text-xs text-[#d6e5f1]">
+              <table className="min-w-[980px] text-left text-xs text-[#d6e5f1]">
                 <thead className="border-b border-[#2d526a] bg-[#112d42] text-[#b7ccdc]">
                   <tr>
                     <th className="px-2 py-1.5 font-semibold">Country</th>
+                    <th className="px-2 py-1.5 font-semibold">OCI</th>
                     <th className="px-2 py-1.5 font-semibold">Coverage</th>
-                    <th className="px-2 py-1.5 font-semibold">Gap/Person</th>
+                    <th className="px-2 py-1.5 font-semibold">Total Gap</th>
                     <th className="px-2 py-1.5 font-semibold">PIN</th>
+                    <th className="px-2 py-1.5 font-semibold">Status</th>
+                    <th className="px-2 py-1.5 font-semibold">Data</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {result.rows.slice(0, 7).map((row) => (
+                  {result.rows.map((row) => (
                     <tr key={`${row.iso3}-${row.year}-${row.country}`} className="border-b border-[#1f3f55]">
                       <td className="px-2 py-1.5">{row.country} ({row.iso3})</td>
+                      <td className="px-2 py-1.5">{typeof row.oci_score === "number" ? row.oci_score.toFixed(2) : "--"}</td>
                       <td className="px-2 py-1.5">{row.coverage_pct.toFixed(1)}%</td>
-                      <td className="px-2 py-1.5">${row.funding_gap_per_person.toFixed(2)}</td>
+                      <td className="px-2 py-1.5">
+                        {new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                          notation: "compact",
+                          maximumFractionDigits: 1
+                        }).format(Math.max(0, row.funding_gap_usd))}
+                      </td>
                       <td className="px-2 py-1.5">{compact(row.people_in_need)}</td>
+                      <td className="px-2 py-1.5">{row.crisis_status || "--"}</td>
+                      <td className="px-2 py-1.5">{row.data_completeness_label || row.oci_variant || "--"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -199,4 +212,3 @@ export function AssistantTab({
     </div>
   );
 }
-

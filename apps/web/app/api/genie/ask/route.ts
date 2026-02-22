@@ -46,7 +46,8 @@ function buildDeterministicPrompt(input: {
     "Return ONLY valid JSON (no markdown) with schema:",
     '{"headline":"string","summary":"2-4 concise sentences","keyPoints":["exactly 3 concise bullets"],"actions":["2-3 practical actions"],"followups":["2-3 useful follow-up questions"]}.',
     "Cover humanitarian context, funding adequacy, risk signals, and why this matters operationally.",
-    "Include these metrics when available: overlooked_crisis_index, severity_score, funding_gap_score, total_people_in_need, crisis_status, funding_coverage_pct, funding_gap_per_person_usd.",
+    "Run a SQL query and include at least one tabular row for the selected country when data exists.",
+    "Include these metrics when available: overlooked_crisis_index, severity_score, funding_gap_score, total_people_in_need, crisis_status, funding_coverage_pct, funding_gap_usd, funding_received_usd, funding_required_usd.",
     "If a metric is unavailable, say so explicitly instead of guessing.",
     input.question?.trim() ? `User question: ${input.question.trim()}` : "User question: country summary."
   ].join(" ");
@@ -61,6 +62,11 @@ function extractSqlAndAttachmentId(attachments: Array<Record<string, unknown>>) 
     }
   }
   return { sql: null as string | null, attachmentId: null as string | null };
+}
+
+function hasSqlAttachment(attachments: Array<Record<string, unknown>>): boolean {
+  const extracted = extractSqlAndAttachmentId(attachments);
+  return Boolean(extracted.attachmentId);
 }
 
 function extractAttachmentText(attachments: Array<Record<string, unknown>>): string | null {
@@ -114,7 +120,6 @@ function synthesizeCountrySummary(
   const idxCoverage = findIndex(columns, "funding_coverage_pct", "coverage_pct");
   const idxPin = findIndex(columns, "total_people_in_need", "people_in_need");
   const idxGap = findIndex(columns, "funding_gap_usd", "gap_usd");
-  const idxGapPer = findIndex(columns, "funding_gap_per_person_usd", "funding_gap_per_person");
   const idxStatus = findIndex(columns, "crisis_status");
   const idxSeverity = findIndex(columns, "severity_score");
   const idxOci = findIndex(columns, "overlooked_crisis_index");
@@ -124,7 +129,6 @@ function synthesizeCountrySummary(
   const coverage = idxCoverage >= 0 ? toNum(first[idxCoverage]) : 0;
   const pin = idxPin >= 0 ? toNum(first[idxPin]) : 0;
   const gapUsd = idxGap >= 0 ? toNum(first[idxGap]) : 0;
-  const gapPer = idxGapPer >= 0 ? toNum(first[idxGapPer]) : 0;
   const status = idxStatus >= 0 ? String(first[idxStatus] ?? "").trim() : "";
   const severity = idxSeverity >= 0 ? toNum(first[idxSeverity]) : 0;
   const oci = idxOci >= 0 ? toNum(first[idxOci]) : 0;
@@ -144,7 +148,6 @@ function synthesizeCountrySummary(
       ? `Funding coverage is ${coverage.toFixed(1)}%, which informs whether response plans are adequately resourced.`
       : "Coverage percentage was not returned in this run.",
     gapUsd > 0 ? `The absolute funding gap is about ${money.format(gapUsd)}.` : "No positive funding gap value was returned.",
-    gapPer > 0 ? `Gap per person is ${money.format(gapPer)}, a signal of per-capita underfunding intensity.` : "",
     status ? `Current crisis status is reported as: ${status}.` : "",
     severity > 0 ? `Severity score is ${severity.toFixed(2)}.` : "",
     oci > 0 ? `Overlooked Crisis Index is ${oci.toFixed(2)}.` : "",
@@ -165,6 +168,7 @@ function formatMetricValue(label: string, value: number): string {
       maximumFractionDigits: 1
     }).format(Math.max(0, value));
   }
+  if (label.includes("Score") || label.includes("Index")) return value.toFixed(2);
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -180,15 +184,17 @@ function buildMetricHighlights(queryResult: { columns: string[]; rows: unknown[]
   const cols = queryResult.columns;
   const idxCoverage = findIndex(cols, "funding_coverage_pct", "coverage_pct");
   const idxPin = findIndex(cols, "total_people_in_need", "people_in_need");
-  const idxGapPer = findIndex(cols, "funding_gap_per_person_usd", "funding_gap_per_person");
-  const idxGap = findIndex(cols, "funding_gap_usd");
+  const idxGap = findIndex(cols, "funding_gap_usd", "gap_usd");
+  const idxSeverity = findIndex(cols, "severity_score");
+  const idxOci = findIndex(cols, "overlooked_crisis_index", "oci_score", "oci");
 
   const highlights: Array<{ label: string; value: string }> = [];
   if (idxCoverage >= 0) highlights.push({ label: "Coverage", value: formatMetricValue("Coverage", toNum(first[idxCoverage])) });
   if (idxPin >= 0) highlights.push({ label: "People In Need", value: formatMetricValue("People", toNum(first[idxPin])) });
-  if (idxGapPer >= 0) highlights.push({ label: "Gap / Person", value: formatMetricValue("USD", toNum(first[idxGapPer])) });
   if (idxGap >= 0) highlights.push({ label: "Funding Gap", value: formatMetricValue("USD", toNum(first[idxGap])) });
-  return highlights.slice(0, 4);
+  if (idxSeverity >= 0) highlights.push({ label: "Severity Score", value: formatMetricValue("Score", toNum(first[idxSeverity])) });
+  if (idxOci >= 0) highlights.push({ label: "OCI", value: formatMetricValue("Index", toNum(first[idxOci])) });
+  return highlights.slice(0, 5);
 }
 
 function mapGenieError(error: unknown) {
@@ -275,7 +281,17 @@ export async function POST(request: Request) {
 
     const finalMessage = await pollMessage(activeConversationId, created.messageId);
     const attachments = finalMessage.attachments as Array<Record<string, unknown>>;
-    const { sql, attachmentId } = extractSqlAndAttachmentId(attachments);
+    let { sql, attachmentId } = extractSqlAndAttachmentId(attachments);
+    let queryMessageId = finalMessage.id;
+    let cachedMessages:
+      | Array<{
+          id: string;
+          status?: string;
+          content?: string;
+          attachments?: Array<Record<string, unknown>>;
+          created_timestamp?: number;
+        }>
+      | null = null;
 
     let queryResult:
       | {
@@ -285,8 +301,26 @@ export async function POST(request: Request) {
         }
       | null = null;
 
+    if (!attachmentId) {
+      cachedMessages = await listConversationMessages(activeConversationId);
+      const latestWithSqlAttachment = cachedMessages
+        .filter((message) => message.status === "COMPLETED")
+        .sort((a, b) => Number(b.created_timestamp ?? 0) - Number(a.created_timestamp ?? 0))
+        .find((message) =>
+          hasSqlAttachment((message.attachments ?? []) as Array<Record<string, unknown>>)
+        );
+      if (latestWithSqlAttachment) {
+        const recovered = extractSqlAndAttachmentId(
+          (latestWithSqlAttachment.attachments ?? []) as Array<Record<string, unknown>>
+        );
+        sql = recovered.sql;
+        attachmentId = recovered.attachmentId;
+        queryMessageId = latestWithSqlAttachment.id;
+      }
+    }
+
     if (attachmentId) {
-      queryResult = await fetchQueryResult(activeConversationId, finalMessage.id, attachmentId);
+      queryResult = await fetchQueryResult(activeConversationId, queryMessageId, attachmentId);
     }
 
     if (finalMessage.status !== "COMPLETED") {
@@ -311,7 +345,7 @@ export async function POST(request: Request) {
     let rawSummary = (finalMessage.content ?? "").trim();
     let attachmentText = extractAttachmentText(attachments);
     if (!attachmentText && (rawSummary === prompt.trim() || rawSummary.startsWith("Use the curated Genie space data"))) {
-      const messages = await listConversationMessages(activeConversationId);
+      const messages = cachedMessages ?? (await listConversationMessages(activeConversationId));
       const latestCompleted = messages
         .filter((message) => message.status === "COMPLETED")
         .sort((a, b) => Number(b.created_timestamp ?? 0) - Number(a.created_timestamp ?? 0))[0];

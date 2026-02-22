@@ -3,6 +3,40 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --dbx-bg: #0b1620;
+    --dbx-surface: #10202d;
+    --dbx-surface-raised: #0f2434;
+    --dbx-surface-strong: #10283a;
+    --dbx-border: #2e4f63;
+    --dbx-border-soft: #35566f;
+    --dbx-text: #eaf3f8;
+    --dbx-text-muted: #9db7c8;
+    --dbx-accent: #6fc4f1;
+    --dbx-accent-soft: #92d5f7;
+    --dbx-cyan: #7fd5ff;
+    --dbx-tab-border: #3d627a;
+    --dbx-tab-bg: #112d40;
+    --dbx-tab-text: #cfe1ee;
+    --dbx-tab-active-bg: #16405c;
+    --dbx-tab-active-text: #ecf7ff;
+    --dbx-chip-bg: #0f3044;
+    --dbx-chip-border: #4a6f87;
+    --dbx-input-border: #2f5067;
+    --dbx-input-bg: #0a1824;
+    --dbx-btn-secondary-border: #4a6f88;
+    --dbx-btn-secondary-bg: #102a3c;
+    --dbx-btn-secondary-text: #d4e6f4;
+    --dbx-list-border: #345871;
+    --dbx-list-bg: #0a1925;
+    --dbx-chat-fab-bg: #1f5678;
+    --dbx-chat-fab-text: #edf8ff;
+    --dbx-modal-backdrop: rgba(5, 14, 22, 0.68);
+    --dbx-globe-hint-bg: rgba(15, 35, 50, 0.95);
+    --dbx-globe-hint-border: #3d627a;
+    --dbx-globe-hint-text: #dcebf7;
+  }
+
   html,
   body {
     @apply m-0 min-h-full bg-[#0b1620] font-['IBM_Plex_Sans','Avenir_Next','Segoe_UI',sans-serif] text-[#eaf3f8];

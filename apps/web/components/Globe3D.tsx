@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Component, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { GlobeMethods } from "react-globe.gl";
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import { geoContains } from "d3-geo";
@@ -16,14 +16,17 @@ import {
 } from "three";
 import countriesTopo from "world-atlas/countries-110m.json";
 import { countryByIso3, iso3ByCcn3 } from "@/lib/countries";
+import type { SimulationImpactArc } from "@/lib/globe/simulation-arcs";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
+import { resolveVoiceCommandToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 type Globe3DProps = {
   metrics: CountryMetrics[];
   layerMode: LayerMode;
   selectedIso3: string | null;
   highlightedIso3: string[];
+  simulationArcs?: SimulationImpactArc[];
   onSelect: (iso3: string) => void;
   onHover: (iso3: string | null) => void;
   className?: string;
@@ -53,6 +56,41 @@ type HandCursorState = {
   active: boolean;
   iso3: string | null;
   country: string | null;
+};
+type SpeechRecognitionAlternativeLike = {
+  transcript: string;
+};
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  length: number;
+  [index: number]: SpeechRecognitionAlternativeLike;
+};
+type SpeechRecognitionResultListLike = {
+  length: number;
+  [index: number]: SpeechRecognitionResultLike;
+};
+type SpeechRecognitionEventLike = Event & {
+  resultIndex: number;
+  results: SpeechRecognitionResultListLike;
+};
+type SpeechRecognitionErrorEventLike = Event & {
+  error: string;
+};
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: ((event: Event) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: ((event: Event) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type SpeechRecognitionCtorLike = new () => SpeechRecognitionLike;
+type WindowWithSpeechRecognition = Window & {
+  SpeechRecognition?: SpeechRecognitionCtorLike;
+  webkitSpeechRecognition?: SpeechRecognitionCtorLike;
 };
 
 const HAND_TASKS_WASM_URL =
@@ -126,11 +164,52 @@ function sensitivityGain(value: number): number {
   return value * value;
 }
 
+function detectWebGlSupport(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(
+      canvas.getContext("webgl2") ||
+        canvas.getContext("webgl") ||
+        canvas.getContext("experimental-webgl")
+    );
+  } catch {
+    return false;
+  }
+}
+
+type GlobeRenderBoundaryProps = {
+  children: ReactNode;
+  onError: () => void;
+};
+
+type GlobeRenderBoundaryState = {
+  hasError: boolean;
+};
+
+class GlobeRenderBoundary extends Component<GlobeRenderBoundaryProps, GlobeRenderBoundaryState> {
+  state: GlobeRenderBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): GlobeRenderBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(): void {
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 export default function Globe3D({
   metrics,
   layerMode,
   selectedIso3,
   highlightedIso3,
+  simulationArcs = [],
   onSelect,
   onHover,
   className
@@ -150,13 +229,21 @@ export default function Globe3D({
   const smoothedHandRef = useRef<SmoothedHand | null>(null);
   const handPovRef = useRef<GeoPov | null>(null);
   const handStatusRef = useRef("Camera control is off.");
+  const voiceStatusRef = useRef("Voice control is off.");
+  const voiceControlEnabledRef = useRef(false);
+  const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
+  const selectedIso3Ref = useRef<string | null>(selectedIso3);
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
+  const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
   const [handOverlayMinimized, setHandOverlayMinimized] = useState(false);
   const [handStatus, setHandStatus] = useState("Camera control is off.");
+  const [voiceStatus, setVoiceStatus] = useState("Voice control is off.");
   const [handSensitivity, setHandSensitivity] = useState(0.95);
+  const [webglSupported, setWebglSupported] = useState(true);
+  const [globeRuntimeFailed, setGlobeRuntimeFailed] = useState(false);
   const [handCursor, setHandCursor] = useState<HandCursorState>({
     x: 0,
     y: 0,
@@ -167,6 +254,14 @@ export default function Globe3D({
 
   const countriesByIso = useMemo(() => {
     return countryByIso3;
+  }, []);
+
+  useEffect(() => {
+    selectedIso3Ref.current = selectedIso3;
+  }, [selectedIso3]);
+
+  useEffect(() => {
+    setWebglSupported(detectWebGlSupport());
   }, []);
 
   const earthMaterial = useMemo(() => {
@@ -181,6 +276,7 @@ export default function Globe3D({
   }, []);
 
   const metricByIso = useMemo(() => new Map(metrics.map((row) => [row.iso3, row])), [metrics]);
+  const visibleSimulationArcs = useMemo(() => simulationArcs.slice(0, 8), [simulationArcs]);
 
   const countriesGeoJson = useMemo(() => {
     const topo = countriesTopo as unknown as {
@@ -282,7 +378,7 @@ export default function Globe3D({
 
     const controls = globeApi.controls();
     controlsRef.current = controls;
-    controls.autoRotate = true;
+    controls.autoRotate = !selectedIso3Ref.current;
     controls.autoRotateSpeed = 0.25;
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -317,10 +413,20 @@ export default function Globe3D({
     };
   }, [globeReady]);
 
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.autoRotate = !handControlEnabled && !selectedIso3;
+  }, [handControlEnabled, selectedIso3]);
+
   const setHandStatusSafely = useCallback((status: string) => {
     if (handStatusRef.current === status) return;
     handStatusRef.current = status;
     setHandStatus(status);
+  }, []);
+  const setVoiceStatusSafely = useCallback((status: string) => {
+    if (voiceStatusRef.current === status) return;
+    voiceStatusRef.current = status;
+    setVoiceStatus(status);
   }, []);
 
   const countryAtScreenPoint = useCallback(
@@ -368,7 +474,7 @@ export default function Globe3D({
       dragPrevPointRef.current = null;
       smoothedHandRef.current = null;
       handPovRef.current = null;
-      if (controlsRef.current) controlsRef.current.autoRotate = true;
+      if (controlsRef.current) controlsRef.current.autoRotate = !selectedIso3Ref.current;
 
       setHandControlEnabled(false);
       setHandCursor({
@@ -517,7 +623,7 @@ export default function Globe3D({
 
       if (shouldClickSelect && hoveredCountry?.iso3) {
         onSelect(hoveredCountry.iso3);
-        setHandStatusSafely(`Selected ${hoveredCountry.country} (${hoveredCountry.iso3})`);
+        setHandStatusSafely(`Selected ${hoveredCountry.country}`);
       }
 
       pinchDownRef.current = false;
@@ -534,7 +640,7 @@ export default function Globe3D({
           ? "Drag mode active: keep pinch held and move hand to rotate globe."
           : "Pinch started: release quickly to select target, or keep holding to enter drag mode."
         : hoveredCountry?.iso3
-          ? `Target: ${hoveredCountry.country} (${hoveredCountry.iso3}) | Quick pinch to select`
+          ? `Target: ${hoveredCountry.country} | Quick pinch to select`
           : "Aim cursor over a country. Quick pinch selects. Hold pinch to drag-rotate globe."
     );
     handLoopRef.current = requestAnimationFrame(runHandLoop);
@@ -625,9 +731,122 @@ export default function Globe3D({
     void startHandControl();
   }
 
+  const stopVoiceControl = useCallback(
+    (status = "Voice control is off.") => {
+      voiceControlEnabledRef.current = false;
+      setVoiceControlEnabled(false);
+
+      const recognition = speechRecognitionRef.current;
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        try {
+          recognition.stop();
+        } catch {
+          // ignore stop errors from an already-ended session
+        }
+      }
+      speechRecognitionRef.current = null;
+      setVoiceStatusSafely(status);
+    },
+    [setVoiceStatusSafely]
+  );
+
+  const startVoiceControl = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const speechWindow = window as WindowWithSpeechRecognition;
+    const RecognitionCtor = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!RecognitionCtor) {
+      setVoiceStatusSafely("Voice control is unavailable in this browser.");
+      return;
+    }
+
+    const recognition = new RecognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setVoiceStatusSafely('Listening... Say "go to Canada".');
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        if (!result?.isFinal) continue;
+        const phrase = result[0]?.transcript?.trim();
+        if (phrase) transcript += `${phrase} `;
+      }
+
+      const spoken = transcript.trim();
+      if (!spoken) return;
+
+      const iso3 = resolveVoiceCommandToCountryIso3(spoken);
+      if (!iso3) {
+        setVoiceStatusSafely(`Heard "${spoken}" but no country match was found.`);
+        return;
+      }
+
+      onSelect(iso3);
+      const countryName = countryByIso3.get(iso3)?.name ?? iso3;
+      setVoiceStatusSafely(`Selected ${countryName}.`);
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        stopVoiceControl("Microphone access blocked. Allow microphone permission and retry.");
+        return;
+      }
+      if (event.error === "audio-capture") {
+        stopVoiceControl("No microphone detected. Connect a microphone and retry.");
+        return;
+      }
+      if (event.error === "no-speech") {
+        setVoiceStatusSafely('No speech detected. Say "go to Canada".');
+        return;
+      }
+      setVoiceStatusSafely("Voice recognition error. Try again.");
+    };
+
+    recognition.onend = () => {
+      if (!voiceControlEnabledRef.current) return;
+      try {
+        recognition.start();
+      } catch {
+        stopVoiceControl("Voice control paused unexpectedly. Start it again.");
+      }
+    };
+
+    speechRecognitionRef.current = recognition;
+    voiceControlEnabledRef.current = true;
+    setVoiceControlEnabled(true);
+    setVoiceStatusSafely("Starting voice control...");
+
+    try {
+      recognition.start();
+    } catch {
+      stopVoiceControl("Unable to start voice control. Check microphone permissions and retry.");
+    }
+  }, [onSelect, setVoiceStatusSafely, stopVoiceControl]);
+
+  function toggleVoiceControl() {
+    if (voiceControlEnabled) {
+      stopVoiceControl();
+      return;
+    }
+    startVoiceControl();
+  }
+
   useEffect(() => {
-    return () => stopHandControl();
-  }, [stopHandControl]);
+    return () => {
+      stopHandControl();
+      stopVoiceControl();
+    };
+  }, [stopHandControl, stopVoiceControl]);
 
   return (
     <div className={`globe-canvas ${className ?? ""}`} ref={containerRef}>
@@ -655,10 +874,14 @@ export default function Globe3D({
           <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
             {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
           </button>
+          <button type="button" onClick={toggleVoiceControl} className="globe-hands-toggle">
+            {voiceControlEnabled ? "Stop Voice Control" : "Start Voice Control"}
+          </button>
           <p>{handStatus}</p>
+          <p>{voiceStatus}</p>
           <p>
             Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
-            move hand to rotate globe.
+            move hand to rotate globe. Voice command example: &quot;go to Canada&quot;.
           </p>
           <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
             Sensitivity: {handSensitivity.toFixed(1)}x
@@ -683,7 +906,7 @@ export default function Globe3D({
           <span />
           {handCursor.iso3 ? (
             <small>
-              {handCursor.country} ({handCursor.iso3})
+              {handCursor.country}
             </small>
           ) : (
             <small>No country target</small>
@@ -696,53 +919,86 @@ export default function Globe3D({
           <span>Cursor tracks your hand</span>
         </div>
       ) : null}
-      <Globe
-        ref={globeRef}
-        width={size.width}
-        height={size.height}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        globeMaterial={earthMaterial}
-        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-        backgroundColor="rgba(0,0,0,0)"
-        atmosphereColor="#9ecbff"
-        atmosphereAltitude={0.17}
-        onGlobeReady={() => setGlobeReady(true)}
-        polygonsData={countriesGeoJson}
-        polygonAltitude={(featureObj) => {
-          const feature = featureObj as CountryFeature;
-          const iso3 = feature.properties.iso3;
-          if (selectedIso3 === iso3) return 0.03;
-          if (highlightedIso3.includes(iso3)) return 0.022;
-          return 0.008;
-        }}
-        polygonCapColor={(featureObj) => {
-          const feature = featureObj as CountryFeature;
-          const iso3 = feature.properties.iso3;
-          const metric = metricByIso.get(iso3);
-          const value = metric ? getLayerValue(metric, layerMode) : 0;
-          if (selectedIso3 === iso3) return palette.selected;
-          if (highlightedIso3.includes(iso3)) return palette.highlight;
-          return colorByValue(layerMode, value);
-        }}
-        polygonSideColor={() => "rgba(14, 36, 52, 0.88)"}
-        polygonStrokeColor={() => "#0d2436"}
-        polygonsTransitionDuration={350}
-        onPolygonClick={(featureObj) => {
-          const feature = featureObj as CountryFeature;
-          const iso3 = feature.properties.iso3;
-          if (iso3) onSelect(iso3);
-        }}
-        onPolygonHover={(featureObj) => {
-          if (!featureObj) {
-            onHover(null);
-            return;
-          }
-          const feature = featureObj as CountryFeature;
-          const iso3 = feature.properties.iso3;
-          onHover(iso3 ?? null);
-        }}
-      />
+      {visibleSimulationArcs.length > 0 ? (
+        <div className="pointer-events-none absolute right-2 top-2 z-[5] grid gap-1 rounded-md border border-[var(--dbx-globe-hint-border)] bg-[var(--dbx-globe-hint-bg)] px-2 py-1 text-[11px] text-[var(--dbx-globe-hint-text)]">
+          <span className="font-semibold uppercase tracking-[0.08em]">Q+8 Impact Arrows</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" /> Competing priority</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#22c55e]" /> Relatively relieved</span>
+          <span className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full bg-[#cbd5e1]" /> Neutral shift</span>
+        </div>
+      ) : null}
+      {!webglSupported || globeRuntimeFailed ? (
+        <div className="globe-loading">
+          <p className="m-0 text-sm font-semibold">3D globe unavailable on this device/browser.</p>
+          <p className="m-0 mt-1 text-xs text-[var(--dbx-globe-hint-text)]">
+            WebGL failed to initialize. Try Chrome/Edge with hardware acceleration enabled.
+          </p>
+        </div>
+      ) : (
+        <GlobeRenderBoundary onError={() => setGlobeRuntimeFailed(true)}>
+          <Globe
+            ref={globeRef}
+            width={size.width}
+            height={size.height}
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+            bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+            globeMaterial={earthMaterial}
+            backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+            backgroundColor="rgba(0,0,0,0)"
+            atmosphereColor="#9ecbff"
+            atmosphereAltitude={0.17}
+            onGlobeReady={() => setGlobeReady(true)}
+            polygonsData={countriesGeoJson}
+            polygonAltitude={(featureObj) => {
+              const feature = featureObj as CountryFeature;
+              const iso3 = feature.properties.iso3;
+              if (selectedIso3 === iso3) return 0.03;
+              if (highlightedIso3.includes(iso3)) return 0.022;
+              return 0.008;
+            }}
+            polygonCapColor={(featureObj) => {
+              const feature = featureObj as CountryFeature;
+              const iso3 = feature.properties.iso3;
+              const metric = metricByIso.get(iso3);
+              const value = metric ? getLayerValue(metric, layerMode) : 0;
+              if (selectedIso3 === iso3) return palette.selected;
+              if (highlightedIso3.includes(iso3)) return palette.highlight;
+              return colorByValue(layerMode, value);
+            }}
+            polygonSideColor={() => "rgba(14, 36, 52, 0.88)"}
+            polygonStrokeColor={() => "#0d2436"}
+            polygonsTransitionDuration={350}
+            arcsData={visibleSimulationArcs}
+            arcLabel={(arcObj: unknown) => (arcObj as SimulationImpactArc).label}
+            arcStartLat={(arcObj: unknown) => (arcObj as SimulationImpactArc).start_lat}
+            arcStartLng={(arcObj: unknown) => (arcObj as SimulationImpactArc).start_lng}
+            arcEndLat={(arcObj: unknown) => (arcObj as SimulationImpactArc).end_lat}
+            arcEndLng={(arcObj: unknown) => (arcObj as SimulationImpactArc).end_lng}
+            arcColor={(arcObj: unknown) => (arcObj as SimulationImpactArc).color}
+            arcStroke={(arcObj: unknown) => (arcObj as SimulationImpactArc).stroke_width}
+            arcAltitudeAutoScale={(arcObj: unknown) => (arcObj as SimulationImpactArc).altitude_auto_scale}
+            arcDashLength={0.3}
+            arcDashGap={0.8}
+            arcDashInitialGap={(arcObj: unknown) => (arcObj as SimulationImpactArc).dash_initial_gap}
+            arcDashAnimateTime={(arcObj: unknown) => (arcObj as SimulationImpactArc).animation_ms}
+            arcsTransitionDuration={450}
+            onPolygonClick={(featureObj) => {
+              const feature = featureObj as CountryFeature;
+              const iso3 = feature.properties.iso3;
+              if (iso3) onSelect(iso3);
+            }}
+            onPolygonHover={(featureObj) => {
+              if (!featureObj) {
+                onHover(null);
+                return;
+              }
+              const feature = featureObj as CountryFeature;
+              const iso3 = feature.properties.iso3;
+              onHover(iso3 ?? null);
+            }}
+          />
+        </GlobeRenderBoundary>
+      )}
     </div>
   );
 }

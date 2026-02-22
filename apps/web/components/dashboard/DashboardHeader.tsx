@@ -18,8 +18,6 @@ export function DashboardHeader({ generatedAt }: DashboardHeaderProps) {
         <div className="flex flex-wrap items-center gap-2">
           <StatPill>Production-ready UI</StatPill>
           <StatPill>Env: local</StatPill>
-          <button className="rounded-lg border border-[#3a637c] bg-[#12344a] px-3 py-1.5 text-xs text-[#e1eef7]">Export</button>
-          <button className="rounded-lg border border-[#3a637c] bg-[#12344a] px-3 py-1.5 text-xs text-[#e1eef7]">Share</button>
         </div>
       </div>
     </header>

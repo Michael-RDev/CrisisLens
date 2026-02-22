@@ -132,11 +132,11 @@ class SqlDatabricksProvider implements DatabricksProvider {
     const table = getTableFqn();
     const buildStatement = (variant: {
       countryExpr: string;
-      peopleInNeedColumn: "total_people_in_need";
-      peopleTargetedColumn: "total_people_targeted";
-      fundingColumn: "total_funding_usd";
-      requirementsColumn: "total_requirements_usd";
-      gapPerPersonColumn: "funding_gap_per_person_usd";
+      peopleInNeedColumn: string;
+      peopleTargetedColumn: string;
+      fundingColumn: string;
+      requirementsColumn: string;
+      gapPerPersonColumn: string;
       coverageRatioExpr: string;
     }) => `
       SELECT
@@ -175,10 +175,46 @@ class SqlDatabricksProvider implements DatabricksProvider {
       const variants = [
         {
           countryExpr: "country_plan_name",
+          peopleInNeedColumn: "people_in_need",
+          peopleTargetedColumn: "people_targeted",
+          fundingColumn: "funding_received_usd",
+          requirementsColumn: "funding_required_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        },
+        {
+          countryExpr: "country_name",
+          peopleInNeedColumn: "people_in_need",
+          peopleTargetedColumn: "people_targeted",
+          fundingColumn: "funding_received_usd",
+          requirementsColumn: "funding_required_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        },
+        {
+          countryExpr: "country_plan_name",
           peopleInNeedColumn: "total_people_in_need",
           peopleTargetedColumn: "total_people_targeted",
           fundingColumn: "total_funding_usd",
           requirementsColumn: "total_requirements_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        },
+        {
+          countryExpr: "country_name",
+          peopleInNeedColumn: "total_people_in_need",
+          peopleTargetedColumn: "total_people_targeted",
+          fundingColumn: "total_funding_usd",
+          requirementsColumn: "total_requirements_usd",
+          gapPerPersonColumn: "funding_gap_per_person_usd",
+          coverageRatioExpr: "funding_coverage_pct / 100.0"
+        },
+        {
+          countryExpr: "CAST(iso3 AS STRING)",
+          peopleInNeedColumn: "people_in_need",
+          peopleTargetedColumn: "people_targeted",
+          fundingColumn: "funding_received_usd",
+          requirementsColumn: "funding_required_usd",
           gapPerPersonColumn: "funding_gap_per_person_usd",
           coverageRatioExpr: "funding_coverage_pct / 100.0"
         },

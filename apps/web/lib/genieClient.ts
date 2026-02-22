@@ -303,13 +303,26 @@ export async function fetchQueryResult(
     };
     data_array?: unknown[][];
     schema?: { columns?: Array<{ name?: string }> };
+    statement_response?: {
+      columns?: Array<{ name?: string }>;
+      rows?: unknown[][];
+      row_count?: number;
+      manifest?: { schema?: { columns?: Array<{ name?: string }> } };
+      result?: {
+        data_array?: unknown[][];
+        row_count?: number;
+        schema?: { columns?: Array<{ name?: string }> };
+      };
+      data_array?: unknown[][];
+      schema?: { columns?: Array<{ name?: string }> };
+    };
   }>(
     `/api/2.0/genie/spaces/${spaceId}/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}/query-result`,
     { method: "GET" },
     "query-result"
   );
 
-  const payload = response.data;
+  const payload = response.data.statement_response ?? response.data;
   const columns =
     payload.columns ??
     payload.schema?.columns ??

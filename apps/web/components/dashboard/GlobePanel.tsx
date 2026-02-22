@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import type { SimulationImpactArc } from "@/lib/globe/simulation-arcs";
 import { LayerMode, CountryMetrics } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
 import { layerConfig } from "@/components/dashboard/layer-config";
@@ -21,6 +22,7 @@ type GlobePanelProps = {
   layerMode: LayerMode;
   selectedIso3: string | null;
   highlightedIso3: string[];
+  simulationArcs: SimulationImpactArc[];
   query: string;
   countrySuggestions: string[];
   hoverText: string;
@@ -35,6 +37,7 @@ export function GlobePanel({
   layerMode,
   selectedIso3,
   highlightedIso3,
+  simulationArcs,
   query,
   countrySuggestions,
   hoverText,
@@ -83,6 +86,7 @@ export function GlobePanel({
         layerMode={layerMode}
         selectedIso3={selectedIso3}
         highlightedIso3={highlightedIso3}
+        simulationArcs={simulationArcs}
         onSelect={onSelectIso3}
         onHover={onHoverIso3}
       />

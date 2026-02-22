@@ -92,6 +92,11 @@ export type AnalyticsOverviewResponse = {
 export type SimulationResponse = {
   iso3: string;
   allocation_usd: number;
+  ml_context: {
+    source_path: string;
+    projection_points: number;
+    uses_neglect_flag: boolean;
+  };
   base: {
     rank: number;
     oci: number;
@@ -103,14 +108,77 @@ export type SimulationResponse = {
     oci: number;
     funding_received: number;
     percent_funded: number;
+    projected_neglect: number;
   };
   rank_delta: number;
   oci_delta: number;
+  overall_score_delta: number;
   top_overlooked_after: Array<{
     rank: number;
     iso3: string;
     country: string;
     oci_score: number;
+  }>;
+  leaderboard_changes: Array<{
+    rank_before: number;
+    rank_after: number;
+    rank_delta: number;
+    iso3: string;
+    country: string;
+    oci_before: number;
+    oci_after: number;
+    oci_delta: number;
+  }>;
+  country_impacts: Array<{
+    iso3: string;
+    country: string;
+    rank_before: number;
+    rank_after: number;
+    rank_delta: number;
+    overall_score_delta: number;
+    projected_neglect_delta: number;
+    direction: "up" | "down" | "flat";
+    relation: "still_ahead" | "new_ahead" | "overtaken" | "behind_buffer" | "shifted";
+  }>;
+  impact_arrows: Array<{
+    from_iso3: string;
+    to_iso3: string;
+    country: string;
+    direction: "pressure" | "relief" | "neutral";
+    relation: "still_ahead" | "new_ahead" | "overtaken" | "behind_buffer" | "shifted";
+    rank_delta: number;
+    overall_score_delta: number;
+    projected_neglect_delta: number;
+    magnitude: number;
+  }>;
+  quarters: Array<{
+    quarter_label: string;
+    quarter_index: number;
+    months_ahead: number;
+    selected_country: {
+      rank: number;
+      oci: number;
+      overall_score_delta: number;
+      funding_received: number;
+      percent_funded: number;
+      projected_neglect: number;
+      neglect_flag_pred: boolean | null;
+    };
+    top_overlooked: Array<{
+      rank: number;
+      iso3: string;
+      country: string;
+      oci_score: number;
+    }>;
+    metrics_overrides: Array<{
+      iso3: string;
+      country: string;
+      overlooked_score: number;
+      severity_score: number;
+      funding_received: number;
+      percent_funded: number;
+      projected_neglect: number;
+    }>;
   }>;
 };
 

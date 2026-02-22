@@ -1,0 +1,110 @@
+{
+  "LightGBM": {
+    "f1_score": 0.8889,
+    "confusion_matrix": [
+      [
+        58,
+        8
+      ],
+      [
+        1,
+        36
+      ]
+    ],
+    "tp": 36,
+    "fp": 8,
+    "fn": 1,
+    "tn": 58,
+    "oof": true
+  },
+  "RandomForest": {
+    "f1_score": 0.9114,
+    "confusion_matrix": [
+      [
+        60,
+        6
+      ],
+      [
+        1,
+        36
+      ]
+    ],
+    "tp": 36,
+    "fp": 6,
+    "fn": 1,
+    "tn": 60,
+    "oof": true
+  },
+  "XGBoost": {
+    "f1_score": 0.9459,
+    "confusion_matrix": [
+      [
+        64,
+        2
+      ],
+      [
+        2,
+        35
+      ]
+    ],
+    "tp": 35,
+    "fp": 2,
+    "fn": 2,
+    "tn": 64,
+    "oof": true
+  },
+  "GBR": {
+    "f1_score": 0.9589,
+    "confusion_matrix": [
+      [
+        65,
+        1
+      ],
+      [
+        2,
+        35
+      ]
+    ],
+    "tp": 35,
+    "fp": 1,
+    "fn": 2,
+    "tn": 65,
+    "oof": true
+  },
+  "Stacking": {
+    "f1_score": 0.9114,
+    "confusion_matrix": [
+      [
+        60,
+        6
+      ],
+      [
+        1,
+        36
+      ]
+    ],
+    "tp": 36,
+    "fp": 6,
+    "fn": 1,
+    "tn": 60,
+    "oof": true
+  },
+  "Ensemble": {
+    "f1_score": 0.9,
+    "confusion_matrix": [
+      [
+        59,
+        7
+      ],
+      [
+        1,
+        36
+      ]
+    ],
+    "tp": 36,
+    "fp": 7,
+    "fn": 1,
+    "tn": 59,
+    "oof": true
+  }
+}

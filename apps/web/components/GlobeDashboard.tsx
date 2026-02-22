@@ -18,6 +18,7 @@ import type {
   SimulationResponse
 } from "@/lib/api/crisiswatch";
 import { normalizeIso3, shouldApplyCVDetection } from "@/lib/cv/globeBridge";
+import { buildSimulationImpactArcs } from "@/lib/globe/simulation-arcs";
 import { getLayerValue } from "@/lib/metrics";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import type { DatabricksCountryState } from "@/lib/databricks/client";
@@ -43,6 +44,7 @@ import { getCountrySuggestions, resolveJumpToCountryIso3 } from "@/components/da
 type GlobeDashboardProps = {
   metrics: CountryMetrics[];
   generatedAt: string;
+  initialPanel?: DashboardPanelKey;
 };
 
 type DashboardPanelKey = "country" | "priority" | "simulation";
@@ -52,13 +54,17 @@ const queryTemplates = [
   "Rank the top 10 most overlooked crises by OCI and explain why."
 ];
 
-export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardProps) {
+export default function GlobeDashboard({
+  metrics,
+  generatedAt,
+  initialPanel = "country"
+}: GlobeDashboardProps) {
   const [selectedIso3, setSelectedIso3] = useState<string | null>(metrics[0]?.iso3 ?? null);
   const [hoverIso3, setHoverIso3] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
-  const [activePanel, setActivePanel] = useState<DashboardPanelKey>("country");
+  const [activePanel, setActivePanel] = useState<DashboardPanelKey>(initialPanel);
 
   const [overview, setOverview] = useState<AnalyticsOverviewResponse | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
@@ -91,6 +97,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   const [allocationUsd, setAllocationUsd] = useState("5000000");
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [showImpactArrows, setShowImpactArrows] = useState(true);
   const [workspacePanelHeight, setWorkspacePanelHeight] = useState<number | null>(null);
   const leftStackRef = useRef<HTMLDivElement | null>(null);
 
@@ -123,6 +130,20 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
   }, [filtered, layerMode]);
 
   const hoverText = buildHoverText({ hoverCountryMetric, hoverCountryMeta, layerMode });
+  const simulationArcs = useMemo(() => {
+    if (!showImpactArrows || !simulation) return [];
+    return buildSimulationImpactArcs(simulation.impact_arrows);
+  }, [showImpactArrows, simulation]);
+
+  function parseAllocationUsd(value: string): number {
+    const parsed = Number(value.replace(/,/g, "").trim());
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.round(parsed);
+  }
+
+  function setAllocationFromNumber(value: number) {
+    setAllocationUsd(String(Math.max(0, Math.round(value))));
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -315,7 +336,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
   async function runSimulation() {
     if (!selectedIso3) return;
-    const parsed = Number(allocationUsd.replace(/,/g, ""));
+    const parsed = parseAllocationUsd(allocationUsd);
     if (!Number.isFinite(parsed) || parsed < 0) return;
 
     setSimulationLoading(true);
@@ -325,12 +346,26 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
         allocation_usd: parsed
       });
       setSimulation(payload);
-      setHighlightedIso3(payload.top_overlooked_after.slice(0, 3).map((item) => item.iso3));
+      const highlighted = new Set<string>(payload.top_overlooked_after.slice(0, 3).map((item) => item.iso3));
+      highlighted.add(payload.iso3);
+      for (const arrow of payload.impact_arrows.slice(0, 6)) {
+        highlighted.add(arrow.to_iso3);
+      }
+      setHighlightedIso3([...highlighted]);
     } catch {
       setSimulation(null);
     } finally {
       setSimulationLoading(false);
     }
+  }
+
+  function bumpAllocation(deltaUsd: number) {
+    const next = parseAllocationUsd(allocationUsd) + deltaUsd;
+    setAllocationFromNumber(next);
+  }
+
+  function openSimulationPanel() {
+    setActivePanel("simulation");
   }
 
   function jumpToCountry() {
@@ -342,7 +377,11 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
 
   return (
     <main className="mx-auto w-full max-w-[1560px] bg-[var(--dbx-bg)] px-4 pb-5 pt-4 sm:px-5 sm:pb-6">
-      <HeroSection generatedAt={generatedAt} />
+      <HeroSection
+        generatedAt={generatedAt}
+        selectedCountryLabel={selectedLabel}
+        onOpenSimulation={openSimulationPanel}
+      />
 
       <section className="dashboard-grid mt-4 grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] 2xl:items-start">
         <div ref={leftStackRef} className="grid min-w-0 content-start gap-3">
@@ -370,6 +409,7 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
             layerMode={layerMode}
             selectedIso3={selectedIso3}
             highlightedIso3={highlightedIso3}
+            simulationArcs={simulationArcs}
             query={query}
             countrySuggestions={countrySuggestions}
             hoverText={hoverText}
@@ -533,6 +573,9 @@ export default function GlobeDashboard({ metrics, generatedAt }: GlobeDashboardP
                   simulationLoading={simulationLoading}
                   simulation={simulation}
                   onAllocationChange={setAllocationUsd}
+                  onAllocationAdjust={bumpAllocation}
+                  showImpactArrows={showImpactArrows}
+                  onShowImpactArrowsChange={setShowImpactArrows}
                   onSimulate={runSimulation}
                 />
               </>

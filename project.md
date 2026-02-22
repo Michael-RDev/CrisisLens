@@ -22,7 +22,7 @@ We leaned into test-driven iteration for unstable surfaces, especially layout an
 
 ## Challenges we ran into
 
-One major challenge was responsive layout behavior, especially preventing globe panel overflow when users zoomed out, which required stricter container constraints and a simpler dashboard structure. We also had to keep interaction behavior consistent across pointer controls, hand controls, and voice commands, which pushed us to centralize parsing and selection utilities. Another recurring issue was data contract stability, since schema drift between generated artifacts and frontend types can quickly break runtime assumptions. Finally, we had to carefully balance local mocked providers with production-oriented API contracts so development stayed fast without losing architectural realism.
+Our biggest challenge was finding a dataset that was both operationally relevant and structurally clean enough to support country-level modeling, then training a custom ML model that generalized well instead of overfitting noisy signals. We also had to keep interaction behavior consistent across pointer controls, hand controls, and voice commands, which pushed us to centralize parsing and selection utilities. Another recurring issue was data contract stability, since schema drift between generated artifacts and frontend types can quickly break runtime assumptions. Finally, we had to carefully balance local mocked providers with production-oriented API contracts so development stayed fast without losing architectural realism.
 
 ## Accomplishments that we're proud of
 

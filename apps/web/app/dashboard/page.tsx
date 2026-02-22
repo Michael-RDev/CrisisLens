@@ -10,7 +10,7 @@ type DashboardPageProps = {
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const [metrics, snapshot] = await Promise.all([loadCountryMetrics(), loadSnapshot()]);
   const modeParam = String(searchParams?.mode ?? "").toLowerCase();
-  const initialMode = modeParam === "ml" ? "ml" : modeParam === "split" ? "split" : "genie";
+  const initialMode = modeParam === "ml" ? "ml" : "genie";
   return (
     <GlobeDashboard metrics={metrics} generatedAt={snapshot.generatedAt} initialMode={initialMode} />
   );

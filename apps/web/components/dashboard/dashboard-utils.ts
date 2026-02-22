@@ -1,11 +1,16 @@
 import { allCountriesSorted, countryByIso3 } from "@/lib/countries";
 import { CountryMetrics, LayerMode, RiskBand } from "@/lib/types";
 
+export const riskClassByBand: Record<RiskBand, string> = {
+  critical: "chip-critical",
+  high: "chip-high",
+  moderate: "chip-moderate",
+  low: "chip-low"
+};
+
 export function getRiskClass(riskBand?: RiskBand): string {
-  if (riskBand === "critical") return "chip-critical";
-  if (riskBand === "high") return "chip-high";
-  if (riskBand === "moderate") return "chip-moderate";
-  return "chip-low";
+  if (!riskBand) return riskClassByBand.low;
+  return riskClassByBand[riskBand] ?? riskClassByBand.low;
 }
 
 export function getOutlierLabel(flag: "low" | "high" | "none"): string {

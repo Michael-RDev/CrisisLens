@@ -107,10 +107,8 @@ export default function GlobeDashboard({
   const [layerMode, setLayerMode] = useState<LayerMode>("overlooked");
   const [highlightedIso3, setHighlightedIso3] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<CommandTabId>("country-data");
-  const [geniePanelOpen, setGeniePanelOpen] = useState(true);
-  const [geniePanelCollapsed, setGeniePanelCollapsed] = useState(false);
-  const [mlPanelOpen, setMlPanelOpen] = useState(true);
-  const [mlPanelCollapsed, setMlPanelCollapsed] = useState(false);
+  const [geniePanelOpen, setGeniePanelOpen] = useState(false);
+  const [mlPanelOpen, setMlPanelOpen] = useState(false);
 
   const [insightSelection, setInsightSelection] = useState<PinchSelection | null>(null);
   const [genieConversationId, setGenieConversationId] = useState<string | null>(null);
@@ -220,9 +218,8 @@ export default function GlobeDashboard({
     if (!showImpactArrows) return [];
     return buildSimulationImpactArcs(simulation?.impact_arrows ?? []);
   }, [showImpactArrows, simulation?.impact_arrows]);
-  const showGenieWorkspace = workspaceMode === "genie" || workspaceMode === "split";
-  const showMlWorkspace = workspaceMode === "ml" || workspaceMode === "split";
-  const isSplitView = workspaceMode === "split";
+  const showGenieWorkspace = workspaceMode === "genie";
+  const showMlWorkspace = workspaceMode === "ml";
 
   useEffect(() => {
     selectedIso3Ref.current = selectedIso3;
@@ -390,12 +387,6 @@ export default function GlobeDashboard({
     setInsightError(null);
   }, [selectedIso3]);
 
-  useEffect(() => {
-    if (workspaceMode !== "split") return;
-    setGeniePanelOpen(true);
-    setMlPanelOpen(true);
-  }, [workspaceMode]);
-
   async function loadInsightForCountry(selection: PinchSelection) {
     const normalized = selection.countryCode ? normalizeCountryCode(selection.countryCode) : null;
     if (!normalized) {
@@ -414,7 +405,6 @@ export default function GlobeDashboard({
     setInsightSql(null);
     setInsightQueryResult(null);
     setGeniePanelOpen(true);
-    setGeniePanelCollapsed(false);
     setActiveTab("country-data");
 
     try {
@@ -491,7 +481,6 @@ export default function GlobeDashboard({
       setStrategicResult(result);
       setActiveTab("insights");
       setGeniePanelOpen(true);
-      setGeniePanelCollapsed(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to run strategic query.";
       setStrategicError(message);
@@ -624,13 +613,23 @@ export default function GlobeDashboard({
     <GlobeCanvas
       overlays={
         <>
-          <TopNav mode={workspaceMode} onModeChange={setWorkspaceMode} />
+          <TopNav
+            mode={workspaceMode}
+            onModeChange={setWorkspaceMode}
+            menuOpen={workspaceMode === "genie" ? geniePanelOpen : mlPanelOpen}
+            onToggleMenu={() => {
+              if (workspaceMode === "genie") {
+                setGeniePanelOpen((current) => !current);
+                return;
+              }
+              setMlPanelOpen((current) => !current);
+            }}
+          />
 
           {showGenieWorkspace ? (
             <RightSidebar
-              side={isSplitView ? "left" : "right"}
+              side="right"
               open={geniePanelOpen}
-              collapsed={geniePanelCollapsed}
               activeTab={activeTab}
               selectedCountryLabel={
                 activeCountryIso
@@ -646,7 +645,6 @@ export default function GlobeDashboard({
               onQueryChange={setQuery}
               onJump={jumpToCountry}
               onToggleOpen={() => setGeniePanelOpen((current) => !current)}
-              onToggleCollapsed={() => setGeniePanelCollapsed((current) => !current)}
               onTabChange={setActiveTab}
             >
               {activeTab === "insights" ? (
@@ -706,9 +704,7 @@ export default function GlobeDashboard({
           {showMlWorkspace ? (
             <MlSidebar
               side="right"
-              splitView={isSplitView}
               open={mlPanelOpen}
-              collapsed={mlPanelCollapsed}
               selectedCountryLabel={
                 selectedIso3
                   ? `${selectedCountryMeta?.name ?? "Country"} • ${selectedIso3}`
@@ -723,7 +719,6 @@ export default function GlobeDashboard({
               onQueryChange={setQuery}
               onJump={jumpToCountry}
               onToggleOpen={() => setMlPanelOpen((current) => !current)}
-              onToggleCollapsed={() => setMlPanelCollapsed((current) => !current)}
             >
               <MlOpsTab
                 activePanel={activeMlPanel}

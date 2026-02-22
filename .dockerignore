@@ -1,0 +1,17 @@
+.git
+.github
+.vscode
+
+.next
+node_modules
+**/node_modules
+
+playwright-report
+test-results
+
+.venv
+*.pyc
+__pycache__
+
+*.log
+.DS_Store

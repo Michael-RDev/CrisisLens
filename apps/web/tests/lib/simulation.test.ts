@@ -234,7 +234,11 @@ describe("quarterly simulation", () => {
     const bbbArrow = simulation.impact_arrows.find((arrow) => arrow.to_iso3 === "BBB");
 
     expect(bbbArrow).toBeDefined();
-    expect(bbbArrow?.overall_score_delta).toBeLessThan(0);
+    // Peer countries receive no funding allocation, so their OCI score is identical between
+    // the no-funding and with-funding scenarios at the same Q+8 horizon. Direction is
+    // determined by relative rank movement (BBB overtakes / stays ahead of the now-better-
+    // funded selected country), not by the peer's own score change.
+    expect(bbbArrow?.overall_score_delta).toBe(0);
     expect(bbbArrow?.direction).toBe("relief");
     expect(typeof bbbArrow?.projected_neglect_delta).toBe("number");
   });

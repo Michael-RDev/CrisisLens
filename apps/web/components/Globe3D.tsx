@@ -19,6 +19,7 @@ import { countryByIso3, iso3ByCcn3 } from "@/lib/countries";
 import type { SimulationImpactArc } from "@/lib/globe/simulation-arcs";
 import { CountryMetrics, LayerMode } from "@/lib/types";
 import { getLayerValue } from "@/lib/metrics";
+import { resolveVoiceCommandToCountryIso3 } from "@/components/dashboard/dashboard-utils";
 
 type Globe3DProps = {
   metrics: CountryMetrics[];
@@ -54,6 +55,41 @@ type HandCursorState = {
   active: boolean;
   iso3: string | null;
   country: string | null;
+};
+type SpeechRecognitionAlternativeLike = {
+  transcript: string;
+};
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  length: number;
+  [index: number]: SpeechRecognitionAlternativeLike;
+};
+type SpeechRecognitionResultListLike = {
+  length: number;
+  [index: number]: SpeechRecognitionResultLike;
+};
+type SpeechRecognitionEventLike = Event & {
+  resultIndex: number;
+  results: SpeechRecognitionResultListLike;
+};
+type SpeechRecognitionErrorEventLike = Event & {
+  error: string;
+};
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: ((event: Event) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: ((event: Event) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type SpeechRecognitionCtorLike = new () => SpeechRecognitionLike;
+type WindowWithSpeechRecognition = Window & {
+  SpeechRecognition?: SpeechRecognitionCtorLike;
+  webkitSpeechRecognition?: SpeechRecognitionCtorLike;
 };
 
 const HAND_TASKS_WASM_URL =
@@ -151,13 +187,18 @@ export default function Globe3D({
   const smoothedHandRef = useRef<SmoothedHand | null>(null);
   const handPovRef = useRef<GeoPov | null>(null);
   const handStatusRef = useRef("Camera control is off.");
+  const voiceStatusRef = useRef("Voice control is off.");
+  const voiceControlEnabledRef = useRef(false);
+  const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const controlsRef = useRef<OrbitControlsLike | null>(null);
   const selectedIso3Ref = useRef<string | null>(selectedIso3);
   const [size, setSize] = useState({ width: 900, height: 560 });
   const [globeReady, setGlobeReady] = useState(false);
   const [handControlEnabled, setHandControlEnabled] = useState(false);
+  const [voiceControlEnabled, setVoiceControlEnabled] = useState(false);
   const [handOverlayMinimized, setHandOverlayMinimized] = useState(false);
   const [handStatus, setHandStatus] = useState("Camera control is off.");
+  const [voiceStatus, setVoiceStatus] = useState("Voice control is off.");
   const [handSensitivity, setHandSensitivity] = useState(0.95);
   const [handCursor, setHandCursor] = useState<HandCursorState>({
     x: 0,
@@ -333,6 +374,11 @@ export default function Globe3D({
     if (handStatusRef.current === status) return;
     handStatusRef.current = status;
     setHandStatus(status);
+  }, []);
+  const setVoiceStatusSafely = useCallback((status: string) => {
+    if (voiceStatusRef.current === status) return;
+    voiceStatusRef.current = status;
+    setVoiceStatus(status);
   }, []);
 
   const countryAtScreenPoint = useCallback(
@@ -637,9 +683,122 @@ export default function Globe3D({
     void startHandControl();
   }
 
+  const stopVoiceControl = useCallback(
+    (status = "Voice control is off.") => {
+      voiceControlEnabledRef.current = false;
+      setVoiceControlEnabled(false);
+
+      const recognition = speechRecognitionRef.current;
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        try {
+          recognition.stop();
+        } catch {
+          // ignore stop errors from an already-ended session
+        }
+      }
+      speechRecognitionRef.current = null;
+      setVoiceStatusSafely(status);
+    },
+    [setVoiceStatusSafely]
+  );
+
+  const startVoiceControl = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const speechWindow = window as WindowWithSpeechRecognition;
+    const RecognitionCtor = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!RecognitionCtor) {
+      setVoiceStatusSafely("Voice control is unavailable in this browser.");
+      return;
+    }
+
+    const recognition = new RecognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setVoiceStatusSafely('Listening... Say "go to Canada".');
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        if (!result?.isFinal) continue;
+        const phrase = result[0]?.transcript?.trim();
+        if (phrase) transcript += `${phrase} `;
+      }
+
+      const spoken = transcript.trim();
+      if (!spoken) return;
+
+      const iso3 = resolveVoiceCommandToCountryIso3(spoken);
+      if (!iso3) {
+        setVoiceStatusSafely(`Heard "${spoken}" but no country match was found.`);
+        return;
+      }
+
+      onSelect(iso3);
+      const countryName = countryByIso3.get(iso3)?.name ?? iso3;
+      setVoiceStatusSafely(`Selected ${countryName}.`);
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        stopVoiceControl("Microphone access blocked. Allow microphone permission and retry.");
+        return;
+      }
+      if (event.error === "audio-capture") {
+        stopVoiceControl("No microphone detected. Connect a microphone and retry.");
+        return;
+      }
+      if (event.error === "no-speech") {
+        setVoiceStatusSafely('No speech detected. Say "go to Canada".');
+        return;
+      }
+      setVoiceStatusSafely("Voice recognition error. Try again.");
+    };
+
+    recognition.onend = () => {
+      if (!voiceControlEnabledRef.current) return;
+      try {
+        recognition.start();
+      } catch {
+        stopVoiceControl("Voice control paused unexpectedly. Start it again.");
+      }
+    };
+
+    speechRecognitionRef.current = recognition;
+    voiceControlEnabledRef.current = true;
+    setVoiceControlEnabled(true);
+    setVoiceStatusSafely("Starting voice control...");
+
+    try {
+      recognition.start();
+    } catch {
+      stopVoiceControl("Unable to start voice control. Check microphone permissions and retry.");
+    }
+  }, [onSelect, setVoiceStatusSafely, stopVoiceControl]);
+
+  function toggleVoiceControl() {
+    if (voiceControlEnabled) {
+      stopVoiceControl();
+      return;
+    }
+    startVoiceControl();
+  }
+
   useEffect(() => {
-    return () => stopHandControl();
-  }, [stopHandControl]);
+    return () => {
+      stopHandControl();
+      stopVoiceControl();
+    };
+  }, [stopHandControl, stopVoiceControl]);
 
   return (
     <div className="globe-canvas" ref={containerRef}>
@@ -667,10 +826,14 @@ export default function Globe3D({
           <button type="button" onClick={toggleHandControl} className="globe-hands-toggle">
             {handControlEnabled ? "Stop Hand Control" : "Start Hand Control"}
           </button>
+          <button type="button" onClick={toggleVoiceControl} className="globe-hands-toggle">
+            {voiceControlEnabled ? "Stop Voice Control" : "Start Voice Control"}
+          </button>
           <p>{handStatus}</p>
+          <p>{voiceStatus}</p>
           <p>
             Controls: aim with hand cursor. Quick pinch selects country. Hold pinch for drag mode and
-            move hand to rotate globe.
+            move hand to rotate globe. Voice command example: &quot;go to Canada&quot;.
           </p>
           <label className="globe-hands-sensitivity" htmlFor="hand-sensitivity">
             Sensitivity: {handSensitivity.toFixed(1)}x

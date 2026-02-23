@@ -2,7 +2,7 @@
 
 .env
 .env.local
-
+data/
 apps/web/data/
 .DS_Store
 node_modules/

@@ -90,30 +90,82 @@
 
 .globe-hands-overlay {
   position: absolute;
-  bottom: 1rem;
-  left: 0.6rem;
-  z-index: 4;
-  max-width: 300px;
-  background: rgba(9, 24, 35, 0.82);
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: max(1rem, env(safe-area-inset-left));
+  z-index: 12;
+  width: min(92vw, 320px);
+  background: rgba(9, 24, 35, 0.84);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(86, 122, 146, 0.72);
   border-radius: 12px;
-  padding: 0.5rem 0.6rem;
-  padding-top: 0.9rem;
+  padding: 0.7rem;
+  padding-top: 0.95rem;
+  box-shadow: 0 12px 28px -18px rgba(6, 19, 30, 0.85);
 }
 
 .globe-hands-overlay-collapsed {
   position: absolute;
-  bottom: 1rem;
-  left: 0.6rem;
-  z-index: 4;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: max(1rem, env(safe-area-inset-left));
+  z-index: 12;
 }
 
 .globe-hands-overlay p {
-  margin: 0.35rem 0 0;
+  margin: 0;
   color: #b7ccda;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.globe-hands-controls-row {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.globe-hands-status-grid {
+  margin-top: 0.45rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.globe-hands-status-card {
+  border: 1px solid rgba(77, 112, 134, 0.7);
+  background: rgba(11, 33, 48, 0.72);
+  border-radius: 9px;
+  padding: 0.32rem 0.44rem;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.globe-hands-status-label {
+  color: #d4e7f5;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.globe-hands-help-row {
+  margin-top: 0.48rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  color: #d4e7f5;
+  font-size: 0.69rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.globe-hands-help-toggle {
+  border: 1px solid #5c8099;
+  background: #102c40;
+  color: #e4f2fb;
+  border-radius: 999px;
+  padding: 0.1rem 0.42rem;
+  font-size: 0.65rem;
   line-height: 1.3;
+  cursor: pointer;
 }
 
 .globe-hands-toggle {
@@ -121,8 +173,11 @@
   background: #133248;
   color: #f2f8fd;
   border-radius: 8px;
-  padding: 0.34rem 0.54rem;
-  font-size: 0.76rem;
+  padding: 0.38rem 0.46rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  min-height: 2rem;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -165,14 +220,19 @@
 
 .globe-hands-sensitivity {
   display: block;
-  margin-top: 0.45rem;
+  margin-top: 0.5rem;
   color: #d7e5f0;
   font-size: 0.72rem;
 }
 
 .globe-hands-overlay input[type="range"] {
   width: 100%;
-  margin-top: 0.2rem;
+  margin-top: 0.24rem;
+}
+
+.globe-hands-instructions {
+  margin-top: 0.3rem !important;
+  color: #b8cfde;
 }
 
 .globe-hand-cursor {
@@ -252,5 +312,15 @@
 @media (max-width: 640px) {
   .globe-canvas {
     height: 42vh;
+  }
+
+  .globe-hands-overlay {
+    width: min(94vw, 300px);
+    padding: 0.65rem;
+    padding-top: 0.9rem;
+  }
+
+  .globe-hands-controls-row {
+    grid-template-columns: 1fr;
   }
 }
